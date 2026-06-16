@@ -5,17 +5,17 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon",
-
-"build": "tsc",
-
-"start": "node dist/server.js"
+    "build": "tsc",
+    "start": "node dist/server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "express": "^5.2.1"
+    "@prisma/client": "^7.8.0",
+    "express": "^5.2.1",
+    "prisma": "^7.8.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",

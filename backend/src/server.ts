@@ -13,7 +13,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   next();
 });
-
+https://github.com/grupo-pinnacle/conectavet/pull/3/conflict?name=backend%252Ftsconfig.json&base_oid=8581f69ec7991b9b34f221fb4b94c7d278cab8d5&head_oid=e2cf5a6140d9f82fa94390b7497e661b5a826a31
 app.get('/health', (req: Request, res: Response) => {
   res.json({
     status: 'ok',

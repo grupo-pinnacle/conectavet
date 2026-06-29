@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getMeController, adminOnlyController } from './users.controller';
+import { getMeController, adminOnlyController, listVetsController } from './users.controller';
 import {
   authenticate,
   authorize
@@ -15,5 +15,6 @@ router.get(
   authorize(Role.ADMIN),
   adminOnlyController
 );
+router.get('/vets', authenticate, listVetsController);
 
 export default router;

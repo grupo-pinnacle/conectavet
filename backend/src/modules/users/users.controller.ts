@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
-import { getUserById } from './users.service';
+import { getUserById, listVets } from './users.service';
 
 export async function getMeController(req: RequestWithUser, res: Response) {
   try {
@@ -41,4 +41,14 @@ export async function adminOnlyController(req: RequestWithUser, res: Response) {
       user: req.user
     }
   });
+}
+
+export async function listVetsController(req: RequestWithUser, res: Response) {
+  try {
+    const vets = await listVets();
+    return res.status(200).json({ success: true, data: vets });
+  } catch (error) {
+    console.error('Error en listVetsController:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
 }

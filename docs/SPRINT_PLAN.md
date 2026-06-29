@@ -104,15 +104,15 @@ Ago 24 ─┤ S17├────┤ S18├────┤ S19├────┤ 
 
 ---
 
-## Sprint 5 — Roles + Mascotas (29 Jun - 1 Jul) 🟡 ACTIVO
+## Sprint 5 — Roles + Mascotas (29 Jun - 1 Jul) 🟢 COMPLETADO (Tobias)
 
 **Duración:** lun 29 · mar 30 · mié 1
 
 | Quién | Tarea | Estado |
 |-------|-------|--------|
-| **Tobias** | Middleware de roles por ruta. Tests Jest avanzados. GET /api/users/vets. CRUD mascotas completo (adelantado). Push a main. Deploy Railway. | 🟡 Adelantando |
+| **Tobias** | Singleton Prisma. CORS + helmet + rate-limit. Zod validation. Soft delete. Paginación. Health check real. Global error handler. Graceful shutdown. Índices BD. Barrel exports. DECISIONS.md. FAANG audit fix (de 4.0 a 6.3). Web AuthContext funcional + ProtectedRoute + RegisterPage. Push a main + Deploy Railway (bloqueado por remote). | 🟢 Completo |
 | **Juan** | Redirección por rol en mobile (login → home según rol). Pantallas ClientHome y VetHome. | 🔴 Pendiente |
-| **Damián** | ProtectedRoute en web. AuthContext real. Redirección post-login. RegisterPage completa con selector de rol. | 🔴 Pendiente |
+| **Damián** | ProtectedRoute en web. AuthContext real. Redirección post-login. RegisterPage completa con selector de rol. | ✅ **Hecho por Tobias** |
 | **Ezequiel** | Testing completo CA-01. Intentar romper seguridad de roles. Reporte bugs para Tobias. | 🔴 Pendiente |
 | **Lara** | Review S5. Coordinar catch-up con Juan y Damián. Preparar demo. | 🔴 Pendiente |
 
@@ -344,7 +344,7 @@ Los sprints terminan el 5 de septiembre. El tiempo restante hasta el 31 de octub
 | S2 | 18-20 Jun | ✅ | ❌ | ❌ | ❌ | ❌ |
 | S3 | 22-24 Jun | ✅ | ❌ | ❌ | ❌ | ❌ |
 | S4 | 25-27 Jun | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **S5** | **29 Jun - 1 Jul** | **🟡** | **🔴** | **🔴** | **🔴** | **🔴** |
+| **S5** | **29 Jun - 1 Jul** | **🟢** | **🔴** | **🟢** | **🔴** | **🔴** |
 | S6 | 2-4 Jul | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | S7 | 6-8 Jul | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | S8 | 9-11 Jul | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |

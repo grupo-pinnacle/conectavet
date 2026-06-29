@@ -1,26 +1,32 @@
 # Railway Deploy — Backend VetConnect
-#
-# 1. Ir a https://railway.app → New Project → Deploy from repo
-# 2. Elegir el repo grupo-pinnacle/conectavet
-# 3. Root Directory: backend
-# 4. Railway detecta automáticamente Node.js y usa:
-#    npm ci → npx prisma generate → npx tsc → node dist/server.js
-#
-# Variables de entorno a configurar en Railway:
-#
-# DATABASE_URL=postgresql://postgres.lgdaobhyhnoxznwhqtot:wfEAMXp9c2fVqj37@aws-1-us-west-2.pooler.supabase.com:6543/postgres?pgbouncer=true
-# DIRECT_URL=postgresql://postgres.lgdaobhyhnoxznwhqtot:wfEAMXp9c2fVqj37@aws-1-us-west-2.pooler.supabase.com:5432/postgres
-# JWT_SECRET=una-clave-secreta-bien-larga-que-nadie-pueda-adivinar-vetconnect-2025
-# NODE_ENV=production
-# PORT=3000
-#
-# 5. Railway asigna una URL tipo: https://conectavet-api.up.railway.app
-# 6. Probar: curl https://conectavet-api.up.railway.app/health
 
-Write-Host "Para deployar:"
-Write-Host "1. Push a main: git push origin main"
-Write-Host "2. Ir a https://railway.app"
-Write-Host "3. New Project → Deploy from GitHub → elegir conectavet"
-Write-Host "4. Root directory: backend"
-Write-Host "5. Agregar variables de entorno (ver .env.example)"
-Write-Host "6. Railway deploya automáticamente"
+## Prerequisitos
+
+- Repo en GitHub con push a `main`
+- Cuenta en [railway.app](https://railway.app)
+
+## Pasos
+
+1. Ir a https://railway.app → New Project → Deploy from repo
+2. Elegir el repo `grupo-pinnacle/conectavet`
+3. Root Directory: `backend`
+4. Railway detecta Node.js y ejecuta automáticamente:
+   ```
+   npm ci → npx prisma generate → npx tsc → node dist/server.js
+   ```
+5. Configurar variables de entorno (ver `.env.example`):
+   - `DATABASE_URL` — Pooler de Supabase (puerto 6543)
+   - `DIRECT_URL` — Conexión directa Supabase (puerto 5432)
+   - `JWT_SECRET` — Clave secreta para JWT (generar una nueva)
+   - `NODE_ENV=production`
+   - `CORS_ORIGIN=https://[frontend-domain]` (opcional)
+
+6. Railway asigna una URL tipo: `https://conectavet-api.up.railway.app`
+7. Probar: `curl https://conectavet-api.up.railway.app/health`
+
+## Notas de seguridad
+
+- **NO** pegar credenciales reales en este archivo ni en ningún documento del repo
+- Usar el `.env.example` como template
+- Generar un `JWT_SECRET` nuevo para producción (ej: `openssl rand -hex 32`)
+- Rotar las credenciales de Supabase si alguna vez se expusieron en el repo

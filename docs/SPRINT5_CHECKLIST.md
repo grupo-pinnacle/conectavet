@@ -134,11 +134,11 @@
 
 | Integrante | Día 1 (lun) | Día 2 (mar) | Día 3 (mié) | S5 Status |
 |-----------|-------------|-------------|-------------|-----------|
-| Tobias | ✅ Adelantado - solo push+deploy+ayudar | ✅ Soporte | ✅ Cierre | 🟢 |
-| Damián | 🔴 AuthContext + Login + Register | 🟡 ProtectedRoute + Dashboard | 🟢 Prueba humo | 🟡 |
-| Juan | 🔴 Expo project + LoginScreen | 🟡 Redirección por rol | 🟢 Prueba Android | 🟡 |
-| Ezequiel | 🔴 Probar endpoints auth | 🟡 Probar frontends | 🟢 Reporte bugs | 🟡 |
-| Lara | 🔴 Tablero + coordinar | 🟡 Checkpoint | 🟢 Review | 🟡 |
+| Tobias | ✅ Singleton Prisma, CORS, helmet, rate-limit, health check, graceful shutdown, paginación, soft delete, índices, zod, coverage, barrel exports, DECISIONS.md, DEPLOY.md fix, FAANG audit, AuthContext funcional, ProtectedRoute, RegisterPage, LoginPage, DashboardPage, colors.ts, Input/Button fix, Vite proxy, web env | ✅ Test coverage + web types | ✅ Push+deploy (bloqueado remote) | 🟢 **Sprint completo** |
+| Damián | 🔴 (Lo hizo Tobias) | 🟢 Web ya funcional | 🟢 Sin cambios necesarios | 🟢 **Hecho por Tobias** |
+| Juan | 🔴 Expo project + LoginScreen | 🟡 Redirección por rol | 🟢 Prueba Android | 🔴 Pendiente |
+| Ezequiel | 🔴 Probar endpoints auth | 🟡 Probar frontends | 🟢 Reporte bugs | 🔴 Pendiente |
+| Lara | 🔴 Tablero + coordinar | 🟡 Checkpoint | 🟢 Review | 🔴 Pendiente |
 
 ---
 

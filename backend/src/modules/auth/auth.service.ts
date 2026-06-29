@@ -1,8 +1,8 @@
-import { PrismaClient, Role } from '@prisma/client';
+import { Role } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { prisma } from '../../shared/prisma';
 
-const prisma = new PrismaClient();
 const SALT_ROUNDS = 10;
 
 interface RegisterInput {

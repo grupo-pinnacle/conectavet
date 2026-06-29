@@ -45,8 +45,10 @@ export async function adminOnlyController(req: RequestWithUser, res: Response) {
 
 export async function listVetsController(req: RequestWithUser, res: Response) {
   try {
-    const vets = await listVets();
-    return res.status(200).json({ success: true, data: vets });
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const result = await listVets(page, limit);
+    return res.status(200).json({ success: true, ...result });
   } catch (error) {
     console.error('Error en listVetsController:', error);
     return res.status(500).json({ success: false, message: 'Error interno del servidor' });

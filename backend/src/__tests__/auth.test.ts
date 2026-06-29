@@ -1,8 +1,7 @@
-import { PrismaClient, Role } from '@prisma/client';
+import { Role } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-
-const prisma = new PrismaClient();
+import { prisma } from '../shared/prisma';
 
 describe('Auth Service', () => {
   const testEmail = `jest-test-${Date.now()}@test.com`;
@@ -65,11 +64,28 @@ describe('Auth Service', () => {
     });
   });
 
+  describe('JWT Middleware', () => {
+    test('debe decodificar un token válido correctamente', () => {
+      const secret = process.env.JWT_SECRET || 'test-secret';
+      const payload = { userId: '456', email: 'vet@test.com', role: 'VET' as Role };
+      const token = jwt.sign(payload, secret, { expiresIn: '7d' });
+      const decoded = jwt.verify(token, secret) as any;
+      expect(decoded.userId).toBe('456');
+      expect(decoded.email).toBe('vet@test.com');
+      expect(decoded.role).toBe('VET');
+    });
+
+    test('debe rechazar token expirado', () => {
+      const secret = process.env.JWT_SECRET || 'test-secret';
+      const token = jwt.sign({ userId: '1', exp: Math.floor(Date.now() / 1000) - 3600 }, secret);
+      expect(() => jwt.verify(token, secret)).toThrow();
+    });
+  });
+
   describe('Roles', () => {
     test('ADMIN debe tener rol ADMIN', () => {
-      const role = 'ADMIN';
-      expect(['ADMIN']).toContain(role);
-      expect(['CLIENT', 'VET']).not.toContain(role);
+      expect('ADMIN').toBe('ADMIN');
+      expect(['CLIENT', 'VET']).not.toContain('ADMIN');
     });
 
     test('CLIENT no debe tener permisos de ADMIN', () => {

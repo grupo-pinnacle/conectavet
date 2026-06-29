@@ -1,0 +1,69 @@
+{
+  "expo": {
+    "name": "VetConnect",
+    "slug": "vetconnect",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "vetconnect",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2563eb"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pinnacle.vetconnect",
+      "infoPlist": {
+        "NSCameraUsageDescription": "VetConnect necesita acceso a la cámara para videollamadas con veterinarios y para tomar fotos de tu mascota.",
+        "NSMicrophoneUsageDescription": "VetConnect necesita acceso al micrófono para videollamadas con veterinarios.",
+        "NSPhotoLibraryUsageDescription": "VetConnect necesita acceso a la galería para seleccionar fotos de tu mascota."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2563eb"
+      },
+      "package": "com.pinnacle.vetconnect",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.INTERNET"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "VetConnect necesita acceso a la cámara para videollamadas y fotos de mascotas."
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "VetConnect necesita acceso al micrófono para videollamadas."
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "tsconfigPaths": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    }
+  }
+}

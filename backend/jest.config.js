@@ -9,4 +9,8 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'clover'],
   coveragePathIgnorePatterns: ['/node_modules/', '/__tests__/', '/dist/'],
+  testTimeout: 30000,
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+  },
 };

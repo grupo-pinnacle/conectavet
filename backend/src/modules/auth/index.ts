@@ -1,3 +1,3 @@
-export { registerController, loginController } from './auth.controller';
-export { register, login, AuthError } from './auth.service';
+export { registerController, loginController, logoutController } from './auth.controller';
+export { register, login, logout, AuthError } from './auth.service';
 export { default as authRoutes } from './auth.routes';

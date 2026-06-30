@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { Role } from '@prisma/client';
-import { register, login, AuthError } from './auth.service';
+import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
+import { register, login, logout, AuthError } from './auth.service';
 
 const registerSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -30,6 +31,19 @@ export async function registerController(req: Request, res: Response) {
       return res.status(error.statusCode).json({ success: false, message: error.message });
     }
     console.error('Error en registerController:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+}
+
+export async function logoutController(req: RequestWithUser, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'No autenticado' });
+    }
+    await logout(req.user.userId);
+    return res.status(200).json({ success: true, message: 'Sesión cerrada' });
+  } catch (error) {
+    console.error('Error en logoutController:', error);
     return res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 }

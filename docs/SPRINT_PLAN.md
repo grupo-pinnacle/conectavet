@@ -136,7 +136,7 @@ Ago 24 ─┤ S17├────┤ S18├────┤ S19├────┤ 
 
 | Quién | Tarea |
 |-------|-------|
-| **Tobias** | Modelo `Message` en Prisma + migración. Setup Socket.io en el servidor. Endpoints base `GET/POST /api/consultations/:id/messages`. Ayudar a Juan a conectar mobile. |
+| **Tobias** | ✅ Modelo `Message` en Prisma + migración. Setup Socket.io. Endpoints consultas + chat. Ayudar a Juan a conectar mobile. |
 | **Juan** | Pantalla alta mascota. Lista mascotas. Detalle mascota. Conectado al backend. Login/Register mobile funcional. |
 | **Damián** | Dashboard web médico: lista mascotas de consultas. Tailwind según wireframes Ezequiel. |
 | **Ezequiel** | Testing pantallas mascota mobile. Verificar datos guardados/mostrados. Casos CA-03. Actualizar Figma. |
@@ -152,7 +152,7 @@ Ago 24 ─┤ S17├────┤ S18├────┤ S19├────┤ 
 
 | Quién | Tarea |
 |-------|-------|
-| **Tobias** | WebSocket (Socket.io) + endpoints `GET/POST /api/consultations/:id/messages`. Tabla `Message` en Prisma. Conectar a sala vía `consultationId`. |
+| **Tobias** | ✅ WebSocket (Socket.io) + endpoints consultas + paginación + autorización. Tabla `Message`. |
 | **Juan** | Pantalla de chat en mobile. Input de texto + lista de mensajes. Conectar al WebSocket. |
 | **Damián** | Pantalla de chat en web. Input de texto + burbujas de mensajes. Conectar al WebSocket. |
 | **Ezequiel** | Probar chat: enviar/recibir mensajes, ver historial al reconectar. Testing en ambos canales. |

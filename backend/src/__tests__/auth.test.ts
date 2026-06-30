@@ -8,7 +8,6 @@ describe('Auth Service', () => {
 
   afterAll(async () => {
     await prisma.user.deleteMany({ where: { email: { startsWith: 'jest-test-' } } });
-    await prisma.$disconnect();
   });
 
   describe('Register', () => {

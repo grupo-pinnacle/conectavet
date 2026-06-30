@@ -1,12 +1,12 @@
 # VetConnect API
 
-> **Backend de telemedicina veterinaria** — API REST monolítica modular con autenticación JWT, roles (CLIENT/VET/ADMIN), CRUD de mascotas, videollamadas LiveKit, cola de espera y asistencia IA.
+> **Backend de telemedicina veterinaria** — API REST monolítica modular con autenticación JWT, roles (CLIENT/VET/ADMIN), CRUD de mascotas, chat de texto en tiempo real y consultas.
 >
-> Node.js · TypeScript · Express 5 · Prisma 6 · PostgreSQL (Supabase) · JWT · LiveKit
+> Node.js · TypeScript · Express 5 · Prisma 6 · PostgreSQL (Supabase) · JWT · Socket.io
 
 ![Status](https://img.shields.io/badge/status-active-brightgreen)
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![Tests](https://img.shields.io/badge/tests-9%2F9-passing)
+![Tests](https://img.shields.io/badge/tests-11%2F11-passing)
 ![Prisma](https://img.shields.io/badge/Prisma-6.x-2D3748)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -111,10 +111,7 @@ backend/
 │   │   │   ├── pets.routes.ts
 │   │   │   ├── pets.controller.ts
 │   │   │   └── pets.service.ts
-│   │   ├── consultations/      # Videollamadas (próximamente)
-│   │   ├── queue/              # Cola de espera (próximamente)
-│   │   ├── medical-records/    # Historial clínico (próximamente)
-│   │   └── ai-assistant/       # IA Claude (próximamente)
+│   │   ├── consultations/      # Consultas + Chat (Socket.io) ✅
 │   ├── shared/
 │   │   ├── middlewares/
 │   │   │   └── auth.middleware.ts   # authenticate + authorize
@@ -143,7 +140,7 @@ La base de datos corre en **Supabase** (PostgreSQL cloud). No se necesita instal
 
 ```prisma
 enum Role { CLIENT, VET, ADMIN }
-enum ConsultationStatus { WAITING, ACTIVE, COMPLETED }
+enum ConsultationStatus { WAITING, ACTIVE, COMPLETED, CANCELLED }
 
 model User {
   id                    String         @id @default(cuid())
@@ -151,9 +148,12 @@ model User {
   password              String
   role                  Role
   isOnline              Boolean        @default(false)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
   pets                  Pet[]
   consultationsAsClient Consultation[] @relation("ClientConsultations")
   consultationsAsVet    Consultation[] @relation("VetConsultations")
+  messages              Message[]
   @@map("users")
 }
 
@@ -166,7 +166,12 @@ model Pet {
   weight        Float?
   ownerId       String
   owner         User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  deletedAt     DateTime?
   consultations Consultation[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  @@index([ownerId])
+  @@index([species])
   @@map("pets")
 }
 
@@ -174,8 +179,8 @@ model Consultation {
   id            String             @id @default(cuid())
   clientId      String
   client        User               @relation("ClientConsultations", fields: [clientId], references: [id])
-  vetId         String
-  vet           User               @relation("VetConsultations", fields: [vetId], references: [id])
+  vetId         String?
+  vet           User?              @relation("VetConsultations", fields: [vetId], references: [id])
   petId         String
   pet           Pet                @relation(fields: [petId], references: [id])
   status        ConsultationStatus @default(WAITING)
@@ -183,7 +188,13 @@ model Consultation {
   liveKitRoom   String?
   startedAt     DateTime?
   endedAt       DateTime?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
   medicalRecord MedicalRecord?
+  messages      Message[]
+  @@index([clientId])
+  @@index([vetId])
+  @@index([status])
   @@map("consultations")
 }
 
@@ -195,7 +206,21 @@ model MedicalRecord {
   diagnosis      String?
   treatment      String?
   notes          String?
+  createdAt      DateTime     @default(now())
+  @@index([petId])
   @@map("medical_records")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  consultationId String
+  consultation   Consultation @relation(fields: [consultationId], references: [id])
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id])
+  content        String
+  createdAt      DateTime     @default(now())
+  @@index([consultationId, createdAt])
+  @@map("messages")
 }
 ```
 

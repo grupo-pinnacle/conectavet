@@ -118,10 +118,7 @@ backend/
 │   │   │   ├── pets.controller.ts
 │   │   │   └── pets.service.ts
 │   │   │
-│   │   ├── consultations/     # VACÍO — para S6/S7
-│   │   ├── queue/             # VACÍO — para S8
-│   │   ├── medical-records/   # VACÍO — para S9
-│   │   └── ai-assistant/      # VACÍO — para S10
+│   │   ├── consultations/     # Consultas + Chat (Socket.io) ✅
 │   │
 │   ├── shared/
 │   │   ├── index.ts           # Barrel export de shared

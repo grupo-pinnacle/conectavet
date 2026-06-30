@@ -1,5 +1,12 @@
 import { prisma } from '../../shared/prisma';
-import { ConsultationStatus } from '@prisma/client';
+import { NotFoundError, ConflictError } from '../../shared/errors';
+
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  WAITING: ['ACTIVE'],
+  ACTIVE: ['COMPLETED'],
+  COMPLETED: [],
+  CANCELLED: [],
+};
 
 export async function createConsultation(data: {
   clientId: string;
@@ -16,6 +23,16 @@ export async function createConsultation(data: {
 }
 
 export async function assignVet(consultationId: string, vetId: string) {
+  const consultation = await prisma.consultation.findUnique({
+    where: { id: consultationId },
+  });
+  if (!consultation) throw new NotFoundError('Consulta no encontrada');
+  if (!VALID_TRANSITIONS[consultation.status].includes('ACTIVE')) {
+    throw new ConflictError(`No se puede asignar — la consulta está en estado ${consultation.status}`);
+  }
+  if (consultation.vetId) {
+    throw new ConflictError('Esta consulta ya tiene un veterinario asignado');
+  }
   return prisma.consultation.update({
     where: { id: consultationId },
     data: { vetId, status: 'ACTIVE', startedAt: new Date() },
@@ -27,6 +44,13 @@ export async function completeConsultation(
   consultationId: string,
   notes?: string
 ) {
+  const consultation = await prisma.consultation.findUnique({
+    where: { id: consultationId },
+  });
+  if (!consultation) throw new NotFoundError('Consulta no encontrada');
+  if (!VALID_TRANSITIONS[consultation.status].includes('COMPLETED')) {
+    throw new ConflictError(`No se puede cerrar — la consulta está en estado ${consultation.status}`);
+  }
   return prisma.consultation.update({
     where: { id: consultationId },
     data: { status: 'COMPLETED', notes, endedAt: new Date() },
@@ -40,16 +64,28 @@ export async function getConsultationById(id: string) {
   });
 }
 
-export async function getConsultationsByUser(userId: string, role: string) {
+export async function getConsultationsByUser(
+  userId: string,
+  role: string,
+  page = 1,
+  limit = 50
+) {
   const where =
     role === 'VET'
       ? { OR: [{ vetId: userId }, { status: 'WAITING' as const }] }
       : { clientId: userId };
-  return prisma.consultation.findMany({
-    where,
-    include: { pet: true, client: true, vet: true },
-    orderBy: { createdAt: 'desc' },
-  });
+  const skip = (page - 1) * limit;
+  const [data, total] = await Promise.all([
+    prisma.consultation.findMany({
+      where,
+      include: { pet: true, client: true, vet: true },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.consultation.count({ where }),
+  ]);
+  return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
 }
 
 export async function getAvailableVets() {
@@ -64,6 +100,12 @@ export async function saveMessage(data: {
   senderId: string;
   content: string;
 }) {
+  if (!data.content || data.content.trim().length === 0) {
+    throw new ConflictError('El mensaje no puede estar vacío');
+  }
+  if (data.content.length > 2000) {
+    throw new ConflictError('El mensaje no puede superar los 2000 caracteres');
+  }
   return prisma.message.create({
     data: {
       consultationId: data.consultationId,

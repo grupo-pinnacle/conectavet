@@ -1,6 +1,7 @@
 import { Server as HttpServer } from 'http';
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
+import { prisma } from '../../shared/prisma';
 import { JwtPayload } from '../../shared/types';
 import { saveMessage } from './consultations.service';
 
@@ -31,7 +32,16 @@ export function setupChatSocket(httpServer: HttpServer) {
   io.on('connection', (socket) => {
     const user = (socket as any).user as JwtPayload;
 
-    socket.on('join:consultation', (consultationId: string) => {
+    socket.on('join:consultation', async (consultationId: string) => {
+      const consultation = await prisma.consultation.findFirst({
+        where: {
+          id: consultationId,
+          OR: [{ clientId: user.userId }, { vetId: user.userId }],
+        },
+      });
+      if (!consultation) {
+        return socket.emit('error', { message: 'No pertenecés a esta consulta' });
+      }
       socket.join(`consultation:${consultationId}`);
     });
 
@@ -41,6 +51,21 @@ export function setupChatSocket(httpServer: HttpServer) {
 
     socket.on('message:send', async (data: { consultationId: string; content: string }) => {
       try {
+        if (!data.content || data.content.trim().length === 0) {
+          return socket.emit('error', { message: 'El mensaje no puede estar vacío' });
+        }
+        if (data.content.length > 2000) {
+          return socket.emit('error', { message: 'El mensaje no puede superar los 2000 caracteres' });
+        }
+        const consultation = await prisma.consultation.findFirst({
+          where: {
+            id: data.consultationId,
+            OR: [{ clientId: user.userId }, { vetId: user.userId }],
+          },
+        });
+        if (!consultation) {
+          return socket.emit('error', { message: 'No pertenecés a esta consulta' });
+        }
         const message = await saveMessage({
           consultationId: data.consultationId,
           senderId: user.userId,

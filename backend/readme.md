@@ -743,12 +743,41 @@ fix/*         → bugs
 
 ---
 
+## API — Consultations + Chat
+
+### `POST /api/consultations`
+Crea una consulta (CLIENT). Body: `{ petId }`.
+
+### `GET /api/consultations/mine`
+Lista consultas del usuario autenticado.
+
+### `GET /api/consultations/vets`
+Lista veterinarios online disponibles.
+
+### `PATCH /api/consultations/:id/assign`
+VET toma una consulta (cambia a ACTIVE).
+
+### `PATCH /api/consultations/:id/complete`
+VET cierra consulta. Body opcional: `{ notes }`.
+
+### `GET /api/consultations/:id/messages`
+Historial de mensajes de una consulta.
+
+### WebSocket (Socket.io)
+Conectar con `{ auth: { token } }`. Eventos:
+- `join:consultation` → `consultationId`
+- `message:send` → `{ consultationId, content }`
+- `message:new` → mensaje broadcast a la sala
+
+---
+
 ## Roadmap
 
 - [x] Auth (register, login, JWT, roles)
 - [x] CRUD mascotas
+- [x] Consultations + Chat de texto (Socket.io)
 - [ ] Cola de espera y asignación automática
-- [ ] Videollamadas con LiveKit
+- [ ] Videollamadas con LiveKit (post-MVP)
 - [ ] Historial clínico y resumen automático
 - [ ] Asistente IA con Claude
 - [ ] Sistema de honorarios

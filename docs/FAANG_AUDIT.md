@@ -89,10 +89,15 @@
 ### Lo que está bien ✅
 - README.md raíz con stack, arquitectura ASCII, setup, sprint plan, equipo
 - backend/readme.md con API Reference completa, auth, roles, tests, deploy, roadmap, **prerequisitos, códigos de error, monitoreo, contribuir** (nuevo)
-- docs/SPRINT_PLAN.md con timeline visual + 20 sprints detallados
+- docs/SPRINT_PLAN.md con timeline visual + 20 sprints detallados (actualizado con alcance recortado MVP)
+- **docs/TECH_REFERENCE.md** — referencia técnica archivo por archivo (nuevo)
+- **docs/MVP_SCOPE.md** — definición formal de alcance del MVP (nuevo)
+- **docs/CHANNEL_DECISION.md** — estrategia web + mobile por rol (nuevo)
+- **docs/STANDUP_GUIDE.md** — reglas de daily standup (nuevo)
+- **docs/HOTFIX_PROTOCOL.md** — protocolo de bugs post-MVP (nuevo)
 - docs/SPRINT5_CHECKLIST.md — checklist día a día por integrante
-- docs/TOBIAS_STATUS.md, docs/DEPLOY.md, docs/helpers/
-- **docs/DECISIONS.md** con 8 ADR documentados (nuevo)
+- docs/DEPLOY.md, docs/helpers/mobile/
+- **docs/DECISIONS.md** con 9 ADR documentados (nuevo: ADR-009 chat)
 - **Badges de estado** en backend/readme.md (nuevo)
 - **Diagrama ASCII de arquitectura** en README raíz
 - **web/.env.example** (nuevo)
@@ -188,18 +193,18 @@
 ## 9. Project Management — 6/10
 
 ### Lo que está bien ✅
-- Sprint plan detallado con 20 sprints
+- Sprint plan detallado con 20 sprints (actualizado con alcance recortado)
 - Checklist día a día por integrante
 - Roles y responsabilidades claros
-- Documentación de seguimiento (TOBIAS_STATUS.md)
+- **Plan de contingencia documentado** en CHANNEL_DECISION.md (plan B si mobile no llega)
+- **Protocolo de hotfix post-MVP** en HOTFIX_PROTOCOL.md
+- **Daily standups documentados** en STANDUP_GUIDE.md
 - Metodología Scrumban documentada
-- DECISIONS.md con 8 ADR
+- DECISIONS.md con 9 ADR
 
 ### Lo que falta ❌
 - 3-4 sprints de atraso en Juan, Damián, Ezequiel, Lara
-- Sin plan de contingencia para el atraso
-- Remote de GitHub inaccesible desde el entorno de Tobias
-- Sin daily standups documentados
+- **Ejecutar la primera daily** (el documento existe, la práctica no)
 - Sin métricas de velocidad del equipo
 
 ---

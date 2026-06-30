@@ -6,6 +6,8 @@ import rateLimit from 'express-rate-limit';
 import authRoutes from './modules/auth/auth.routes.js';
 import usersRoutes from './modules/users/users.routes.js';
 import petsRoutes from './modules/pets/pets.routes.js';
+import { consultationsRoutes } from './modules/consultations/index.js';
+import { setupChatSocket } from './modules/consultations/chat.gateway.js';
 import { prisma } from './shared/prisma.js';
 
 if (!process.env.JWT_SECRET) {
@@ -70,6 +72,7 @@ app.get('/health', async (_req: Request, res: Response) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/pets', petsRoutes);
+app.use('/api/consultations', consultationsRoutes);
 
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ success: false, message: 'Ruta no encontrada' });
@@ -86,6 +89,8 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+setupChatSocket(server);
 
 function gracefulShutdown(signal: string) {
   console.log(`\n${signal} recibida. Cerrando servidor...`);

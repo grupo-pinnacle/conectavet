@@ -77,3 +77,37 @@
 **Decisión:** No usar npm workspaces. Cada subproyecto tiene su propio package.json.
 
 **Consecuencias:** + Independencia de versiones, - Dependencias duplicadas. Se evaluará post-MVP si el monorepo crece.
+
+---
+
+## ADR-009: Chat de texto con Socket.io + PostgreSQL
+
+**Contexto:** El MVP original incluía LiveKit para videollamadas. Se reemplazó por chat de texto para reducir riesgo técnico (ver `MVP_SCOPE.md`). Necesitábamos decidir la tecnología de comunicación en tiempo real.
+
+**Decisión:** Socket.io para mensajería en tiempo real + tabla `Message` en PostgreSQL vía Prisma para persistencia.
+
+| Aspecto | Decisión |
+|---------|----------|
+| Transporte | WebSocket con Socket.io (fallback a polling HTTP si WebSocket no está disponible) |
+| Persistencia | Tabla `Message` en PostgreSQL (misma BD que el resto) |
+| Sala por consulta | Cada consulta es una sala Socket.io identificada por `consultationId` |
+| API REST adicional | `GET /api/consultations/:id/messages` (historial al reconectar) |
+| Sin caché | Para MVP. Post-MVP se evaluará Redis para histórico de chats recientes |
+
+**Modelo Message en Prisma:**
+```prisma
+model Message {
+  id             String       @id @default(cuid())
+  consultationId String
+  consultation   Consultation @relation(fields: [consultationId], references: [id])
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id])
+  content        String
+  createdAt      DateTime     @default(now())
+
+  @@index([consultationId, createdAt])
+  @@map("messages")
+}
+```
+
+**Consecuencias:** + Tiempo real sin infraestructura adicional (misma BD, mismo servidor), + Socket.io es maduro y bien documentado, + Historial persiste aunque el usuario se desconecte. - Sin caché, consultas anteriores requieren query a PostgreSQL. - Escalabilidad horizontal requiere sticky sessions o adaptador Redis (post-MVP).

@@ -34,9 +34,9 @@
 |---|---|---|---|
 | S1 + S2 | S1 | 15-20 jun | Setup + Modelos |
 | S3 + S4 | S2 | 22-27 jun | Auth backend + Conectar frontends |
-| **S5 + S6** | **S3** | **29 jun - 4 jul** | **Roles + Mascotas + LiveKit inicio** |
-| S7 + S8 | S4 | 6-11 jul | LiveKit + Cola de espera |
-| S9 + S10 | S5 | 13-18 jul | Historial clínico + IA + Honorarios |
+| **S5 + S6** | **S3** | **29 jun - 4 jul** | **Roles + Mascotas + Conexión mobile** |
+| S7 + S8 | S4 | 6-11 jul | Chat de texto + Pulido flujo completo |
+| S9 + S10 | S5 | 13-18 jul | Bugs + Freeze |
 
 ---
 
@@ -48,6 +48,8 @@ Jun 15 ─┤ S1 ├────┤ S2 ├────┤ S3 ├────┤ 
 
 Jul  6 ─┤ S7 ├────┤ S8 ├────┤ S9 ├────┤ S10├────▓▓ MVP ▓▓──── VACACIONES ────
          lun 6     jue 9     lun 13    jue 16    lun 20    20-31 jul
+         Chat      Pulido    Bugs      Freeze
+         (no LiveKit)
 
 Ago  3 ─┤ S11├────┤ S12├────┤ S13├────┤ S14├────┤ S15├────┤ S16├────┤
          lun 3     jue 6     lun 10    jue 13    lun 17    jue 20
@@ -128,73 +130,77 @@ Ago 24 ─┤ S17├────┤ S18├────┤ S19├────┤ 
 
 ---
 
-## Sprint 6 — CRUD Mascotas + Screens (2-4 Jul)
+## Sprint 6 — Conexión Mobile + Chat Inicio (2-4 Jul)
 
 **Duración:** jue 2 · vie 3 · sáb 4
 
 | Quién | Tarea |
 |-------|-------|
-| **Tobias** | Adelantar: historial vacunas (VetCard). Endpoint subir imágenes. |
-| **Juan** | Pantalla alta mascota. Lista mascotas. Detalle mascota. Conectado al backend. |
+| **Tobias** | Modelo `Message` en Prisma + migración. Setup Socket.io en el servidor. Endpoints base `GET/POST /api/consultations/:id/messages`. Ayudar a Juan a conectar mobile. |
+| **Juan** | Pantalla alta mascota. Lista mascotas. Detalle mascota. Conectado al backend. Login/Register mobile funcional. |
 | **Damián** | Dashboard web médico: lista mascotas de consultas. Tailwind según wireframes Ezequiel. |
 | **Ezequiel** | Testing pantallas mascota mobile. Verificar datos guardados/mostrados. Casos CA-03. Actualizar Figma. |
-| **Lara** | Review con profesores. Última semana antes de vacaciones: objetivo = auth + mascotas funcionando. |
+| **Lara** | Review con profesores. Objetivo: auth + mascotas funcionando en web + mobile. |
 
 ---
 
-## Sprint 7 — LiveKit (6-8 Jul)
+## Sprint 7 — Chat de Texto + Historial Básico (6-8 Jul)
 
 **Duración:** lun 6 · mar 7 · mié 8
 
+> **Reemplaza a LiveKit.** Se acordó en `MVP_SCOPE.md`: el MVP usa chat de texto, no videollamada. LiveKit pasa a post-MVP.
+
 | Quién | Tarea |
 |-------|-------|
-| **Tobias** | Servidor LiveKit en Railway. Endpoints crear/unirse sala. Token LiveKit por usuario. |
-| **Juan** | SDK LiveKit en mobile. Vet inicia sala, cliente se une. Video + audio en Android. |
-| **Damián** | LiveKit en web. Médico hace videollamada desde el navegador. Misma sala que mobile. |
-| **Ezequiel** | Probar videollamada en dispositivos reales. Latencia, caídas, audio/video. |
-| **Lara** | Coordinar. Mayor riesgo técnico del proyecto. Escalar problemas rápido. |
+| **Tobias** | WebSocket (Socket.io) + endpoints `GET/POST /api/consultations/:id/messages`. Tabla `Message` en Prisma. Conectar a sala vía `consultationId`. |
+| **Juan** | Pantalla de chat en mobile. Input de texto + lista de mensajes. Conectar al WebSocket. |
+| **Damián** | Pantalla de chat en web. Input de texto + burbujas de mensajes. Conectar al WebSocket. |
+| **Ezequiel** | Probar chat: enviar/recibir mensajes, ver historial al reconectar. Testing en ambos canales. |
+| **Lara** | Coordinar. Validar que el flujo chat cierra consulta correctamente. |
 
 ---
 
-## Sprint 8 — Cola de Espera + Online/Offline (9-11 Jul)
+## Sprint 8 — Pulir Flujo Completo + Testing (9-11 Jul)
 
 **Duración:** jue 9 · vie 10 · sáb 11
 
+> **Sprint de integración.** No se agregan features nuevas. Solo conectar puntas sueltas.
+
 | Quién | Tarea |
 |-------|-------|
-| **Tobias** | Lógica de cola: asignación automática de vet disponible por especie. Endpoint primer vet disponible. |
-| **Juan** | Pantalla selección tipo mascota. Búsqueda de veterinario. Feedback visual de espera. |
-| **Damián** | Botón online/offline en web del médico. Indicador visual de estado. |
-| **Ezequiel** | Testing cola de espera. Simular múltiples clientes. Chat de texto básico en consulta. |
-| **Lara** | Review S8. Ajustar tablero. |
+| **Tobias** | Cerrar endpoints de consulta: crear, asignar VET, cerrar con notas. Validar que el chat persiste correctamente. |
+| **Juan** | Conectar pantalla de registro mascota con lista. Navegación completa mobile: register → login → home → chat. |
+| **Damián** | Dashboard web médico: lista de consultas activas. Botón "iniciar consulta" → chat. Formulario cerrar consulta con notas. |
+| **Ezequiel** | Testing de flujo completo. Registrar CLIENT + VET, crear consulta, chatear, cerrar. Reportar bugs. |
+| **Lara** | Review S8. Preparar demo para profesores. |
 
 ---
 
-## Sprint 9 — Historial Clínico (13-15 Jul)
+## Sprint 9 — Últimos Bugs + Preparar Presentación (13-15 Jul)
 
 **Duración:** lun 13 · mar 14 · mié 15
 
+> **No se agregan features nuevas.** Solo bugs detectados en S8.
+
 | Quién | Tarea |
 |-------|-------|
-| **Tobias** | Endpoint resumen automático al finalizar consulta. Guardar en historial: fecha, vet, duración, notas. |
-| **Juan** | Pantalla historial clínico en mobile. Consultas ordenadas por fecha. |
-| **Damián** | Formulario notas clínicas durante consulta. Enviar notas al backend al cerrar. |
-| **Ezequiel** | Testing CA-03 y CA-04. Historial se guarda correctamente. Resumen llega al cliente. |
-| **Lara** | Review. CA-03 y CA-04 cerrados. |
+| **Tobias** | Bugs backend priorizados (máximo 3). Optimizar queries si es necesario. Ayudar a Damián con lo que trabe. |
+| **Juan** | Bugs mobile: navegación, carga de datos, errores de conexión. Probar en Android físico. |
+| **Damián** | Bugs web: responsive, estados de carga/error, edge cases de navegación. |
+| **Ezequiel** | Re-testear bugs corregidos. Armar casos de prueba para la presentación. |
+| **Lara** | Coordinar demo. Definir quién muestra qué. Preparar slides. |
 
 ---
 
-## Sprint 10 — IA + Honorarios (16-18 Jul)
+## Sprint 10 — Freeze (16-18 Jul)
 
 **Duración:** jue 16 · vie 17 · sáb 18
 
+> **Código congelado.** No se agrega nada. Solo bugs críticos que rompan el flujo principal.
+
 | Quién | Tarea |
 |-------|-------|
-| **Tobias** | Integrar Claude API. Módulo asistente veterinario: síntomas → prompt → referencias clínicas. Contenido videollamada nunca se envía a IA. Sistema honorarios: duración, tarifa base, comprobante. |
-| **Juan** | Campo texto síntomas en mobile vet. Botón consultar IA. Sección honorarios por consulta. |
-| **Damián** | Misma interfaz IA en web. Panel admin: tabla consultas + duración + monto + filtros. |
-| **Ezequiel** | Probar IA con síntomas reales. Evaluar respuestas. Documentar limitaciones. Testing CA-05 honorarios. |
-| **Lara** | Review S10. Mostrar módulo IA a profesores. |
+| **Todo el equipo** | Últimos retoques. Nadie empieza nada nuevo. Preparar la presentación del lunes 20. |
 
 ---
 

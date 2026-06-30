@@ -4,11 +4,19 @@
 >
 > Node.js · TypeScript · Express 5 · Prisma 6 · PostgreSQL (Supabase) · JWT · LiveKit
 
+![Status](https://img.shields.io/badge/status-active-brightgreen)
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Tests](https://img.shields.io/badge/tests-9%2F9-passing)
+![Prisma](https://img.shields.io/badge/Prisma-6.x-2D3748)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 ---
 
 ## Tabla de contenidos
 
 - [Stack](#stack)
+- [Prerequisitos](#prerequisitos)
 - [Setup rápido](#setup-rápido)
 - [Estructura del proyecto](#estructura-del-proyecto)
 - [Base de datos (Supabase)](#base-de-datos-supabase)
@@ -17,11 +25,14 @@
   - [Auth](#auth)
   - [Users](#users)
   - [Pets](#pets)
+  - [Errores](#códigos-de-error)
 - [Autenticación](#autenticación)
 - [Roles y permisos](#roles-y-permisos)
 - [Tests](#tests)
 - [Deploy](#deploy)
+- [Monitoreo](#monitoreo-y-observabilidad)
 - [Variables de entorno](#variables-de-entorno)
+- [Contribuir](#contribuir)
 
 ---
 
@@ -38,6 +49,19 @@
 | Testing | Jest + ts-jest | Tests unitarios |
 | Dev server | tsx watch | Hot reload en desarrollo |
 | Compilador | tsc | Build de producción |
+
+---
+
+## Prerequisitos
+
+| Herramienta | Versión (mín) | Cómo verificar |
+|---|---|---|
+| Node.js | 18.x | `node --version` |
+| npm | 9.x | `npm --version` |
+| Git | Cualquier reciente | `git --version` |
+| Supabase | — | Cuenta en [supabase.com](https://supabase.com) |
+
+> ⚠ El proyecto usa Supabase como base de datos. No necesitás PostgreSQL local.
 
 ---
 
@@ -506,6 +530,27 @@ Elimina una mascota.
 
 ---
 
+## Códigos de error
+
+| Código | Significado |
+|--------|-------------|
+| `400` | Bad Request — payload inválido o campos faltantes |
+| `401` | Unauthorized — token faltante, expirado o inválido |
+| `403` | Forbidden — el rol no tiene permiso |
+| `404` | Not Found — recurso inexistente |
+| `409` | Conflict — email duplicado |
+| `500` | Internal Server Error — error inesperado |
+
+**Estructura de respuesta de error:**
+```json
+{
+  "success": false,
+  "message": "Descripción legible del error"
+}
+```
+
+---
+
 ## Autenticación
 
 ### Cómo funciona
@@ -643,6 +688,58 @@ Template completo en [`.env.example`](.env.example).
 | `npx prisma studio` | UI web para ver datos |
 | `npx prisma generate` | Regenerar cliente Prisma |
 | `npx tsc --noEmit` | Type check sin compilar |
+
+---
+
+## Monitoreo y observabilidad
+
+### Health check
+
+```
+GET /api/health
+```
+
+Endpoint público que verifica conectividad con Supabase. Retorna `200` si todo está bien.
+
+### Logging
+
+- `console.error` para errores inesperados (reemplazar por Winston/Pino en producción)
+- Los errores esperados retornan respuestas JSON con `success: false`
+
+### Métricas (futuro)
+
+- [ ] Morgan/Pino para logging estructurado
+- [ ] Sentry para error tracking
+- [ ] Métricas de endpoint (latencia, tasa de error)
+- [ ] Health check avanzado (BD + LiveKit + IA)
+
+---
+
+## Contribuir
+
+### Branches
+
+```
+main          → producción
+develop       → integración
+feature/*     → features nuevas
+fix/*         → bugs
+```
+
+### Workflow
+
+1. Crear branch desde `develop`: `git checkout -b feature/mi-feature`
+2. Codear, testear, type-check: `npm test && npx tsc --noEmit`
+3. Push y PR a `develop`
+4. Code review → merge → deploy a staging
+5. QA → merge a `main` → deploy a producción
+
+### Estándares
+
+- **ESM**: usar `import/export`, no `require`
+- **Nombres**: `camelCase` para variables/funciones, `PascalCase` para clases/types, `kebab-case` para archivos
+- **Errores**: siempre responder con `{ success: false, message }`
+- **Tests**: todo endpoint nuevo debe tener tests
 
 ---
 

@@ -11,3 +11,16 @@ Thumbs.db
 .expo
 
 *.log
+
+.env
+.env.local
+.env.production
+.env.development
+
+*.tsbuildinfo
+
+.vscode/
+
+.idea/
+
+coverage/

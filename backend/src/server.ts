@@ -26,6 +26,15 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/pets', petsRoutes);
 
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  console.error(`[${new Date().toISOString()}] Error:`, err.stack || err.message);
+  res.status(500).json({
+    success: false,
+    message: 'Error interno del servidor',
+    ...(process.env.NODE_ENV === 'development' && { error: err.message })
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

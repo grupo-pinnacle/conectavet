@@ -8,7 +8,6 @@ export async function createConsultation(data: {
   return prisma.consultation.create({
     data: {
       clientId: data.clientId,
-      vetId: '',
       petId: data.petId,
       status: 'WAITING',
     },
@@ -43,7 +42,9 @@ export async function getConsultationById(id: string) {
 
 export async function getConsultationsByUser(userId: string, role: string) {
   const where =
-    role === 'VET' ? { vetId: userId } : { clientId: userId };
+    role === 'VET'
+      ? { OR: [{ vetId: userId }, { status: 'WAITING' as const }] }
+      : { clientId: userId };
   return prisma.consultation.findMany({
     where,
     include: { pet: true, client: true, vet: true },

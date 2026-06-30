@@ -60,8 +60,8 @@ model Consultation {
   id            String             @id @default(cuid())
   clientId      String
   client        User               @relation("ClientConsultations", fields: [clientId], references: [id])
-  vetId         String
-  vet           User               @relation("VetConsultations", fields: [vetId], references: [id])
+  vetId         String?
+  vet           User?              @relation("VetConsultations", fields: [vetId], references: [id])
   petId         String
   pet           Pet                @relation(fields: [petId], references: [id])
   status        ConsultationStatus @default(WAITING)

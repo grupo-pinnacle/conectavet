@@ -201,13 +201,15 @@ curl http://localhost:3000/health
 
 | Documento | Descripción |
 |-----------|-------------|
+| [`docs/TECH_REFERENCE.md`](docs/TECH_REFERENCE.md) | **Referencia técnica completa** — leer primero |
 | [`docs/SPRINT_PLAN.md`](docs/SPRINT_PLAN.md) | Planificación completa de sprints |
-| [`docs/SPRINT3_GUIDE.md`](docs/SPRINT3_GUIDE.md) | Guía activa del sprint actual para el equipo |
-| [`docs/TOBIAS_STATUS.md`](docs/TOBIAS_STATUS.md) | Estado y checklist del backend |
-| [`backend/DECISIONS.md`](backend/DECISIONS.md) | Decisiones técnicas del stack |
+| [`docs/DECISIONS.md`](docs/DECISIONS.md) | Architecture Decision Records (8 ADR) |
+| [`docs/FAANG_AUDIT.md`](docs/FAANG_AUDIT.md) | Auditoría técnica y scores |
+| [`docs/STANDUP_GUIDE.md`](docs/STANDUP_GUIDE.md) | Reglas de daily standup |
+| [`docs/HOTFIX_PROTOCOL.md`](docs/HOTFIX_PROTOCOL.md) | Protocolo de bugs durante vacaciones |
+| [`docs/DEPLOY.md`](docs/DEPLOY.md) | Deploy a Railway |
 | [`backend/readme.md`](backend/readme.md) | Documentación técnica del backend + API |
-| `web/README.md` | Documentación del frontend web |
-| `mobile/README.md` | Documentación de la app mobile |
+| [`backend/DECISIONS.md`](backend/DECISIONS.md) | Decisiones técnicas del backend |
 
 ---
 

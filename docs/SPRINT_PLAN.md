@@ -22,11 +22,21 @@
 | Dimensión | Sprint | Estado |
 |-----------|--------|--------|
 | **Equipo (oficial)** | **S5** (29 jun - 1 jul) | 🟡 Activo |
-| **Tobias (individual)** | **S5** (adelantó S3, S4, parte S6) | 🟢 Completó S3-S4 |
+| **Tobias (individual)** | **S5** ✅ | 🟢 Completó S3, S4, adelantó parte S6 |
 | Juan | S2-S3-S4 | 🔴 Atrasado |
 | Damián | S3-S4 | 🔴 Atrasado |
 | Ezequiel | S2-S3 | 🔴 Atrasado |
 | Lara | S2-S3 | 🔴 Atrasado |
+
+> ⚠️ **Corrección de calendario:** Tobias documentó sprints con numeración distinta en `TOBIAS_STATUS.md` (usó bloques de 6 días en vez de 3 días). La tabla de abajo mapea ambas numeraciones. **La numeración oficial es la de este documento.**
+
+| Numeración oficial (SPRINT_PLAN) | Numeración Tobias (TOBIAS_STATUS) | Fechas | Tema |
+|---|---|---|---|
+| S1 + S2 | S1 | 15-20 jun | Setup + Modelos |
+| S3 + S4 | S2 | 22-27 jun | Auth backend + Conectar frontends |
+| **S5 + S6** | **S3** | **29 jun - 4 jul** | **Roles + Mascotas + LiveKit inicio** |
+| S7 + S8 | S4 | 6-11 jul | LiveKit + Cola de espera |
+| S9 + S10 | S5 | 13-18 jul | Historial clínico + IA + Honorarios |
 
 ---
 

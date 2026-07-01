@@ -10,8 +10,7 @@
     "strict": true,
     "skipLibCheck": true,
     "types": ["node", "jest"],
-    "isolatedModules": true,
-    "ignoreDeprecations": "6.0"
+    "isolatedModules": true
   },
   "include": ["src/**/*"]
 }

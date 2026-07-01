@@ -50,7 +50,7 @@
                      │ PostgreSQL via Supabase (cloud)
 ┌────────────────────▼────────────────────────────────────┐
 │              PostgreSQL (Supabase)                       │
-│  Tablas: users · pets · consultations · medical_records  │
+│  Tablas: users · pets · consultations · messages         │
 │  Hosteado en cloud. Pooler (6543) + Direct (5432)       │
 └─────────────────────────────────────────────────────────┘
 
@@ -71,11 +71,13 @@ web/ → se conecta al backend via HTTP (Axios)
 | Base de datos | PostgreSQL via Supabase | 15 |
 | Autenticación | JWT + bcrypt | — |
 | Validación | Zod | 4.x |
+| Testing | Jest + ts-jest + supertest | — |
+| Logging | JSON estructurado (logger propio) | — |
 | Frontend web | React + Vite + TailwindCSS | React 19, Vite 8 |
 | Mobile | React Native + Expo | — (no iniciado) |
 | Videollamada | LiveKit | — (futuro) |
 | IA | Claude API (Anthropic) | — (futuro) |
-| Deploy backend | Railway | — |
+| Deploy backend | Railway + Docker + GitHub Actions CI/CD | — |
 | Deploy web | Vercel | — |
 
 ---
@@ -152,9 +154,9 @@ Define los 4 modelos actuales:
 | Modelo | Propósito | Campos clave |
 |--------|-----------|-------------|
 | `User` | Usuarios (CLIENT, VET, ADMIN) | email, password (hash), role, isOnline |
-| `Pet` | Mascotas de los clientes | name, species, breed, age, weight, ownerId, deletedAt (soft delete) |
-| `Consultation` | Consultas veterinarias | clientId, vetId, petId, status (WAITING/ACTIVE/COMPLETED), liveKitRoom, notas |
-| `MedicalRecord` | Registro clínico | petId, consultationId (unique), diagnosis, treatment, notes |
+| `Pet` | Mascotas de los clientes | name, species, breed, age, weight, ownerId, deletedAt (soft delete, piloto en Pet) |
+| `Consultation` | Consultas veterinarias | clientId, vetId, petId, status (WAITING/ACTIVE/COMPLETED), notas |
+| `Message` | Mensajes del chat | consultationId, senderId, content |
 
 Índices: `ownerId`, `species`, `clientId`, `vetId`, `status`, `petId`.
 
@@ -227,16 +229,27 @@ Dos middlewares:
 11 tests con Jest que cubren:
 - Registro de CLIENT, VET, ADMIN
 - Email duplicado (409)
-- Password < 6 caracteres (400)
 - Login exitoso (200 + JWT)
 - Login con credenciales incorrectas (401)
 - GET /api/users/me con/sin token (200/401)
+- Token inválido, expirado, firma incorrecta
 - Acceso admin-only con ADMIN (200) vs CLIENT/VET (403)
 
-**⚠️ Los tests escriben a la BD real de Supabase.** No hay base de datos de testing aislada.
+#### `src/__tests__/consultations.test.ts`
+15 tests de integración HTTP con supertest que cubren:
+- Creación de consulta (CLIENT) — 201
+- Sin token — 401
+- Sin petId — 400
+- Asignación de VET — 200
+- Reasignación (ya asignada) — 409
+- CLIENT no puede asignar — 403
+- Cierre con notas (VET asignado) — 200
+- VET no asignado no puede cerrar — 403
+- Paginación de consultas (CLIENT + VET)
+- Mensajes: ver historial, acceso denegado a no participantes
+- Logout: isOnline=false
 
-#### `src/__tests__/` — carpetas vacías
-`consultations/`, `queue/`, `medical-records/`, `ai-assistant/` existen como esqueletos para sprints futuros. No tienen código.
+**⚠️ Los tests escriben a la BD real de Supabase.** No hay base de datos de testing aislada (prioridad post-MVP).
 
 #### `DECISIONS.md`
 Decisiones de backend: por qué se eligió cada tecnología. Contiene 3 ADR:

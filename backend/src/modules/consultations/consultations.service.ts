@@ -64,28 +64,31 @@ export async function getConsultationById(id: string) {
   });
 }
 
+const MAX_PAGE_SIZE = 100;
+
 export async function getConsultationsByUser(
   userId: string,
   role: string,
   page = 1,
   limit = 50
 ) {
+  const cappedLimit = Math.min(limit, MAX_PAGE_SIZE);
   const where =
     role === 'VET'
       ? { OR: [{ vetId: userId }, { status: 'WAITING' as const }] }
       : { clientId: userId };
-  const skip = (page - 1) * limit;
+  const skip = (page - 1) * cappedLimit;
   const [data, total] = await Promise.all([
     prisma.consultation.findMany({
       where,
       include: { pet: true, client: true, vet: true },
       orderBy: { createdAt: 'desc' },
       skip,
-      take: limit,
+      take: cappedLimit,
     }),
     prisma.consultation.count({ where }),
   ]);
-  return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+  return { data, total, page, limit: cappedLimit, totalPages: Math.ceil(total / cappedLimit) };
 }
 
 export async function getAvailableVets() {

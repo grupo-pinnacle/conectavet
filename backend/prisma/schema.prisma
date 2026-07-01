@@ -67,32 +67,16 @@ model Consultation {
   pet           Pet                @relation(fields: [petId], references: [id])
   status        ConsultationStatus @default(WAITING)
   notes         String?
-  liveKitRoom   String?
   startedAt     DateTime?
   endedAt       DateTime?
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
-  medicalRecord MedicalRecord?
   messages      Message[]
 
   @@index([clientId])
   @@index([vetId])
   @@index([status])
   @@map("consultations")
-}
-
-model MedicalRecord {
-  id             String       @id @default(cuid())
-  petId          String
-  consultationId String       @unique
-  consultation   Consultation @relation(fields: [consultationId], references: [id])
-  diagnosis      String?
-  treatment      String?
-  notes          String?
-  createdAt      DateTime     @default(now())
-
-  @@index([petId])
-  @@map("medical_records")
 }
 
 model Message {

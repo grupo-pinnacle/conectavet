@@ -6,7 +6,7 @@
 
 ![Status](https://img.shields.io/badge/status-active-brightgreen)
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![Tests](https://img.shields.io/badge/tests-11%2F11-passing)
+![Tests](https://img.shields.io/badge/tests-26%2F26-passing)
 ![Prisma](https://img.shields.io/badge/Prisma-6.x-2D3748)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -40,15 +40,18 @@
 
 | Componente | Tecnología | Propósito |
 |-----------|-----------|-----------|
-| Runtime | Node.js ≥ 18 | Entorno de ejecución |
+| Runtime | Node.js 20 (LTS) | Entorno de ejecución |
 | Lenguaje | TypeScript 5.x | Tipado estático |
 | Framework | Express 5.x | Servidor HTTP |
 | ORM | Prisma 6.x | Abstracción de base de datos |
 | DB | PostgreSQL 15 (Supabase) | Almacenamiento |
 | Auth | JWT + bcrypt | Autenticación y hash de contraseñas |
-| Testing | Jest + ts-jest | Tests unitarios |
+| Testing | Jest + ts-jest + supertest | Tests unitarios e integración |
+| Logging | JSON estructurado (logger propio) | Observabilidad |
 | Dev server | tsx watch | Hot reload en desarrollo |
 | Compilador | tsc | Build de producción |
+| Contenedor | Docker (multi-stage) | Build reproducible |
+| CI/CD | GitHub Actions | Tests automáticos + deploy |
 
 ---
 
@@ -185,30 +188,15 @@ model Consultation {
   pet           Pet                @relation(fields: [petId], references: [id])
   status        ConsultationStatus @default(WAITING)
   notes         String?
-  liveKitRoom   String?
   startedAt     DateTime?
   endedAt       DateTime?
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
-  medicalRecord MedicalRecord?
   messages      Message[]
   @@index([clientId])
   @@index([vetId])
   @@index([status])
   @@map("consultations")
-}
-
-model MedicalRecord {
-  id             String       @id @default(cuid())
-  petId          String
-  consultationId String       @unique
-  consultation   Consultation @relation(fields: [consultationId], references: [id])
-  diagnosis      String?
-  treatment      String?
-  notes          String?
-  createdAt      DateTime     @default(now())
-  @@index([petId])
-  @@map("medical_records")
 }
 
 model Message {
@@ -638,52 +626,33 @@ router.get('/admin-only', authenticate, authorize(Role.ADMIN), handler);
 npm test
 ```
 
-Actualmente **9 tests** unitarios de autenticación:
+Actualmente **26 tests** (11 de autenticación + 15 de consultas):
 
 ```
-PASS src/__tests__/auth.test.ts
-  Auth Service
-    Register
-      ✓ debe crear un usuario CLIENT
-      ✓ debe rechazar email duplicado
-      ✓ debe crear usuarios VET y ADMIN
-    JWT
-      ✓ debe generar token con userId, email y role
-      ✓ debe rechazar token inválido
-      ✓ debe rechazar token con firma incorrecta
-    Roles
-      ✓ ADMIN debe tener rol ADMIN
-      ✓ CLIENT no tiene permisos de ADMIN
-      ✓ VET no tiene permisos de ADMIN
+PASS src/__tests__/auth.test.ts          — 11 tests (auth service + JWT + roles)
+PASS src/__tests__/consultations.test.ts — 15 tests (CRUD consultas + chat + permisos)
 ```
 
 ---
 
 ## Deploy
 
-### Railway (producción)
+### Railway (producción) — vía CI/CD
 
-```bash
-# 1. Compilar
-npm run build
+El deploy a Railway es automático mediante GitHub Actions al hacer push a `main`:
 
-# 2. El resultado queda en dist/
-# 3. Conectar repo a Railway:
-#    - Root directory: backend
-#    - Start command: node dist/server.js
-#    - Variables de entorno:
-#      - DATABASE_URL
-#      - DIRECT_URL
-#      - JWT_SECRET
-#      - PORT (Railway lo asigna automáticamente)
-#      - NODE_ENV=production
+```
+push a main → tests (26 tests) → build → deploy a Railway
 ```
 
-Railway ejecuta automáticamente:
-1. `npm ci`
-2. `npx prisma generate`
-3. `npx tsc`
-4. `node dist/server.js`
+### Docker (cualquier proveedor)
+
+```bash
+docker build -t conectavet-api .
+docker run -p 3000:3000 --env-file .env conectavet-api
+```
+
+Ver [`docs/DEPLOY.md`](../docs/DEPLOY.md) para instrucciones detalladas.
 
 ---
 
@@ -691,11 +660,13 @@ Railway ejecuta automáticamente:
 
 | Variable | Descripción | Obligatorio |
 |----------|-------------|-------------|
-| `DATABASE_URL` | Pooler de Supabase (port 6543) para queries | Sí |
+| `DATABASE_URL` | Pooler de Supabase (port 6543, con `?pgbouncer=true`) | Sí |
 | `DIRECT_URL` | Conexión directa Supabase (port 5432) para migrations | Sí |
 | `JWT_SECRET` | Clave secreta para firmar tokens JWT | Sí |
 | `PORT` | Puerto del servidor (default: 3000) | No |
 | `NODE_ENV` | `development`, `production` | No |
+| `CORS_ORIGIN` | Origen permitido para CORS (default: `http://localhost:5173`) | No |
+| `LOG_LEVEL` | `debug`, `info`, `warn`, `error` (default: `debug` en dev, `info` en prod) | No |
 
 Template completo en [`.env.example`](.env.example).
 
@@ -707,9 +678,11 @@ Template completo en [`.env.example`](.env.example).
 |---------|-------------|
 | `npm run dev` | Servidor con hot-reload (tsx watch) |
 | `npm run build` | Compilar TypeScript a JavaScript |
-| `npm start` | Correr versión compilada (dist/) |
+| `npm start` | Migrar BD + correr versión compilada (dist/) |
+| `npm run migrate` | Ejecutar migraciones pendientes |
 | `npm test` | Ejecutar tests con Jest |
-| `npx prisma db push` | Sincronizar schema con BD |
+| `npx prisma db push` | Sincronizar schema con BD (desarrollo) |
+| `npx prisma migrate dev` | Crear migration versionada |
 | `npx prisma studio` | UI web para ver datos |
 | `npx prisma generate` | Regenerar cliente Prisma |
 | `npx tsc --noEmit` | Type check sin compilar |
@@ -728,15 +701,16 @@ Endpoint público que verifica conectividad con Supabase. Retorna `200` si todo 
 
 ### Logging
 
-- `console.error` para errores inesperados (reemplazar por Winston/Pino en producción)
+- Logger estructurado en JSON (`src/shared/logger.ts`) con timestamp, nivel y metadata
+- `logger.info`, `logger.warn`, `logger.error` según severidad
+- Nivel configurable via `LOG_LEVEL` env var
 - Los errores esperados retornan respuestas JSON con `success: false`
 
 ### Métricas (futuro)
 
-- [ ] Morgan/Pino para logging estructurado
 - [ ] Sentry para error tracking
 - [ ] Métricas de endpoint (latencia, tasa de error)
-- [ ] Health check avanzado (BD + LiveKit + IA)
+- [ ] Health check avanzado (BD + chat + servicios externos)
 
 ---
 

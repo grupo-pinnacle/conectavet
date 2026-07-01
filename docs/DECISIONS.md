@@ -46,7 +46,7 @@
 
 **Decisión:** Soft delete con campo `deletedAt` + endpoint `POST /:id/restore`.
 
-**Consecuencias:** + Recuperación de datos, + Auditoría, - Queries deben filtrar `deletedAt: null`. Implementado en Pet como piloto.
+**Consecuencias:** + Recuperación de datos, + Auditoría, - Queries deben filtrar `deletedAt: null`. Implementado exclusivamente en Pet como piloto. Si se valida, se extenderá a otros modelos post-MVP.
 
 ---
 

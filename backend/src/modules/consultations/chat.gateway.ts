@@ -5,6 +5,20 @@ import { prisma } from '../../shared/prisma';
 import { JwtPayload } from '../../shared/types';
 import { saveMessage } from './consultations.service';
 
+const RATE_LIMIT_WINDOW = 1000;
+const RATE_LIMIT_MAX = 10;
+const rateLimitMap = new Map<string, number[]>();
+
+function checkRateLimit(socketId: string): boolean {
+  const now = Date.now();
+  const timestamps = rateLimitMap.get(socketId) || [];
+  const recent = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW);
+  if (recent.length >= RATE_LIMIT_MAX) return false;
+  recent.push(now);
+  rateLimitMap.set(socketId, recent);
+  return true;
+}
+
 let io: Server;
 
 export function setupChatSocket(httpServer: HttpServer) {
@@ -51,6 +65,9 @@ export function setupChatSocket(httpServer: HttpServer) {
 
     socket.on('message:send', async (data: { consultationId: string; content: string }) => {
       try {
+        if (!checkRateLimit(socket.id)) {
+          return socket.emit('error', { message: 'Demasiados mensajes. Esperá un momento.' });
+        }
         if (!data.content || data.content.trim().length === 0) {
           return socket.emit('error', { message: 'El mensaje no puede estar vacío' });
         }
@@ -77,7 +94,9 @@ export function setupChatSocket(httpServer: HttpServer) {
       }
     });
 
-    socket.on('disconnect', () => {});
+    socket.on('disconnect', () => {
+      rateLimitMap.delete(socket.id);
+    });
   });
 
   return io;

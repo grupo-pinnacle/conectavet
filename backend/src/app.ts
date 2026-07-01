@@ -8,9 +8,10 @@ import usersRoutes from './modules/users/users.routes.js';
 import petsRoutes from './modules/pets/pets.routes.js';
 import { consultationsRoutes } from './modules/consultations/index.js';
 import { prisma } from './shared/prisma.js';
+import { logger } from './shared/logger.js';
 
 if (!process.env.JWT_SECRET) {
-  console.error('FATAL: JWT_SECRET no está definido en las variables de entorno');
+  logger.error('JWT_SECRET no está definido en las variables de entorno');
   process.exit(1);
 }
 
@@ -26,7 +27,7 @@ app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: false }));
 
 app.use((req: Request, _res: Response, next: NextFunction) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  logger.info(`${req.method} ${req.path}`, { method: req.method, path: req.path });
   next();
 });
 
@@ -77,7 +78,7 @@ app.use((_req: Request, res: Response) => {
 });
 
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error(`[ERROR] ${err.message}`);
+  logger.error(err.message, { stack: err.stack });
   res.status(500).json({
     success: false,
     message: process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : err.message,

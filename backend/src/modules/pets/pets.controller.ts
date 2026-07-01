@@ -1,7 +1,24 @@
 import { Response } from 'express';
+import { z } from 'zod';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
 import { AppError, NotFoundError, ForbiddenError } from '../../shared/errors';
 import { getPetsByOwner, getPetById, createPet, updatePet, deletePet, restorePet } from './pets.service';
+
+const createPetSchema = z.object({
+  name: z.string().min(1, 'El nombre es requerido'),
+  species: z.string().min(1, 'La especie es requerida'),
+  breed: z.string().optional(),
+  age: z.coerce.number().int().positive('La edad debe ser un número positivo').optional(),
+  weight: z.coerce.number().positive('El peso debe ser un número positivo').optional(),
+});
+
+const updatePetSchema = z.object({
+  name: z.string().min(1).optional(),
+  species: z.string().min(1).optional(),
+  breed: z.string().optional(),
+  age: z.coerce.number().int().positive('La edad debe ser un número positivo').optional(),
+  weight: z.coerce.number().positive('El peso debe ser un número positivo').optional(),
+});
 
 function handleError(error: unknown, res: Response) {
   if (error instanceof AppError) {
@@ -48,21 +65,11 @@ export async function createPetController(req: RequestWithUser, res: Response) {
     if (!req.user) {
       return res.status(401).json({ success: false, message: 'No autenticado' });
     }
-    const { name, species, breed, age, weight } = req.body;
-    if (!name || !species) {
-      return res.status(400).json({ success: false, message: 'Nombre y especie son requeridos' });
+    const parsed = createPetSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, message: parsed.error.issues[0].message });
     }
-    const ageNum = age !== undefined ? Number(age) : undefined;
-    const weightNum = weight !== undefined ? Number(weight) : undefined;
-    if ((age !== undefined && isNaN(ageNum!)) || (weight !== undefined && isNaN(weightNum!))) {
-      return res.status(400).json({ success: false, message: 'Edad y peso deben ser números' });
-    }
-    const pet = await createPet({
-      name, species, breed,
-      age: ageNum,
-      weight: weightNum,
-      ownerId: req.user.userId,
-    });
+    const pet = await createPet({ ...parsed.data, ownerId: req.user.userId });
     return res.status(201).json({ success: true, data: pet });
   } catch (error) {
     return handleError(error, res);
@@ -88,12 +95,11 @@ export async function updatePetController(req: RequestWithUser, res: Response) {
     if (!allowed) {
       throw new ForbiddenError('No tenés permiso para modificar esta mascota');
     }
-    const { name, species, breed, age, weight } = req.body;
-    const updated = await updatePet(req.params.id as string, {
-      name, species, breed,
-      age: age !== undefined ? Number(age) : undefined,
-      weight: weight !== undefined ? Number(weight) : undefined,
-    });
+    const parsed = updatePetSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, message: parsed.error.issues[0].message });
+    }
+    const updated = await updatePet(req.params.id as string, parsed.data);
     return res.status(200).json({ success: true, data: updated });
   } catch (error) {
     return handleError(error, res);

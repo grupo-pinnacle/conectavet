@@ -1,5 +1,6 @@
 import { prisma } from '../../shared/prisma';
 import { NotFoundError, ConflictError } from '../../shared/errors';
+import { getCached, setCache, clearCache } from '../../shared/cache';
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   WAITING: ['ACTIVE'],
@@ -92,10 +93,14 @@ export async function getConsultationsByUser(
 }
 
 export async function getAvailableVets() {
-  return prisma.user.findMany({
+  const cached = getCached<any[]>('vets:available');
+  if (cached) return cached;
+  const vets = await prisma.user.findMany({
     where: { role: 'VET', isOnline: true },
     select: { id: true, email: true, isOnline: true },
   });
+  setCache('vets:available', vets, 30);
+  return vets;
 }
 
 export async function saveMessage(data: {

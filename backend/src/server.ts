@@ -1,5 +1,5 @@
 import app from './app.js';
-import { setupChatSocket } from './modules/consultations/chat.gateway.js';
+import { setupChatSocket, getIO } from './modules/consultations/chat.gateway.js';
 import { prisma } from './shared/prisma.js';
 import { logger } from './shared/logger.js';
 
@@ -14,6 +14,7 @@ setupChatSocket(server);
 function gracefulShutdown(signal: string) {
   logger.info(`Señal ${signal} recibida. Cerrando servidor...`, { signal });
   server.close(async () => {
+    getIO()?.close();
     await prisma.$disconnect();
     logger.info('Conexiones cerradas. Servidor detenido.');
     process.exit(0);

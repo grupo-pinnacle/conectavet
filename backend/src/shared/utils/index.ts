@@ -4,9 +4,9 @@ export function parsePagination(query: { page?: string; limit?: string }, maxLim
   return { page, limit, skip: (page - 1) * limit };
 }
 
-export function excludePassword<T extends { password?: string }>(obj: T): Omit<T, 'password'> {
+export function excludePassword<T extends Record<string, unknown>>(obj: T): Omit<T, 'password'> {
   const { password, ...rest } = obj;
-  return rest;
+  return rest as Omit<T, 'password'>;
 }
 
 export function asyncHandler(fn: (req: any, res: any, next: any) => Promise<any>) {

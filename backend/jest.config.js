@@ -5,7 +5,6 @@ const sharedConfig = {
   roots: ['<rootDir>/src'],
   moduleFileExtensions: ['ts', 'js', 'json'],
   collectCoverage: true,
-  coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'clover'],
   coveragePathIgnorePatterns: ['/node_modules/', '/__tests__/', '/dist/'],
   coverageThreshold: {
@@ -32,6 +31,7 @@ module.exports = {
       testMatch: ['**/__tests__/(utils|cache).test.ts'],
       globalSetup: undefined,
       globalTeardown: undefined,
+      coverageDirectory: 'coverage/unit',
     },
     {
       ...sharedConfig,
@@ -39,6 +39,7 @@ module.exports = {
       testMatch: ['**/__tests__/!(utils|cache).test.ts'],
       globalSetup: '<rootDir>/jest-global-setup.js',
       globalTeardown: '<rootDir>/jest-global-teardown.js',
+      coverageDirectory: 'coverage/integration',
     },
   ],
 };

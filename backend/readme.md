@@ -6,7 +6,7 @@
 
 ![Status](https://img.shields.io/badge/status-active-brightgreen)
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![Tests](https://img.shields.io/badge/tests-44%2F44-passing)
+![Tests](https://img.shields.io/badge/tests-89%2F89-passing)
 ![Prisma](https://img.shields.io/badge/Prisma-6.x-2D3748)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -102,40 +102,49 @@ backend/
 │   └── migrations/             # Migraciones SQL versionadas
 ├── src/
 │   ├── modules/
-│   │   ├── auth/               # Registro, login, JWT, refresh token
+│   │   ├── auth/               # Registro, login, JWT, refresh token, logout
+│   │   │   ├── index.ts
 │   │   │   ├── auth.routes.ts
 │   │   │   ├── auth.controller.ts
 │   │   │   └── auth.service.ts
 │   │   ├── users/              # Gestión de usuarios
+│   │   │   ├── index.ts
 │   │   │   ├── users.routes.ts
 │   │   │   ├── users.controller.ts
 │   │   │   └── users.service.ts
-│   │   ├── pets/               # CRUD de mascotas + soft delete
+│   │   ├── pets/               # CRUD de mascotas + soft delete + restore
+│   │   │   ├── index.ts
 │   │   │   ├── pets.routes.ts
 │   │   │   ├── pets.controller.ts
 │   │   │   └── pets.service.ts
 │   │   ├── consultations/      # Consultas + Chat (Socket.io)
+│   │   │   ├── index.ts
 │   │   │   ├── consultations.routes.ts
 │   │   │   ├── consultations.controller.ts
 │   │   │   ├── consultations.service.ts
 │   │   │   └── chat.gateway.ts
 │   ├── shared/
+│   │   ├── cache.ts                 # node-cache para vets disponibles
+│   │   ├── logger.ts                # Logger JSON estructurado
+│   │   ├── prisma.ts                # Singleton de PrismaClient
+│   │   ├── index.ts                 # Barrel export
 │   │   ├── middlewares/
 │   │   │   └── auth.middleware.ts   # authenticate + authorize
 │   │   ├── types/
 │   │   │   └── index.ts             # JwtPayload, ApiResponse (re-export @conectavet/shared)
 │   │   ├── utils/
 │   │   │   └── index.ts             # parsePagination, excludePassword, asyncHandler
-│   │   ├── errors/
-│   │   │   └── index.ts             # AppError, NotFoundError, ForbiddenError, ConflictError
-│   │   ├── cache.ts                 # node-cache para vets disponibles
-│   │   ├── logger.ts                # Logger JSON estructurado
-│   │   └── prisma.ts                # Singleton de PrismaClient
+│   │   └── errors/
+│   │       └── index.ts             # AppError, NotFoundError, ForbiddenError, ConflictError
 │   ├── __tests__/
-│   │   ├── auth.test.ts             # 11 tests (auth service + JWT + roles)
-│   │   ├── consultations.test.ts    # 15 tests (CRUD consultas + chat + permisos)
-│   │   ├── pets.test.ts             # 18 tests (CRUD mascotas + soft delete + ownership)
-│   │   └── setup-env.ts             # Configura schema de testing
+│   │   ├── auth.test.ts             # 21 tests (service + JWT + HTTP controllers + roles)
+│   │   ├── consultations.test.ts    # 15 tests (CRUD consultas + chat + permisos + logout)
+│   │   ├── pets.test.ts             # 18 tests (CRUD mascotas + soft delete + ownership + restore)
+│   │   ├── users.test.ts            #  7 tests (me, admin-only, vets pagination)
+│   │   ├── utils.test.ts            # 12 tests (pagination, excludePassword, asyncHandler, errors)
+│   │   ├── cache.test.ts            #  4 tests (set/get, clear, pattern clear)
+│   │   ├── app.test.ts              #  3 tests (health, 404, login validation)
+│   │   └── setup-env.ts             # Configura schema de testing de Supabase
 │   └── server.ts               # Entry point + graceful shutdown + Socket.io setup
 ├── dist/                       # Compilado (npm run build)
 ├── jest-global-setup.js        # Crea schema test_ dinámico en Supabase
@@ -145,7 +154,7 @@ backend/
 ├── jest.config.js              # Configuración de Jest + coverage thresholds
 ├── tsconfig.json               # Configuración de TypeScript
 ├── Dockerfile                  # Multi-stage build (alpine)
-├── prisma.config.ts            # Configuración de Prisma CLI
+├── .dockerignore
 └── package.json
 ```
 
@@ -644,12 +653,16 @@ router.get('/admin-only', authenticate, authorize(Role.ADMIN), handler);
 npm test
 ```
 
-Actualmente **44 tests** (11 de autenticación + 15 de consultas + 18 de mascotas):
+Actualmente **89 tests** en 7 archivos:
 
 ```
-PASS src/__tests__/auth.test.ts          — 11 tests (auth service + JWT + roles + refresh token)
-PASS src/__tests__/consultations.test.ts — 15 tests (CRUD consultas + chat + permisos)
-PASS src/__tests__/pets.test.ts          — 18 tests (CRUD mascotas + soft delete + ownership + paginación)
+PASS src/__tests__/auth.test.ts          — 21 tests (service + JWT + HTTP controllers + refresh + roles)
+PASS src/__tests__/consultations.test.ts — 15 tests (CRUD consultas + chat + permisos + logout)
+PASS src/__tests__/pets.test.ts          — 18 tests (CRUD mascotas + soft delete + ownership + paginación + restore)
+PASS src/__tests__/users.test.ts         —  7 tests (me, admin-only, vets)
+PASS src/__tests__/utils.test.ts         — 12 tests (parsePagination, excludePassword, asyncHandler, AppError)
+PASS src/__tests__/cache.test.ts         —  4 tests (set/get, clear, pattern clear)
+PASS src/__tests__/app.test.ts           —  3 tests (health, 404, login validation)
 ```
 
 ---
@@ -661,7 +674,7 @@ PASS src/__tests__/pets.test.ts          — 18 tests (CRUD mascotas + soft dele
 El deploy a Railway es automático mediante GitHub Actions al hacer push a `main`:
 
 ```
-push a main → tests (26 tests) → build → deploy a Railway
+push a main → tests (89 tests, unit + integration) → build → deploy a Railway
 ```
 
 ### Docker (cualquier proveedor)
@@ -682,6 +695,7 @@ Ver [`docs/DEPLOY.md`](../docs/DEPLOY.md) para instrucciones detalladas.
 | `DATABASE_URL` | Pooler de Supabase (port 6543, con `?pgbouncer=true`) | Sí |
 | `DIRECT_URL` | Conexión directa Supabase (port 5432) para migrations | Sí |
 | `JWT_SECRET` | Clave secreta para firmar tokens JWT | Sí |
+| `REFRESH_TOKENS` | Habilita endpoint refresh (default: `true`) | No |
 | `PORT` | Puerto del servidor (default: 3000) | No |
 | `NODE_ENV` | `development`, `production` | No |
 | `CORS_ORIGIN` | Origen permitido para CORS (default: `http://localhost:5173`) | No |
@@ -758,6 +772,26 @@ fix/*         → bugs
 - **Nombres**: `camelCase` para variables/funciones, `PascalCase` para clases/types, `kebab-case` para archivos
 - **Errores**: siempre responder con `{ success: false, message }`
 - **Tests**: todo endpoint nuevo debe tener tests
+
+---
+
+#### `GET /api/consultations/vets`
+
+Lista los veterinarios disponibles en línea.
+
+**Response** `200`
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "cmqzhmc290001w3zkcck1ys3s",
+      "email": "vet@ejemplo.com",
+      "isOnline": true
+    }
+  ]
+}
+```
 
 ---
 

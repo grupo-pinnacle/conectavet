@@ -17,6 +17,8 @@ if (!process.env.JWT_SECRET) {
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 app.use(helmet());
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
@@ -33,7 +35,10 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
 
 app.get('/health', async (_req: Request, res: Response) => {
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    await Promise.race([
+      prisma.$queryRaw`SELECT 1`,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000)),
+    ]);
     res.json({
       status: 'ok',
       timestamp: new Date().toISOString(),

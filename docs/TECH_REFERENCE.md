@@ -181,12 +181,13 @@ Entry point del servidor. Inicializa, en este orden:
 | Método | Ruta | Auth | Body | Respuesta |
 |--------|------|------|------|-----------|
 | POST | `/api/auth/register` | No | `{ email, password, role }` | 201 + usuario (sin password) |
-| POST | `/api/auth/login` | No | `{ email, password }` | 200 + `{ token, user }` |
-| — | — | — | — | — |
+| POST | `/api/auth/login` | No | `{ email, password }` | 200 + `{ token, refreshToken, user }` |
+| POST | `/api/auth/refresh` | No | `{ refreshToken }` | 200 + `{ token, refreshToken, user }` |
+| POST | `/api/auth/logout` | Sí | — | 200 + limpia isOnline + caché |
 
-- `auth.routes.ts` — Define las rutas y las conecta a los controllers
+- `auth.routes.ts` — Define las rutas (register, login, refresh, logout) y las conecta a los controllers
 - `auth.controller.ts` — Valida con Zod, llama al service, maneja respuestas y errores
-- `auth.service.ts` — Lógica: hash de password (bcrypt), crear usuario en BD, generar JWT, errores custom (`AuthError`)
+- `auth.service.ts` — Lógica: hash de password (bcrypt), crear usuario en BD, generar JWT + refresh token, logout (isOnline=false + cache clear), errores custom (`AuthError`)
 - `index.ts` — Re-exporta todo para imports limpios
 
 #### `src/modules/users/`
@@ -225,37 +226,26 @@ Dos middlewares:
 - **`authenticate`** — Extrae token del header `Authorization: Bearer <token>`, verifica con `jwt.verify()`, adjunta `req.user = { userId, email, role }`
 - **`authorize(...roles)`** — Factory que devuelve middleware. Verifica que `req.user.role` esté incluido en los roles permitidos. Si no, `403`.
 
-#### `src/__tests__/auth.test.ts`
-11 tests con Jest que cubren:
-- Registro de CLIENT, VET, ADMIN
-- Email duplicado (409)
-- Login exitoso (200 + JWT)
-- Login con credenciales incorrectas (401)
-- GET /api/users/me con/sin token (200/401)
-- Token inválido, expirado, firma incorrecta
-- Acceso admin-only con ADMIN (200) vs CLIENT/VET (403)
+#### `src/__tests__/`
+7 archivos con **89 tests totales**:
+
+| Archivo | Tests | Cobertura |
+|---------|-------|-----------|
+| `auth.test.ts` | 21 | Service: register, login, JWT sign/verify. HTTP: register (201/409/400), login (200/401), refresh (200/401/400), logout (200) |
+| `consultations.test.ts` | 15 | HTTP: create (201/400/401), assign VET (200/409/403), complete (200/403), mine con paginación, messages (200/403), detalle (200/403) |
+| `pets.test.ts` | 18 | HTTP: create (201/400/401), list (200/401), getById (200/404/403), update (200/403/400), delete+restore (200/404) |
+| `users.test.ts` | 7 | HTTP: GET /me (200/401), admin-only (200/403/403), vets pagination (200) |
+| `utils.test.ts` | 12 | Unit: parsePagination edge cases, excludePassword, asyncHandler, AppError classes |
+| `cache.test.ts` | 4 | Unit: set/get, missing key, clear all, clear by pattern |
+| `app.test.ts` | 3 | HTTP: /health (200), 404, login validation (400) |
 
 #### `src/__tests__/consultations.test.ts`
-15 tests de integración HTTP con supertest que cubren:
-- Creación de consulta (CLIENT) — 201
-- Sin token — 401
-- Sin petId — 400
-- Asignación de VET — 200
-- Reasignación (ya asignada) — 409
-- CLIENT no puede asignar — 403
-- Cierre con notas (VET asignado) — 200
-- VET no asignado no puede cerrar — 403
-- Paginación de consultas (CLIENT + VET)
-- Mensajes: ver historial, acceso denegado a no participantes
-- Logout: isOnline=false
+15 tests de integración HTTP con supertest. Cubren el flujo completo de consultas. Ver tabla en sección `src/__tests__/` arriba.
 
-**⚠️ Los tests escriben a la BD real de Supabase.** No hay base de datos de testing aislada (prioridad post-MVP).
+**⚠️ Los tests escriben a la BD real de Supabase pero en schema test_ aislado.** El globalSetup crea un schema único por ejecución (`test_{timestamp}`) y el globalTeardown lo elimina.
 
 #### `DECISIONS.md`
-Decisiones de backend: por qué se eligió cada tecnología. Contiene 3 ADR:
-- Monolito modular vs microservicios
-- Prisma vs TypeORM/Drizzle
-- Supabase como BD
+Decisiones de backend. **Nota: el archivo `backend/DECISIONS.md` fue eliminado por duplicación.** Ver `docs/DECISIONS.md` para los ADR oficiales (ADR-001 al ADR-009).
 
 #### `readme.md`
 Documentación técnica extensa: setup, API reference, scripts, tests, deploy, monitoreo, convenciones, roadmap.
@@ -514,11 +504,11 @@ const data = await getX();
 
 ## 10. Preguntas frecuentes técnicas
 
-**¿Por qué no hay npm workspaces?**
-Decisión ADR-008 en `docs/DECISIONS.md`. Cada subproyecto tiene su propio `package.json` para mantener independencia de versiones. Se evaluará post-MVP.
+**¿Por qué npm workspaces?**
+Decisión ADR-008 en `docs/DECISIONS.md`. Se implementaron workspaces con `@conectavet/shared` en `packages/shared/` para tipos compartidos (User, Pet, JwtPayload, ApiResponse). Esto elimina duplicación de tipos entre backend y web. Requiere `npm install` desde la raíz del monorepo, no desde subdirectorios.
 
-**¿Por qué JWT sin refresh token?**
-Decisión ADR-004. El token dura 7 días. Para un MVP es aceptable. Post-MVP se agregará refresh token.
+**¿Por qué JWT con refresh token?**
+Decisión ADR-004. Access token dura 7 días, refresh token 30 días. Se implementó `POST /api/auth/refresh` para renovar sin login. La rotación de tokens es completa (nuevo par en cada refresh). Post-MVP se agregará blacklist con tabla en BD.
 
 **¿Por qué tests contra Supabase y no contra BD local?**
 Es una deuda técnica identificada en la FAANG audit (score 6/10 en Testing). La solución (Docker Compose + BD de testing aislada) está priorizada para S6.

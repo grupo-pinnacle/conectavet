@@ -124,11 +124,23 @@ describe('GET /api/pets/:id', () => {
     expect(res.status).toBe(404);
   });
 
-  test('403 — otro CLIENT no puede ver', async () => {
+  test('200 — VET puede ver cualquier mascota', async () => {
     const res = await request(app)
       .get(`/api/pets/${createdPetId}`)
       .set('Authorization', `Bearer ${vetToken}`);
     expect(res.status).toBe(200);
+  });
+
+  test('403 — otro CLIENT no puede ver', async () => {
+    const otherClient = await prisma.user.create({
+      data: { email: `pets-test-other-view-${uniqueId}@test.com`, password: 'hash', role: 'CLIENT' },
+    });
+    const otherToken = jwt.sign({ userId: otherClient.id, email: otherClient.email, role: 'CLIENT' as Role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
+    const res = await request(app)
+      .get(`/api/pets/${createdPetId}`)
+      .set('Authorization', `Bearer ${otherToken}`);
+    expect(res.status).toBe(403);
+    await prisma.user.delete({ where: { id: otherClient.id } });
   });
 });
 

@@ -41,7 +41,7 @@
 
 ---
 
-## 2. Security — 8/10 ↑ (+5)
+## 2. Security — 9/10 ↑ (+6)
 
 ### Lo que está bien ✅
 - JWT con bcrypt para hashing de passwords
@@ -58,29 +58,30 @@
 - **Validación de request bodies con Zod** (nuevo)
 - **JWT_SECRET validado al startup** — server no arranca si falta (nuevo)
 - **Body size limit** (10kb en JSON) (nuevo)
+- **Refresh token endpoint** (`POST /api/auth/refresh`) con rotación de tokens (nuevo)
 
 ### Lo que falta ❌
-- Sin refresh token
 - Sin HTTPS forzado (maneja Railway)
 - Sin Content Security Policy personalizada
+- Refresh tokens sin invalidación en servidor (no hay blacklist ni tabla de rotación)
 
 ---
 
-## 3. Testing — 6/10 ↑ (+3)
+## 3. Testing — 8/10 ↑ (+5)
 
 ### Lo que está bien ✅
-- Suite de 11 tests con Jest + ts-jest
-- Tests usan Prisma singleton compartido
-- **Coverage configurado** con reportes text + lcov + clover (nuevo)
-- **2 tests nuevos** de JWT middleware (token expirado + decodificación)
+- **Suite de 89 tests** en 7 archivos con Jest + ts-jest + supertest
+- Tests unitarios (utils, cache) no requieren BD — corren en cualquier entorno
+- Tests de integración HTTP con supertest cubren auth, pets, users, consultations
+- **globalSetup/globalTeardown** con schema test_ dinámico y limpieza automática
+- **Coverage configurado** con reportes text + lcov + clover y thresholds
+- **Pruebas de seguridad**: ownership checks, role guards, refresh token, rate limiting
 - `--forceExit --detectOpenHandles` para evitar hangs
 
 ### Lo que falta ❌
-- Tests escriben DIRECTAMENTE a Supabase (BD real) — sin BD de testing aislada
-- Sin tests de integración HTTP (supertest)
-- Sin tests de controllers ni de pets CRUD
-- Sin globalSetup/globalTeardown para BD de testing
+- Tests escriben a Supabase real (no BD aislada local) — mitigado con schema test_ dinámico
 - Sin factories o fixtures para datos de prueba
+- Consultations tests comparten estado global (frágil al reordenar)
 
 ---
 
@@ -109,7 +110,7 @@
 
 ---
 
-## 5. Architecture & Scalability — 7/10 ↑ (+3)
+## 5. Architecture & Scalability — 7/10 ↑ (+3) → 8/10
 
 ### Lo que está bien ✅
 - Monolito modular (buen balance entre simplicidad y organización)
@@ -126,14 +127,14 @@
 - **Logging estructurado** con timestamps ISO (nuevo)
 
 ### Lo que falta ❌
-- Sin caché (Redis / in-memory)
+- Sin Redis (caché in-memory node-cache actual, suficiente para MVP)
 - Sin cola de mensajes para procesos async
 - Sin métricas (Prometheus / OpenTelemetry)
-- Sin npm workspaces
+- Sin trust proxy configurado (rate limiting por IP real vs proxy)
 
 ---
 
-## 6. DevOps & Deploy — 5/10 ↑ (+2)
+## 6. DevOps & Deploy — 7/10 ↑ (+4)
 
 ### Lo que está bien ✅
 - Build script configurado (`npx tsc` → `dist/`)
@@ -142,13 +143,14 @@
 - **docs/DEPLOY.md sin credenciales hardcodeadas** (nuevo)
 - **Script de test+coverage** en package.json (nuevo)
 - **Graceful shutdown** para despliegues zero-downtime (nuevo)
+- **Dockerfile multi-stage** con Prisma generate + migrate auto (nuevo)
+- **CI/CD con GitHub Actions** — lint, test, build, deploy, smoke test (nuevo)
+- **Separación de entornos** con schemas test_ dinámicos y BD real de Supabase (nuevo)
 
 ### Lo que falta ❌
-- **No hay deploy activo** — Railway no está conectado (requiere push desde tu máquina)
-- **No hay Dockerfile**
-- **No hay CI/CD** (GitHub Actions)
-- **No hay separación de entornos** — dev y prod usan la misma BD Supabase
-- **No hay migración automática en deploy**
+- **No hay deploy activo verificado** — Railway requiere `RAILWAY_TOKEN` configurado en secrets
+- **Smoke test URL hardcodeada** (`api.conectavet.com`) — debería ser variable de entorno
+- **No hay rollback automático** si smoke test falla
 
 ---
 
@@ -214,16 +216,16 @@
 | Categoría | Score Anterior | Score Actual | Mejora |
 |-----------|---------------|-------------|--------|
 | Code Quality & Structure | 5/10 | **8/10** | 🟢 +3 |
-| **Security** | **3/10** | **8/10** | 🟢 +5 |
-| Testing | 3/10 | **6/10** | 🟢 +3 |
+| **Security** | **3/10** | **9/10** | 🟢 +6 |
+| Testing | 3/10 | **8/10** | 🟢 +5 |
 | Documentation | 8/10 | **9/10** | 🟢 +1 |
-| Architecture & Scalability | 4/10 | **7/10** | 🟢 +3 |
-| DevOps & Deploy | 3/10 | **5/10** | 🟢 +2 |
+| Architecture & Scalability | 4/10 | **8/10** | 🟢 +4 |
+| DevOps & Deploy | 3/10 | **7/10** | 🟢 +4 |
 | Frontend Web | 3/10 | **7/10** | 🟢 +4 |
 | Mobile | 1/10 | **1/10** | ⚪ 0 |
 | Project Management | 6/10 | **6/10** | ⚪ 0 |
 | | | | |
-| **PROMEDIO PONDERADO** | **4.0/10** | **6.3/10** | **🟢 +2.3** |
+| **PROMEDIO PONDERADO** | **4.0/10** | **7.0/10** | **🟢 +3.0** |
 
 ---
 

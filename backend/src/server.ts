@@ -1,40 +1,32 @@
-import 'dotenv/config';
-import express, { Request, Response, NextFunction } from 'express';
-import authRoutes from './modules/auth/auth.routes.js';
-import usersRoutes from './modules/users/users.routes.js';
-import petsRoutes from './modules/pets/pets.routes.js';
+import app from './app.js';
+import { setupChatSocket } from './modules/consultations/chat.gateway.js';
+import { prisma } from './shared/prisma.js';
+import { logger } from './shared/logger.js';
 
-const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-
-app.use((req: Request, res: Response, next: NextFunction) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
-  next();
+const server = app.listen(PORT, () => {
+  logger.info(`Servidor iniciado en puerto ${PORT}`, { port: PORT, env: process.env.NODE_ENV });
 });
-app.get('/health', (req: Request, res: Response) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+
+setupChatSocket(server);
+
+function gracefulShutdown(signal: string) {
+  logger.info(`Señal ${signal} recibida. Cerrando servidor...`, { signal });
+  server.close(async () => {
+    await prisma.$disconnect();
+    logger.info('Conexiones cerradas. Servidor detenido.');
+    process.exit(0);
   });
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('uncaughtException', (err) => {
+  logger.error('Excepción no capturada', { message: err.message, stack: err.stack });
+  gracefulShutdown('uncaughtException');
 });
-
-app.use('/api/auth', authRoutes);
-app.use('/api/users', usersRoutes);
-app.use('/api/pets', petsRoutes);
-
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error(`[${new Date().toISOString()}] Error:`, err.stack || err.message);
-  res.status(500).json({
-    success: false,
-    message: 'Error interno del servidor',
-    ...(process.env.NODE_ENV === 'development' && { error: err.message })
-  });
-});
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+process.on('unhandledRejection', (reason: any) => {
+  logger.error('Promesa rechazada no manejada', { reason: reason?.message || reason });
+  process.exit(1);
 });

@@ -6,6 +6,7 @@ import {
   createPetController,
   updatePetController,
   deletePetController,
+  restorePetController,
 } from './pets.controller';
 
 const router = Router();
@@ -15,5 +16,6 @@ router.get('/:id', authenticate, getPetByIdController);
 router.post('/', authenticate, createPetController);
 router.put('/:id', authenticate, updatePetController);
 router.delete('/:id', authenticate, deletePetController);
+router.post('/:id/restore', authenticate, restorePetController);
 
 export default router;

@@ -7,16 +7,28 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 
 module.exports = async () => {
   const tmpFile = path.join(__dirname, '.jest-schema');
-  if (!fs.existsSync(tmpFile)) return;
+  if (!fs.existsSync(tmpFile)) {
+    console.warn('[teardown] No .jest-schema file found — nothing to clean up');
+    return;
+  }
 
-  const schemaName = fs.readFileSync(tmpFile, 'utf-8').trim();
-  fs.unlinkSync(tmpFile);
+  let schemaName;
+  try {
+    schemaName = fs.readFileSync(tmpFile, 'utf-8').trim();
+    fs.unlinkSync(tmpFile);
+  } catch (err) {
+    console.error('[teardown] Error reading/removing .jest-schema file:', err.message);
+    return;
+  }
 
   const directUrl = process.env.DIRECT_URL;
-  if (!directUrl || !schemaName) return;
+  if (!directUrl || !schemaName) {
+    console.warn('[teardown] DIRECT_URL not set or schemaName empty — skipping cleanup');
+    return;
+  }
 
   const directBase = directUrl.split('?')[0];
-  const dropUrl = `${directBase}`;
+  const dropUrl = directBase;
 
   try {
     execSync(
@@ -26,9 +38,12 @@ module.exports = async () => {
         stdio: ['pipe', 'inherit', 'inherit'],
         cwd: __dirname,
         env: { ...process.env, DATABASE_URL: dropUrl, DIRECT_URL: dropUrl },
+        timeout: 15000,
       }
     );
+    console.log(`[teardown] Schema "${schemaName}" dropped successfully`);
   } catch (err) {
-    console.error(`[teardown] Error dropping schema ${schemaName}:`, err.message);
+    console.error(`[teardown] Error dropping schema "${schemaName}":`, err.message);
+    console.warn('[teardown] You may need to manually drop this schema via Supabase SQL editor');
   }
 };

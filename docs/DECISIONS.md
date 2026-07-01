@@ -30,13 +30,13 @@
 
 ---
 
-## ADR-004: Autenticación JWT sin refresh token
+## ADR-004: Autenticación JWT con refresh token
 
 **Contexto:** Diseño del sistema de autenticación.
 
-**Decisión:** JWT con expiración de 7 días, sin refresh token.
+**Decisión:** JWT con expiración de 7 días para access token + refresh token con expiración de 30 días. Endpoint `POST /api/auth/refresh` para renovar el par sin requerir login.
 
-**Consecuencias:** + Simplicidad, - Sesión perdida al expirar. Aceptable para MVP. Refresh token se agregará post-MVP si es necesario.
+**Consecuencias:** + Mejora experiencia de usuario (no pierde sesión cada 7 días), + Seguridad (access token de corta duración), - Mayor superficie de ataque (2 tokens circulando). Refresh token se valida por JWT únicamente (sin blacklist en BD). Post-MVP se puede agregar rotación forzada con tabla de refresh tokens.
 
 ---
 
@@ -70,13 +70,13 @@
 
 ---
 
-## ADR-008: npm workspaces no implementado
+## ADR-008: npm workspaces para tipos compartidos
 
-**Contexto:** Coordinación de dependencias entre backend, web y mobile.
+**Contexto:** Coordinación de dependencias entre backend, web y mobile. Los tipos `User`, `Pet`, `JwtPayload`, `ApiResponse` estaban duplicados en backend y web.
 
-**Decisión:** No usar npm workspaces. Cada subproyecto tiene su propio package.json.
+**Decisión:** npm workspaces con paquete `@conectavet/shared` en `packages/shared/`. El root `package.json` define los workspaces. Ambos proyectos importan desde el mismo paquete.
 
-**Consecuencias:** + Independencia de versiones, - Dependencias duplicadas. Se evaluará post-MVP si el monorepo crece.
+**Consecuencias:** + Tipos unificados (cambio en un solo lugar), + Eliminación de duplicación, - Dependencia de estructura de monorepo. Los workspaces están configurados pero el equipo debe recordar `npm install` desde la raíz, no desde los subdirectorios.
 
 ---
 

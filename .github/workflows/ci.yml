@@ -63,3 +63,27 @@ jobs:
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         working-directory: backend
+
+  smoke-test:
+    name: Smoke Test - Health Check
+    needs: [deploy]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Wait for deploy to settle
+        run: sleep 15
+      - name: Check /health endpoint
+        run: |
+          for i in $(seq 1 5); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://api.conectavet.com/health || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              BODY=$(curl -s https://api.conectavet.com/health)
+              echo "Health check passed: $BODY"
+              echo "$BODY" | grep -q '"database":"connected"' && exit 0 || echo "WARNING: database not connected"
+            fi
+            echo "Attempt $i/5 failed (HTTP $STATUS). Retrying in 10s..."
+            sleep 10
+          done
+          echo "Smoke test failed after 5 attempts"
+          exit 1

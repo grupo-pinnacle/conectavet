@@ -6,7 +6,7 @@
 
 ![Status](https://img.shields.io/badge/status-active-brightgreen)
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![Tests](https://img.shields.io/badge/tests-26%2F26-passing)
+![Tests](https://img.shields.io/badge/tests-44%2F44-passing)
 ![Prisma](https://img.shields.io/badge/Prisma-6.x-2D3748)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -102,7 +102,7 @@ backend/
 │   └── migrations/             # Migraciones SQL versionadas
 ├── src/
 │   ├── modules/
-│   │   ├── auth/               # Registro, login, JWT
+│   │   ├── auth/               # Registro, login, JWT, refresh token
 │   │   │   ├── auth.routes.ts
 │   │   │   ├── auth.controller.ts
 │   │   │   └── auth.service.ts
@@ -110,25 +110,41 @@ backend/
 │   │   │   ├── users.routes.ts
 │   │   │   ├── users.controller.ts
 │   │   │   └── users.service.ts
-│   │   ├── pets/               # CRUD de mascotas
+│   │   ├── pets/               # CRUD de mascotas + soft delete
 │   │   │   ├── pets.routes.ts
 │   │   │   ├── pets.controller.ts
 │   │   │   └── pets.service.ts
-│   │   ├── consultations/      # Consultas + Chat (Socket.io) ✅
+│   │   ├── consultations/      # Consultas + Chat (Socket.io)
+│   │   │   ├── consultations.routes.ts
+│   │   │   ├── consultations.controller.ts
+│   │   │   ├── consultations.service.ts
+│   │   │   └── chat.gateway.ts
 │   ├── shared/
 │   │   ├── middlewares/
 │   │   │   └── auth.middleware.ts   # authenticate + authorize
 │   │   ├── types/
-│   │   │   └── index.ts             # JwtPayload, ApiResponse
-│   │   └── utils/                   # Utilidades (próximamente)
+│   │   │   └── index.ts             # JwtPayload, ApiResponse (re-export @conectavet/shared)
+│   │   ├── utils/
+│   │   │   └── index.ts             # parsePagination, excludePassword, asyncHandler
+│   │   ├── errors/
+│   │   │   └── index.ts             # AppError, NotFoundError, ForbiddenError, ConflictError
+│   │   ├── cache.ts                 # node-cache para vets disponibles
+│   │   ├── logger.ts                # Logger JSON estructurado
+│   │   └── prisma.ts                # Singleton de PrismaClient
 │   ├── __tests__/
-│   │   └── auth.test.ts        # Tests de autenticación
-│   └── server.ts               # Entry point
+│   │   ├── auth.test.ts             # 11 tests (auth service + JWT + roles)
+│   │   ├── consultations.test.ts    # 15 tests (CRUD consultas + chat + permisos)
+│   │   ├── pets.test.ts             # 18 tests (CRUD mascotas + soft delete + ownership)
+│   │   └── setup-env.ts             # Configura schema de testing
+│   └── server.ts               # Entry point + graceful shutdown + Socket.io setup
 ├── dist/                       # Compilado (npm run build)
+├── jest-global-setup.js        # Crea schema test_ dinámico en Supabase
+├── jest-global-teardown.js     # Dropea schema test_ al finalizar
 ├── .env                        # Variables de entorno (no versionado)
 ├── .env.example                # Template de variables de entorno
-├── jest.config.js              # Configuración de Jest
+├── jest.config.js              # Configuración de Jest + coverage thresholds
 ├── tsconfig.json               # Configuración de TypeScript
+├── Dockerfile                  # Multi-stage build (alpine)
 ├── prisma.config.ts            # Configuración de Prisma CLI
 └── package.json
 ```
@@ -312,6 +328,7 @@ Inicia sesión y devuelve un JWT.
   "success": true,
   "data": {
     "token": "eyJhbGciOiJIUzI1NiIs...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
     "user": {
       "id": "cmqzhma650000w3zk1jkoomim",
       "email": "usuario@ejemplo.com",
@@ -590,7 +607,8 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 
 ### Refresh
 
-El token dura **7 días**. No hay refresh token implementado. Al expirar, el cliente debe loguearse nuevamente.
+El access token dura **7 días**. Se incluye un `refreshToken` (válido por **30 días**) en la respuesta de login.
+Usar `POST /api/auth/refresh` con body `{ "refreshToken": "..." }` para obtener un nuevo par token + refresh sin que el usuario tenga que loguearse de nuevo.
 
 ---
 
@@ -626,11 +644,12 @@ router.get('/admin-only', authenticate, authorize(Role.ADMIN), handler);
 npm test
 ```
 
-Actualmente **26 tests** (11 de autenticación + 15 de consultas):
+Actualmente **44 tests** (11 de autenticación + 15 de consultas + 18 de mascotas):
 
 ```
-PASS src/__tests__/auth.test.ts          — 11 tests (auth service + JWT + roles)
+PASS src/__tests__/auth.test.ts          — 11 tests (auth service + JWT + roles + refresh token)
 PASS src/__tests__/consultations.test.ts — 15 tests (CRUD consultas + chat + permisos)
+PASS src/__tests__/pets.test.ts          — 18 tests (CRUD mascotas + soft delete + ownership + paginación)
 ```
 
 ---
@@ -772,8 +791,8 @@ Conectar con `{ auth: { token } }`. Eventos:
 
 ## Roadmap
 
-- [x] Auth (register, login, JWT, roles)
-- [x] CRUD mascotas
+- [x] Auth (register, login, JWT, roles, refresh token)
+- [x] CRUD mascotas (soft delete + restore)
 - [x] Consultations + Chat de texto (Socket.io)
 - [ ] Cola de espera y asignación automática
 - [ ] Videollamadas con LiveKit (post-MVP)

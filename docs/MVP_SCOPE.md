@@ -76,6 +76,20 @@ La consulta funciona así:
 
 ---
 
+## 🔧 Mejoras internas implementadas (no planificadas originalmente)
+
+Las siguientes mejoras técnicas fueron implementadas sin estar en el alcance MVP original. No afectan el flujo funcional del producto pero mejoran la calidad interna:
+
+| Mejora | Impacto | Aprobación |
+|--------|---------|------------|
+| **Refresh tokens** (`POST /api/auth/refresh`) | Evita que usuarios pierdan sesión cada 7 días | Técnica, aprobada en daily |
+| **node-cache** para vets disponibles | Reduce queries a BD para listar veterinarios online | Técnica, aprobada en daily |
+| **npm workspaces** (`packages/shared/`) | Tipos compartidos entre backend y web (User, Pet, JwtPayload) | Técnica, aprobada en daily |
+
+> Para features funcionales nuevos, volver a la regla #1.
+
+---
+
 ## 📐 Cómo se relaciona con los sprints
 
 | Sprint | Feature |

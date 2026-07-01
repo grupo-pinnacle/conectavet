@@ -10,14 +10,23 @@ const createPetSchema = z.object({
   breed: z.string().optional(),
   age: z.coerce.number().int().positive('La edad debe ser un número positivo').optional(),
   weight: z.coerce.number().positive('El peso debe ser un número positivo').optional(),
+  photoUrl: z.string().optional(),
+  weightKg: z.coerce.number().positive().optional(),
+  sex: z.string().optional(),
+  color: z.string().optional(),
+  microchip: z.string().optional(),
+  allergies: z.array(z.string()).optional(),
+  chronicConditions: z.array(z.string()).optional(),
+  birthDate: z.string().optional(),
 });
 
 const updatePetSchema = z.object({
   name: z.string().min(1).optional(),
   species: z.string().min(1).optional(),
   breed: z.string().optional(),
-  age: z.coerce.number().int().positive('La edad debe ser un número positivo').optional(),
-  weight: z.coerce.number().positive('El peso debe ser un número positivo').optional(),
+  age: z.coerce.number().int().positive().optional(),
+  weight: z.coerce.number().positive().optional(),
+  photoUrl: z.string().optional(),
 });
 
 function handleError(error: unknown, res: Response) {

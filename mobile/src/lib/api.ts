@@ -51,8 +51,7 @@ api.interceptors.response.use(
     // Unwrap to the inner `data` so service-layer calls return typed payloads
     // (e.g. `api.get<Pet>('/pets/123')` resolves to a `Pet`, not the envelope).
     const envelope = response.data;
-    if (envelope && typeof envelope === 'object' && 'status' in envelope && 'data' in envelope) {
-      // Attach pagination metadata for callers that need it
+    if (envelope && typeof envelope === 'object' && ('status' in envelope || 'success' in envelope) && 'data' in envelope) {
       const result = envelope.data as unknown;
       if (envelope.pagination && Array.isArray(result)) {
         (result as unknown as { pagination?: typeof envelope.pagination }).pagination =

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../../shared/middlewares/auth.middleware';
 import { registerController, loginController, logoutController, refreshController } from './auth.controller';
+import { getMeController } from '../users/users.controller';
 
 const router = Router();
 
@@ -13,5 +14,6 @@ if (REFRESH_ENABLED) {
 }
 
 router.post('/logout', authenticate, logoutController);
+router.get('/me', authenticate, getMeController);
 
 export default router;

@@ -511,7 +511,7 @@ Decisión ADR-008 en `docs/DECISIONS.md`. Se implementaron workspaces con `@cone
 Decisión ADR-004. Access token dura 7 días, refresh token 30 días. Se implementó `POST /api/auth/refresh` para renovar sin login. La rotación de tokens es completa (nuevo par en cada refresh). Post-MVP se agregará blacklist con tabla en BD.
 
 **¿Por qué tests contra Supabase y no contra BD local?**
-Es una deuda técnica identificada en la FAANG audit (score 6/10 en Testing). La solución (Docker Compose + BD de testing aislada) está priorizada para S6.
+Los tests usan un schema dinámico `test_` con globalSetup/globalTeardown que se crea y destruye por cada ejecución. Esto permite tests aislados sin BD local. La suite actual tiene 89 tests y corre en CI vía GitHub Actions.
 
 **¿Por qué Express 5 y Prisma 6 si son versiones nuevas?**
 Tobias eligió las versiones más recientes por mejor DX y tipado. Hay un riesgo bajo de bugs no descubiertos. Se pincharon versiones en `package.json` para evitar roturas por updates automáticos.

@@ -110,14 +110,16 @@ describe('Auth Service', () => {
       await prisma.user.deleteMany({ where: { email: { startsWith: `auth-http-${authUnique}` } } });
     });
 
-    test('POST /api/auth/register — 201 crea usuario', async () => {
+    test('POST /api/auth/register — 201 crea usuario + tokens', async () => {
       const res = await request(app)
         .post('/api/auth/register')
         .send({ email, password: '123456', role: 'CLIENT' });
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.email).toBe(email);
-      expect(res.body.data).not.toHaveProperty('password');
+      expect(res.body.data.accessToken).toBeDefined();
+      expect(res.body.data.refreshToken).toBeDefined();
+      expect(res.body.data.user.email).toBe(email);
+      expect(res.body.data.user).not.toHaveProperty('password');
     });
 
     test('POST /api/auth/register — 409 email duplicado', async () => {
@@ -147,7 +149,7 @@ describe('Auth Service', () => {
         .post('/api/auth/login')
         .send({ email, password: '123456' });
       expect(res.status).toBe(200);
-      expect(res.body.data.token).toBeDefined();
+      expect(res.body.data.accessToken).toBeDefined();
       expect(res.body.data.refreshToken).toBeDefined();
       expect(res.body.data.user.email).toBe(email);
     });
@@ -177,7 +179,7 @@ describe('Auth Service', () => {
         .post('/api/auth/refresh')
         .send({ refreshToken });
       expect(res.status).toBe(200);
-      expect(res.body.data.token).toBeDefined();
+      expect(res.body.data.accessToken).toBeDefined();
       expect(res.body.data.refreshToken).toBeDefined();
     });
 

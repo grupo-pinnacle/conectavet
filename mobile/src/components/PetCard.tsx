@@ -46,10 +46,10 @@ export function PetCard({ pet, onPress }: PetCardProps) {
               {pet.breed ? ` · ${pet.breed}` : ''}
             </Text>
             <Text style={{ fontSize: 13, color: colors.inkMuted }}>
-              {formatAge(pet.birthDate)}
+              {pet.birthDate ? formatAge(pet.birthDate) : `~${pet.age ?? '?'} años`}
               {pet.weightKg ? ` · ${pet.weightKg} kg` : ''}
             </Text>
-            {pet.allergies.length > 0 && (
+            {pet.allergies && pet.allergies.length > 0 && (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 2 }}>
                 {pet.allergies.slice(0, 2).map((a) => (
                   <Badge key={a} label={`⚠ ${a}`} bg={colors.accentDark} color="#fff" />

@@ -1,7 +1,7 @@
 # FAANG Audit — VetConnect
 
 > Evaluación del proyecto contra estándares de ingeniería de FAANG (Meta, Google, Amazon, Netflix, Apple).
-> **Fecha:** 29 de junio, 2026 | **Auditor:** Tobias (Backend) | **Versión:** Post-fix
+> **Fecha:** 30 de junio, 2026 | **Auditor:** Tobias (Backend) | **Versión:** v2 — Post-fix completo
 
 ---
 
@@ -81,7 +81,6 @@
 ### Lo que falta ❌
 - Tests escriben a Supabase real (no BD aislada local) — mitigado con schema test_ dinámico
 - Sin factories o fixtures para datos de prueba
-- Consultations tests comparten estado global (frágil al reordenar)
 
 ---
 
@@ -96,8 +95,7 @@
 - **docs/CHANNEL_DECISION.md** — estrategia web + mobile por rol (nuevo)
 - **docs/STANDUP_GUIDE.md** — reglas de daily standup (nuevo)
 - **docs/HOTFIX_PROTOCOL.md** — protocolo de bugs post-MVP (nuevo)
-- docs/SPRINT5_CHECKLIST.md — checklist día a día por integrante
-- docs/DEPLOY.md, docs/helpers/mobile/
+- docs/DEPLOY.md
 - **docs/DECISIONS.md** con 9 ADR documentados (nuevo: ADR-009 chat)
 - **Badges de estado** en backend/readme.md (nuevo)
 - **Diagrama ASCII de arquitectura** en README raíz
@@ -110,7 +108,7 @@
 
 ---
 
-## 5. Architecture & Scalability — 7/10 ↑ (+3) → 8/10
+## 5. Architecture & Scalability — 8/10 ↑ (+4)
 
 ### Lo que está bien ✅
 - Monolito modular (buen balance entre simplicidad y organización)
@@ -130,7 +128,6 @@
 - Sin Redis (caché in-memory node-cache actual, suficiente para MVP)
 - Sin cola de mensajes para procesos async
 - Sin métricas (Prometheus / OpenTelemetry)
-- Sin trust proxy configurado (rate limiting por IP real vs proxy)
 
 ---
 
@@ -182,7 +179,7 @@
 ## 8. Mobile Quality — 1/10
 
 ### Lo que está bien ✅
-- Código helper completo en `docs/helpers/mobile/` (AuthContext, LoginScreen, RegisterScreen, HomeScreen, App.tsx)
+- Documentación clara de qué necesita el proyecto mobile (ver `docs/CHANNEL_DECISION.md`)
 
 ### Lo que falta ❌
 - **Directorio mobile/ completamente vacío** — ni siquiera `package.json`
@@ -231,24 +228,17 @@
 
 ## 🎯 Pendiente para llegar a 10
 
-### Depende de Tobias (desde su máquina)
-1. Push a main + Deploy Railway → DevOps sube a 7
-2. Dockerfile → DevOps sube a 8
-3. GitHub Actions con tests automáticos → DevOps sube a 9, Testing sube a 8
-4. BD de testing aislada con Jest globalSetup → Testing sube a 9
-5. Tests de integración con supertest (controllers + middleware) → Testing sube a 10
-
-### Depende de Damián (Web)
-6. No hay nada más que arreglar — web está 7/10 y funcional
+### Depende de Tobias (backend)
+1. Tests de integración con BD aislada local (Docker Compose) → Testing sube a 10
+2. Documentación OpenAPI/Swagger → Documentation sube a 10
 
 ### Depende de Juan (Mobile)
-7. Crear proyecto Expo + copiar helpers → Mobile sube a 6
-8. Probar en Android + pulir → Mobile sube a 8
+3. Crear proyecto Expo + conectar auth + mascotas + chat → Mobile sube a 8
 
 ### Depende de Ezequiel (QA)
-9. Probar seguridad + documentar bugs → Code Quality sube a 9
-10. Tests manuales documentados → PM sube a 8
+4. Probar seguridad + documentar bugs → Code Quality sube a 9
+5. Tests manuales documentados → PM sube a 8
 
 ### Depende de Lara (PM)
-11. Daily standups + métricas de velocity → PM sube a 8
-12. Plan de contingencia para atraso → PM sube a 9
+6. Daily standups + métricas de velocity → PM sube a 8
+7. Plan de contingencia para atraso → PM sube a 9

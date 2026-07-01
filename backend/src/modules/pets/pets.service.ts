@@ -27,14 +27,21 @@ export async function createPet(data: {
   breed?: string;
   age?: number;
   weight?: number;
+  photoUrl?: string;
   ownerId: string;
 }) {
-  return prisma.pet.create({ data });
+  const { photoUrl, ...rest } = data;
+  return prisma.pet.create({
+    data: {
+      ...rest,
+      photoUrl: photoUrl ?? null,
+    },
+  });
 }
 
 export async function updatePet(
   id: string,
-  data: { name?: string; species?: string; breed?: string; age?: number; weight?: number },
+  data: { name?: string; species?: string; breed?: string; age?: number; weight?: number; photoUrl?: string },
 ) {
   return prisma.pet.update({ where: { id }, data });
 }

@@ -9,7 +9,10 @@ const SALT_ROUNDS = 10;
 interface RegisterInput {
   email: string;
   password: string;
-  role: Role;
+  role?: Role;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
 }
 
 interface LoginInput {
@@ -48,12 +51,32 @@ export async function register(input: RegisterInput) {
     data: {
       email: input.email,
       password: hashedPassword,
-      role: input.role
+      role: input.role ?? 'CLIENT',
+      firstName: input.firstName,
+      lastName: input.lastName,
+      phone: input.phone,
     }
   });
 
+  const token = jwt.sign(
+    { userId: user.id, email: user.email, role: user.role },
+    process.env.JWT_SECRET as string,
+    { expiresIn: '7d' }
+  );
+
+  const refreshTokenValue = jwt.sign(
+    { userId: user.id, type: 'refresh' },
+    process.env.JWT_SECRET as string,
+    { expiresIn: '30d' }
+  );
+
   const { password, ...userWithoutPassword } = user;
-  return userWithoutPassword;
+
+  return {
+    accessToken: token,
+    refreshToken: refreshTokenValue,
+    user: userWithoutPassword,
+  };
 }
 
 export async function login(input: LoginInput) {
@@ -98,7 +121,7 @@ export async function login(input: LoginInput) {
   const { password, ...userWithoutPassword } = user;
 
   return {
-    token,
+    accessToken: token,
     refreshToken: refreshTokenValue,
     user: { ...userWithoutPassword, isOnline: user.role === 'VET' ? true : userWithoutPassword.isOnline }
   };
@@ -125,7 +148,7 @@ export async function refreshAccessToken(refreshTokenValue: string) {
       { expiresIn: '30d' }
     );
     const { password, ...userWithoutPassword } = user;
-    return { token, refreshToken: newRefreshToken, user: userWithoutPassword };
+    return { accessToken: token, refreshToken: newRefreshToken, user: userWithoutPassword };
   } catch (err) {
     if (err instanceof AuthError) throw err;
     throw new AuthError('Token de refresco inválido o expirado', 401);

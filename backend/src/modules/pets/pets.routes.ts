@@ -15,6 +15,7 @@ router.get('/', authenticate, getMyPetsController);
 router.get('/:id', authenticate, getPetByIdController);
 router.post('/', authenticate, createPetController);
 router.put('/:id', authenticate, updatePetController);
+router.patch('/:id', authenticate, updatePetController);
 router.delete('/:id', authenticate, deletePetController);
 router.post('/:id/restore', authenticate, restorePetController);
 

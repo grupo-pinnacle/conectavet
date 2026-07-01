@@ -7,7 +7,10 @@ import { register, login, logout, refreshAccessToken, AuthError } from './auth.s
 const registerSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
-  role: z.enum(['CLIENT', 'VET', 'ADMIN'], { error: 'El rol debe ser CLIENT, VET o ADMIN' }),
+  role: z.enum(['CLIENT', 'VET', 'ADMIN']).optional(),
+  firstName: z.string().max(50).optional(),
+  lastName: z.string().max(50).optional(),
+  phone: z.string().max(20).optional(),
 });
 
 const loginSchema = z.object({

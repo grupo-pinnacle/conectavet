@@ -14,6 +14,11 @@ enum Role {
   ADMIN
 }
 
+enum Sex {
+  MALE
+  FEMALE
+}
+
 enum ConsultationStatus {
   WAITING
   ACTIVE
@@ -42,19 +47,28 @@ model User {
 }
 
 model Pet {
-  id            String         @id @default(cuid())
-  name          String
-  species       String
-  breed         String?
-  age           Int?
-  weight        Float?
-  photoUrl      String?
-  ownerId       String
-  owner         User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  consultations Consultation[]
-  deletedAt     DateTime?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id                String         @id @default(cuid())
+  name              String
+  species           String
+  breed             String?
+  age               Int?
+  weight            Float?
+  photoUrl          String?
+  ownerId           String
+  owner             User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  consultations     Consultation[]
+  deletedAt         DateTime?
+  weightKg          Float?
+  sex               Sex?
+  color             String?
+  microchip         String?
+  allergies         String[]
+  chronicConditions String[]
+  birthDate         DateTime?
+  isDeceased        Boolean       @default(false)
+  deathDate         DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
   @@index([ownerId])
   @@index([species])

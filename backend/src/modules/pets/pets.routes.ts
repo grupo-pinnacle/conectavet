@@ -3,6 +3,7 @@ import { authenticate } from '../../shared/middlewares/auth.middleware';
 import {
   getMyPetsController,
   getPetByIdController,
+  getPetVetCardController,
   createPetController,
   updatePetController,
   deletePetController,
@@ -17,6 +18,7 @@ router.post('/', authenticate, createPetController);
 router.put('/:id', authenticate, updatePetController);
 router.patch('/:id', authenticate, updatePetController);
 router.delete('/:id', authenticate, deletePetController);
+router.get('/:id/vetcard', authenticate, getPetVetCardController);
 router.post('/:id/restore', authenticate, restorePetController);
 
 export default router;

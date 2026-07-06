@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { z } from 'zod';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
 import { AppError, NotFoundError, ForbiddenError } from '../../shared/errors';
-import { getPetsByOwner, getPetById, createPet, updatePet, deletePet, restorePet } from './pets.service';
+import { getPetsByOwner, getPetById, createPet, updatePet, deletePet, restorePet, getPetVetCard } from './pets.service';
 
 const createPetSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
@@ -10,14 +10,14 @@ const createPetSchema = z.object({
   breed: z.string().optional(),
   age: z.coerce.number().int().positive('La edad debe ser un número positivo').optional(),
   weight: z.coerce.number().positive('El peso debe ser un número positivo').optional(),
-  photoUrl: z.string().optional(),
   weightKg: z.coerce.number().positive().optional(),
-  sex: z.string().optional(),
+  sex: z.enum(['MALE', 'FEMALE']).optional(),
   color: z.string().optional(),
   microchip: z.string().optional(),
   allergies: z.array(z.string()).optional(),
   chronicConditions: z.array(z.string()).optional(),
   birthDate: z.string().optional(),
+  photoUrl: z.string().optional(),
 });
 
 const updatePetSchema = z.object({
@@ -26,6 +26,13 @@ const updatePetSchema = z.object({
   breed: z.string().optional(),
   age: z.coerce.number().int().positive().optional(),
   weight: z.coerce.number().positive().optional(),
+  weightKg: z.coerce.number().positive().optional(),
+  sex: z.enum(['MALE', 'FEMALE']).optional(),
+  color: z.string().optional(),
+  microchip: z.string().optional(),
+  allergies: z.array(z.string()).optional(),
+  chronicConditions: z.array(z.string()).optional(),
+  birthDate: z.string().optional(),
   photoUrl: z.string().optional(),
 });
 
@@ -64,6 +71,25 @@ export async function getPetByIdController(req: RequestWithUser, res: Response) 
       throw new ForbiddenError('No tenés permiso para ver esta mascota');
     }
     return res.status(200).json({ success: true, data: pet });
+  } catch (error) {
+    return handleError(error, res);
+  }
+}
+
+export async function getPetVetCardController(req: RequestWithUser, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'No autenticado' });
+    }
+    const pet = await getPetById(req.params.id as string);
+    if (!pet || pet.deletedAt) {
+      throw new NotFoundError('Mascota no encontrada');
+    }
+    if (pet.ownerId !== req.user.userId && req.user.role === 'CLIENT') {
+      throw new ForbiddenError('No tenés permiso para ver esta mascota');
+    }
+    const vetCard = await getPetVetCard(req.params.id as string);
+    return res.status(200).json({ success: true, data: vetCard });
   } catch (error) {
     return handleError(error, res);
   }

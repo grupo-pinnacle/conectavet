@@ -15,6 +15,7 @@ const router = Router();
 
 router.post('/', authenticate, createController);
 router.get('/mine', authenticate, getMyConsultationsController);
+router.get('/my-history', authenticate, getMyConsultationsController);
 router.get('/vets', authenticate, getAvailableVetsController);
 router.get('/:id', authenticate, getByIdController);
 router.patch('/:id/assign', authenticate, authorize(Role.VET, Role.ADMIN), assignVetController);

@@ -54,7 +54,7 @@ export const roleSchema = z.enum(['OWNER', 'VET', 'ADMIN']);
 export type Role = z.infer<typeof roleSchema>;
 
 export const userSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string(),
   email: z.string().email(),
   role: roleSchema,
   firstName: z.string(),
@@ -106,7 +106,7 @@ export const sexSchema = z.enum(['MALE', 'FEMALE']);
 export type Sex = z.infer<typeof sexSchema>;
 
 export const petSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string(),
   name: z.string(),
   species: speciesSchema,
   breed: z.string().nullable(),
@@ -118,7 +118,7 @@ export const petSchema = z.object({
   allergies: z.array(z.string()),
   chronicConditions: z.array(z.string()),
   photoUrl: z.string().nullable(),
-  ownerId: z.string().uuid(),
+  ownerId: z.string(),
   isDeceased: z.boolean(),
   deathDate: z.string().datetime().nullable(),
   createdAt: z.string().datetime(),
@@ -150,7 +150,7 @@ export type UpdatePetPayload = z.infer<typeof updatePetSchema>;
 export const vetCardSchema = z.object({
   pet: petSchema,
   owner: z.object({
-    id: z.string().uuid(),
+    id: z.string(),
     firstName: z.string(),
     lastName: z.string(),
     phone: z.string(),
@@ -163,7 +163,7 @@ export const vetCardSchema = z.object({
   }),
   recentConsultations: z.array(
     z.object({
-      id: z.string().uuid(),
+      id: z.string(),
       reason: z.string(),
       status: z.string(),
       completedAt: z.string().datetime().nullable(),
@@ -187,10 +187,10 @@ export const queueEntryStatusSchema = z.enum([
 export type QueueEntryStatus = z.infer<typeof queueEntryStatusSchema>;
 
 export const queueEntrySchema = z.object({
-  id: z.string().uuid(),
-  userId: z.string().uuid(),
-  petId: z.string().uuid(),
-  vetId: z.string().uuid().nullable(),
+  id: z.string(),
+  userId: z.string(),
+  petId: z.string(),
+  vetId: z.string().nullable(),
   status: queueEntryStatusSchema,
   reason: z.string(),
   joinedAt: z.string().datetime(),
@@ -206,7 +206,7 @@ export const queueEntrySchema = z.object({
 export type QueueEntry = z.infer<typeof queueEntrySchema>;
 
 export const joinQueueSchema = z.object({
-  petId: z.string().uuid(),
+  petId: z.string(),
   reason: z.string().min(5).max(500),
 });
 export type JoinQueuePayload = z.infer<typeof joinQueueSchema>;
@@ -235,9 +235,9 @@ export const conversationStatusSchema = z.enum(['ACTIVE', 'ARCHIVED', 'ESCALATED
 export type ConversationStatus = z.infer<typeof conversationStatusSchema>;
 
 export const conversationSchema = z.object({
-  id: z.string().uuid(),
-  userId: z.string().uuid(),
-  petId: z.string().uuid().nullable(),
+  id: z.string(),
+  userId: z.string(),
+  petId: z.string().nullable(),
   status: conversationStatusSchema,
   title: z.string().nullable(),
   createdAt: z.string().datetime(),
@@ -249,8 +249,8 @@ export const messageRoleSchema = z.enum(['USER', 'ASSISTANT', 'SYSTEM']);
 export type MessageRole = z.infer<typeof messageRoleSchema>;
 
 export const messageSchema = z.object({
-  id: z.string().uuid(),
-  conversationId: z.string().uuid(),
+  id: z.string(),
+  conversationId: z.string(),
   role: messageRoleSchema,
   content: z.string(),
   tokenInput: z.number(),
@@ -262,7 +262,7 @@ export const messageSchema = z.object({
 export type Message = z.infer<typeof messageSchema>;
 
 export const createConversationSchema = z.object({
-  petId: z.string().uuid().optional(),
+  petId: z.string().optional(),
   title: z.string().max(120).optional(),
 });
 export type CreateConversationPayload = z.infer<typeof createConversationSchema>;

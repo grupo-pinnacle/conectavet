@@ -1,12 +1,14 @@
-import type { InputHTMLAttributes } from "react";
+type InputProps = {
+    type: string;
+    placeholder: string;
+}
 
-type InputProps = InputHTMLAttributes<HTMLInputElement>;
-
-export default function Input(props: InputProps) {
-  return (
-    <input
-      {...props}
-      className="w-full rounded border p-2"
-    />
-  );
+export default function Input({ type, placeholder }: InputProps) {
+    return (
+        <input
+            type={type}
+            placeholder={placeholder}
+            className="w-full border rounded p-2"
+        />
+    );
 }

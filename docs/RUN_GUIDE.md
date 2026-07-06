@@ -11,7 +11,6 @@
 | Node.js | 18+ | `node --version` |
 | npm | 9+ | `npm --version` |
 | Expo Go | última | App en Play Store |
-| ADB (solo USB) | — | `adb devices` |
 
 ---
 
@@ -19,8 +18,8 @@
 
 ```bash
 cd backend
-npm install        # solo la primera vez
-npm run dev        # http://localhost:3001
+npm install
+npm run dev
 ```
 
 **Esperá a ver:**
@@ -28,13 +27,20 @@ npm run dev        # http://localhost:3001
 Servidor iniciado en puerto 3001
 ```
 
+**Verificá que funciona:**
+```
+http://localhost:3001/health
+→ {"status":"ok","database":"connected",...}
+```
+
 **Si no arranca:**
-- Verificá que `backend/.env` tenga las credenciales de Supabase (DATABASE_URL, DIRECT_URL)
-- Verificá que `JWT_SECRET` no sea `change-me`
+- `backend/.env` debe tener credenciales reales de Supabase
+- `JWT_SECRET` debe tener un valor (no `change-me`)
+- El puerto 3001 debe estar libre: `netstat -ano | findstr 3001`
 
 ---
 
-## 🌐 2. Web (opcional, para probar desde el navegador)
+## 🌐 2. Web (opcional, navegador)
 
 En otra terminal:
 ```bash
@@ -43,86 +49,100 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-**Registrate como CLIENT o VET** y probá login + dashboard por rol.
+Registrate como CLIENT o VET y probá login + dashboard por rol.
 
 ---
 
-## 📱 3. Mobile (en celular Android)
+## 📱 3. Mobile (Expo) — la app se ve en el celular
 
-### 3.1 Configurar la IP
+La app mobile NO abre en el navegador de la PC. Se renderiza en el celular a través de **Expo Go**.
 
-El celular necesita llegar al backend de tu compu. `localhost` no funciona desde el celu.
+### 3.1 Preparar el celu
 
-**Sacá tu IP:**
+1. Instalá **Expo Go** de Play Store en tu celular
+2. Conectá el celu a la **misma red WiFi** que la compu
+
+### 3.2 Configurar la IP
+
+El celu necesita llegar al backend de la compu. `localhost` no funciona desde el celu.
+
+**Sacá tu IP local:**
 ```bash
 ipconfig | findstr IPv4
-# Ejemplo: 10.20.40.134
+# Ej: 192.168.1.100  (o 10.20.40.x)
 ```
 
-**Actualizá `mobile/.env`:**
+**Actualizá `mobile/.env` con tu IP:**
 ```
-EXPO_PUBLIC_API_URL=http://{TU_IP}:3001
-EXPO_PUBLIC_WS_URL=ws://{TU_IP}:3001/ws/queue
+EXPO_PUBLIC_API_URL=http://192.168.1.100:3001
+EXPO_PUBLIC_WS_URL=ws://192.168.1.100:3001/ws/queue
 ```
 
-### 3.2 Instalar Expo Go
-
-En el celular → Play Store → **Expo Go**
-
-### 3.3 Conectar por USB (opcional, más rápido)
+### 3.3 Iniciar Expo
 
 ```bash
-# 1. Activá en el celular:
-#    Ajustes → Opciones de desarrollador → USB debugging → ON
-#
-# 2. Conectá el USB y aceptá el permiso en el celu
-#
-# 3. Instalá ADB (si no lo tenés):
-winget install Google.PlatformTools
-#
-# 4. Verificá que se ve el celu:
-adb devices
-#    Debería mostrar: <id> device
-#
-# 5. En la terminal del mobile:
 cd mobile
+npm install
 npx expo start
-#    Apretá 'a' para abrir en Android
 ```
 
-### 3.4 Conectar por QR (si USB no funciona)
+**Cuando arranque** vas a ver:
+```
+Starting project at ...
+env: load .env
+env: export EXPO_PUBLIC_API_URL EXPO_PUBLIC_WS_URL EXPO_PUBLIC_LIVEKIT_URL
+Starting Metro Bundler
+...
+```
 
+Si pregunta `Use port 8082 instead?` → tipeá **Y + Enter**
+
+Después de ~20-30 segundos aparece un **código QR**. Escanealo con **Expo Go** en tu celu.
+
+### 3.4 Si el QR no aparece o no conecta
+
+**Opción Tunnel** (usa internet, no necesita WiFi local):
 ```bash
-cd mobile
 npx expo start --tunnel
-# Escaneá el QR con Expo Go en el celular
+```
+
+**Limpiar caché de Metro:**
+```bash
+npx expo start --clear
 ```
 
 ### 3.5 Verificar conexión
 
 Cuando la app cargue en el celu:
-1. **Registrate** (completá nombre, email, contraseña, seleccioná "Dueño de mascota")
+1. **Registrate** (completá nombre, email, contraseña, seleccioná rol)
 2. **Iniciá sesión** con el mismo email y contraseña
 3. Si ves el home → **todo funciona**
 
 **Si no conecta:**
 - El backend debe estar corriendo (`npm run dev` en backend)
-- La IP en `mobile/.env` debe coincidir con la IP de tu compu
-- El firewall de Windows puede bloquear el puerto 3001 → permitilo
+- La IP en `mobile/.env` debe coincidir con la IP de la compu (`ipconfig`)
+- El firewall de Windows puede bloquear el puerto 3001 → permitilo en firewall advanced
 - Probá con `npx expo start --tunnel` (usa internet, no necesita IP local)
 
 ---
 
-## 🔄 Flujo completo de prueba
+## 🔄 Flujo completo (3 terminales)
 
 ```
-1. Backend: npm run dev                              → Terminal 1
-2. Mobile:  npx expo start                           → Terminal 2
-3. Celular: escanear QR con Expo Go
-4.          Registrarse (Dueño de mascota)
-5.          Iniciar sesión
-6.          Agregar mascota → "Firulais" → Perro
-7.          Ver mascota en la lista
+┌─ Terminal 1 ──────────────────────────────┐
+│ cd backend && npm run dev                  │
+│ → Backend en http://localhost:3001         │
+└────────────────────────────────────────────┘
+
+┌─ Terminal 2 ──────────────────────────────┐
+│ cd mobile && npx expo start               │
+│ → Escaneá el QR desde Expo Go en tu celu  │
+└────────────────────────────────────────────┘
+
+┌─ Terminal 3 (opcional) ───────────────────┐
+│ cd web && npm run dev                      │
+│ → Web en http://localhost:5173             │
+└────────────────────────────────────────────┘
 ```
 
 ---
@@ -133,45 +153,19 @@ Cuando la app cargue en el celu:
 |---------|-------|----------|
 | Pantalla blanca en mobile | Expo Go no puede cargar el bundle | `npx expo start --clear` |
 | "Network request failed" | Mobile no llega al backend | Verificar IP en `.env` y que backend esté corriendo |
-| "Port 3001 already in use" | Otro proceso ocupando el puerto | `netstat -ano findstr 3001` y matar el PID |
+| "Port 3001 already in use" | Otro proceso ocupando el puerto | `netstat -ano \| findstr 3001` y matar el PID |
 | Error al registrarse | Backend caído o sin BD | Verificar `backend/.env` tenga credenciales reales |
-| ADB no reconoce el celu | USB debugging desactivado o drivers | Revisar permisos USB en el celular |
-| Expo no tiene opción 'a' | ADB no instalado | `winget install Google.PlatformTools` |
-| CORS error en web | Backend no acepta el origen | Verificar `CORS_ORIGIN` en `backend/.env` |
+| Expo no muestra QR | Metro/Expo atascado | `npx expo start --clear --tunnel` |
+| CORS error en web | Backend no acepta el origen | Verificar `CORS_ORIGIN` en `backend/.env` (debe incluir `http://localhost:5173` y `http://localhost:8081`) |
+| El QR no se ve en la terminal | Puerto 8081 ocupado por otro proceso | Matar el proceso o aceptar usar puerto 8082 |
 
 ---
 
-## 🐳 Docker (alternativa al backend local)
+## 📁 Puertos usados
 
-```bash
-cd backend
-docker build -t conectavet-api .
-docker run -p 3001:3001 --env-file .env conectavet-api
-```
-
----
-
-## 📁 Estructura del monorepo
-
-```
-conectavet/
-├── backend/          → API REST (Express + Prisma + Supabase)
-│   ├── src/
-│   │   ├── modules/  → auth, pets, consultations, users, queue
-│   │   ├── shared/   → prisma, middlewares, types, utils
-│   │   └── server.ts → entry point
-│   └── prisma/       → schema + migrations
-├── web/              → Web app (React + Vite + Tailwind)
-│   └── src/
-│       ├── pages/    → Login, Register, Dashboard
-│       ├── context/  → AuthContext
-│       └── components/ → Button, Input, ProtectedRoute
-└── mobile/           → Mobile app (Expo + React Native + Expo Router)
-    ├── app/          → File-based routes (auth, app, call)
-    ├── src/
-    │   ├── stores/   → Zustand (auth, queue, call)
-    │   ├── hooks/    → useAuth, usePets, useQueue, useLiveKit
-    │   ├── lib/      → api.ts, secure-storage, ws.ts
-    │   └── types/    → Zod schemas + TS types
-    └── .env          → IP de la compu para el celu
-```
+| Servicio | Puerto | URL |
+|----------|--------|-----|
+| Backend (Express) | 3001 | http://localhost:3001 |
+| Frontend Web (Vite) | 5173 | http://localhost:5173 |
+| Mobile (Expo/Metro) | 8081 | http://localhost:8081 |
+| Health Check | 3001 | http://localhost:3001/health |

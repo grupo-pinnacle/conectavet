@@ -20,8 +20,9 @@ const app = express();
 app.set('trust proxy', 1);
 
 app.use(helmet());
+const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map(s => s.trim());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: corsOrigins,
   credentials: true,
 }));
 

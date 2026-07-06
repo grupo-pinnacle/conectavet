@@ -28,8 +28,7 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# Local env files
-.env
+# Local env files (excluding .env — we commit it in this repo)
 .env.local
 .env.*.local
 

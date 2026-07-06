@@ -126,53 +126,44 @@ No es necesario instalar PostgreSQL local — la base de datos corre en **Supaba
 git clone https://github.com/grupo-pinnacle/conectavet.git
 cd conectavet
 
-# Backend
+# Backend (siempre primero)
 cd backend
 npm install
-cp .env.example .env    # Editar .env con credenciales reales
-npm run dev              # http://localhost:3000
+npm run dev                # http://localhost:3001
 
-# Web (otra terminal)
+# Web (otra terminal, opcional)
 cd web
 npm install
-npm run dev              # http://localhost:5173
+npm run dev                # http://localhost:5173
 
 # Mobile (otra terminal)
 cd mobile
 npm install
-npx expo start           # Escanear QR con Expo Go
+npx expo start             # Escanear QR con Expo Go en el celu
 ```
 
-### 2. Variables de entorno (backend)
+### 2. Variables de entorno
 
+**Backend (`backend/.env`):**
 ```env
-# Conexión a Supabase (pooler para queries)
 DATABASE_URL="postgresql://user:pass@host:6543/postgres?pgbouncer=true"
-
-# Conexión directa (para migrations)
 DIRECT_URL="postgresql://user:pass@host:5432/postgres"
-
-# Secreto para firmar JWT
 JWT_SECRET="tu-clave-secreta-aqui"
-
-# Puerto del servidor (opcional, default 3000)
-PORT=3000
+PORT=3001
+CORS_ORIGIN="http://localhost:5173,http://localhost:8081"
 ```
 
-### 3. Base de datos
-
-```bash
-cd backend
-npx prisma db push       # Sincroniza schema con Supabase
-npx prisma generate      # Genera cliente Prisma
-npm run dev               # Inicia servidor
+**Mobile (`mobile/.env`):**
+```env
+EXPO_PUBLIC_API_URL=http://192.168.1.x:3001   # IP de tu compu
+EXPO_PUBLIC_WS_URL=ws://192.168.1.x:3001/ws/queue
 ```
 
-### 4. Verificar instalación
+### 3. Verificar instalación
 
 ```bash
-curl http://localhost:3000/health
-# → {"status":"ok","timestamp":"...","environment":"development"}
+curl http://localhost:3001/health
+# → {"status":"ok","database":"connected","environment":"development"}
 ```
 
 ---

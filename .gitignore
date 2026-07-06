@@ -12,11 +12,6 @@ Thumbs.db
 
 *.log
 
-.env
-.env.local
-.env.production
-.env.development
-
 *.tsbuildinfo
 
 .vscode/

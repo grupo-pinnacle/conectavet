@@ -41,15 +41,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await api.post("/api/auth/login", { email, password });
-    const { token: newToken, user: userData } = res.data.data;
-    localStorage.setItem("vetconnect_auth_token", newToken);
-    setToken(newToken);
+    const { accessToken, user: userData } = res.data.data;
+    localStorage.setItem("vetconnect_auth_token", accessToken);
+    setToken(accessToken);
     setUser(userData);
   }, []);
 
   const register = useCallback(async (email: string, password: string, role: string) => {
     const res = await api.post("/api/auth/register", { email, password, role });
-    setUser(res.data.data);
+    const { accessToken, user: userData } = res.data.data;
+    localStorage.setItem("vetconnect_auth_token", accessToken);
+    setToken(accessToken);
+    setUser(userData);
   }, []);
 
   const logout = useCallback(() => {

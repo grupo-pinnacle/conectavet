@@ -7,6 +7,13 @@ echo  VetConnect - RUN ALL
 echo ========================================
 echo.
 
+:: Detect LAN IP via PowerShell
+for /f "delims=" %%i in ('powershell -Command "ipconfig | Select-String 'IPv4.*10\.' | ForEach-Object { $_ -replace '.*:\s*', '' } | Select-Object -First 1"') do set IP=%%i
+if "%IP%"=="" (
+    for /f "delims=" %%i in ('powershell -Command "ipconfig | Select-String 'IPv4.*192\.' | ForEach-Object { $_ -replace '.*:\s*', '' } | Select-Object -First 1"') do set IP=%%i
+)
+echo       IP detectada: %IP%
+
 :: Kill old node processes
 echo [1/5] Cerrando procesos anteriores...
 taskkill /f /im node.exe >nul 2>&1
@@ -41,7 +48,7 @@ cd qrgen
 copy nul package.json >nul 2>&1
 echo {"name":"qrgen","private":true} > package.json
 call npm install qrcode --legacy-peer-deps >nul 2>&1
-set URL=exp://10.20.40.134:8081
+set URL=exp://%IP%:8081
 node -e "const QR=require('qrcode'); QR.toFile('expo-qr.png','%URL%',{width:400},e=>{if(e){process.exit(1)}else{console.log('OK')}})" >nul 2>&1
 copy /y expo-qr.png "%temp%\expo-qr.png" >nul 2>&1
 
@@ -58,7 +65,7 @@ echo ========================================
 echo.
 echo  Backend : http://localhost:3001
 echo  Expo    : http://localhost:8081
-echo  Celular : exp://10.20.40.134:8081
+echo  Celular : exp://%IP%:8081
 echo.
 echo  1. Conecta el celular a la MISMA red
 echo  2. Escanea el QR con Expo Go

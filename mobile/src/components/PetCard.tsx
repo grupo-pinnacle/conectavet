@@ -46,7 +46,7 @@ export function PetCard({ pet, onPress }: PetCardProps) {
               {pet.breed ? ` · ${pet.breed}` : ''}
             </Text>
             <Text style={{ fontSize: 13, color: colors.inkMuted }}>
-              {pet.birthDate ? formatAge(pet.birthDate) : `~${pet.age ?? '?'} años`}
+              {pet.birthDate ? formatAge(pet.birthDate) : '?'}
               {pet.weightKg ? ` · ${pet.weightKg} kg` : ''}
             </Text>
             {pet.allergies && pet.allergies.length > 0 && (

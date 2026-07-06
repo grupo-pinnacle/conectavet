@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  CLIENT
+  VET
+  ADMIN
+}
+
+enum ConsultationStatus {
+  WAITING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id                    String         @id @default(cuid())
+  email                 String         @unique
+  password              String
+  firstName             String?
+  lastName              String?
+  phone                 String?
+  role                  Role
+  isOnline              Boolean        @default(false)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  pets                  Pet[]
+  consultationsAsClient Consultation[] @relation("ClientConsultations")
+  consultationsAsVet    Consultation[] @relation("VetConsultations")
+  messages              Message[]
+
+  @@map("users")
+}
+
+model Pet {
+  id            String         @id @default(cuid())
+  name          String
+  species       String
+  breed         String?
+  age           Int?
+  weight        Float?
+  photoUrl      String?
+  ownerId       String
+  owner         User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  consultations Consultation[]
+  deletedAt     DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([ownerId])
+  @@index([species])
+  @@map("pets")
+}
+
+model Consultation {
+  id            String             @id @default(cuid())
+  clientId      String
+  client        User               @relation("ClientConsultations", fields: [clientId], references: [id])
+  vetId         String?
+  vet           User?              @relation("VetConsultations", fields: [vetId], references: [id])
+  petId         String
+  pet           Pet                @relation(fields: [petId], references: [id])
+  status        ConsultationStatus @default(WAITING)
+  notes         String?
+  startedAt     DateTime?
+  endedAt       DateTime?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  messages      Message[]
+
+  @@index([clientId])
+  @@index([vetId])
+  @@index([status])
+  @@map("consultations")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  consultationId String
+  consultation   Consultation @relation(fields: [consultationId], references: [id])
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id])
+  content        String
+  createdAt      DateTime     @default(now())
+
+  @@index([consultationId, createdAt])
+  @@map("messages")
+}

@@ -1,55 +1,74 @@
-import { createContext, useState } from "react";
+import { createContext, useState, useCallback, useEffect } from "react";
 import type { ReactNode } from "react";
 import type { User } from "../types";
+import api from "../services/api";
 
 export interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string, role: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
   isAuthenticated: boolean;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(
-  undefined
-);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
+function parseUserFromToken(token: string): User | null {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return {
+      id: payload.sub || payload.id || "",
+      name: payload.name || "",
+      email: payload.email || "",
+      role: payload.role || "owner",
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user] = useState<User | null>(null);
-  const [token] = useState<string | null>(null);
-  const [isLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const login = async (email: string, password: string) => {
-    console.log("Login:", email, password);
-  };
+  useEffect(() => {
+    const saved = localStorage.getItem("vetconnect_auth_token");
+    if (saved) {
+      const parsed = parseUserFromToken(saved);
+      if (parsed) {
+        setToken(saved);
+        setUser(parsed);
+      } else {
+        localStorage.removeItem("vetconnect_auth_token");
+      }
+    }
+    setIsLoading(false);
+  }, []);
 
-<<<<<<< HEAD
-  const logout = () => {
-    console.log("Logout");
-  };
+  const setAuth = useCallback((accessToken: string, userData: User) => {
+    localStorage.setItem("vetconnect_auth_token", accessToken);
+    setToken(accessToken);
+    setUser(userData);
+  }, []);
 
-  const isAuthenticated = !!token;
-=======
   const login = useCallback(async (email: string, password: string) => {
     const res = await api.post("/api/auth/login", { email, password });
     const { accessToken, user: userData } = res.data.data;
-    localStorage.setItem("vetconnect_auth_token", accessToken);
-    setToken(accessToken);
-    setUser(userData);
-  }, []);
+    setAuth(accessToken, userData);
+  }, [setAuth]);
 
-  const register = useCallback(async (email: string, password: string, role: string) => {
-    const res = await api.post("/api/auth/register", { email, password, role });
+  const register = useCallback(async (name: string, email: string, password: string, role: string) => {
+    const res = await api.post("/api/auth/register", { name, email, password, role });
     const { accessToken, user: userData } = res.data.data;
-    localStorage.setItem("vetconnect_auth_token", accessToken);
-    setToken(accessToken);
-    setUser(userData);
-  }, []);
+    setAuth(accessToken, userData);
+  }, [setAuth]);
 
   const logout = useCallback(() => {
     localStorage.removeItem("vetconnect_auth_token");
@@ -58,7 +77,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const isAuthenticated = !!token && !!user;
->>>>>>> 01988924b24fffd102ad957855769aa50643cffd
 
   return (
     <AuthContext.Provider
@@ -66,6 +84,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         user,
         token,
         login,
+        register,
         logout,
         isLoading,
         isAuthenticated,

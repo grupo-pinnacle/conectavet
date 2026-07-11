@@ -1,8 +1,7 @@
 import 'react-native-url-polyfill/auto';
 import { secureStorage } from './secure-storage';
 import type { WsMessage } from '@/types';
-
-const WS_URL = process.env.EXPO_PUBLIC_WS_URL ?? 'ws://localhost:3000/ws/queue';
+import { WS_URL } from './env';
 
 type MessageHandler = (msg: WsMessage) => void;
 type StatusHandler = (status: 'connecting' | 'open' | 'closed' | 'error') => void;

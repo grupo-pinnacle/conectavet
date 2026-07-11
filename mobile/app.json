@@ -43,18 +43,6 @@
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-camera",
-        {
-          "cameraPermission": "VetConnect necesita acceso a la cámara para videollamadas y fotos de mascotas."
-        }
-      ],
-      [
-        "expo-av",
-        {
-          "microphonePermission": "VetConnect necesita acceso al micrófono para videollamadas."
-        }
-      ],
       "expo-secure-store"
     ],
     "experiments": {

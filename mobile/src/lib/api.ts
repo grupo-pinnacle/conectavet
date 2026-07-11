@@ -1,8 +1,7 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { secureStorage } from './secure-storage';
 import { ApiError, type AuthResponse } from '@/types';
-
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
+import { API_URL } from './env';
 
 /**
  * Axios instance for the VetConnect backend (Express + Prisma).
@@ -15,7 +14,7 @@ const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
  *  - If refresh fails, the user is logged out and redirected to login.
  */
 export const api: AxiosInstance = axios.create({
-  baseURL: `${BASE_URL}/api`,
+  baseURL: `${API_URL}/api`,
   timeout: 30_000,
   headers: {
     'Content-Type': 'application/json',

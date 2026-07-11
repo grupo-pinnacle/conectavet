@@ -9,7 +9,17 @@
  *  - Session-expired redirect
  *
  * Then delegates to `(auth)` or `(app)` group based on `isAuthenticated`.
+ *
+ * ── Polyfill notice ─────────────────────────────────────────────────────────
+ * The first import **must** be @/polyfills because Hermes does not provide
+ * `DOMException` natively.  Libraries such as `@react-navigation/native`
+ * (router-store.js) and `livekit-client` (DeferrableMap) rely on
+ * `AbortController` which internally creates a `DOMException` on abort, and
+ * will crash with "Property 'DOMException' doesn't exist" if it is missing.
+ * ────────────────────────────────────────────────────────────────────────────
  */
+import '@/polyfills';
+
 import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

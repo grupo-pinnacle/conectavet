@@ -1,4 +1,4 @@
 export const API_CONFIG = {
-  BASE_URL: "http://localhost:3001",
+  BASE_URL: "",
   TIMEOUT: 10000,
 };

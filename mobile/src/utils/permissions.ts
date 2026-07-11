@@ -1,10 +1,10 @@
 import { Platform, Linking } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera } from 'expo-camera';
 
 export async function requestCameraAndMicPermissions(): Promise<boolean> {
   if (Platform.OS === 'web') return true;
 
+  const { Camera } = await import('expo-camera');
   const camStatus = await Camera.requestCameraPermissionsAsync();
   const micStatus = await Camera.requestMicrophonePermissionsAsync();
 

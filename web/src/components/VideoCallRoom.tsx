@@ -1,0 +1,134 @@
+import { useState, useEffect, useRef } from "react";
+import { createLiveKitRoom, joinLiveKitRoom } from "../services/endpoints";
+
+interface VideoCallRoomProps {
+  roomName?: string;
+  onEndCall: () => void;
+}
+
+export default function VideoCallRoom({ roomName: initialRoom, onEndCall }: VideoCallRoomProps) {
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [muted, setMuted] = useState(false);
+  const [videoOff, setVideoOff] = useState(false);
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [remoteStream] = useState<MediaStream | null>(null);
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        if (!initialRoom) {
+          await createLiveKitRoom();
+        } else {
+          await joinLiveKitRoom(initialRoom);
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        setLocalStream(stream);
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+        }
+      } catch (err: any) {
+        setError(err?.message || "Error al conectar la videollamada");
+      } finally {
+        setLoading(false);
+      }
+    };
+    init();
+
+    return () => {
+      localStream?.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
+
+  const toggleMute = () => {
+    if (localStream) {
+      localStream.getAudioTracks().forEach((t) => { t.enabled = muted; });
+      setMuted(!muted);
+    }
+  };
+
+  const toggleVideo = () => {
+    if (localStream) {
+      localStream.getVideoTracks().forEach((t) => { t.enabled = videoOff; });
+      setVideoOff(!videoOff);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-xl border border-[#CBD5E1] bg-white p-10 shadow-sm">
+        <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#2563EB] border-t-transparent" />
+        <p className="text-lg font-bold text-[#0F172A]">Conectando videollamada...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-xl border border-[#CBD5E1] bg-white p-10 shadow-sm">
+        <p className="mb-2 text-lg font-bold text-red-600">Error</p>
+        <p className="mb-4 text-sm text-[#475569]">{error}</p>
+        <button onClick={onEndCall} className="rounded-lg bg-[#2563EB] px-6 py-2.5 text-sm font-bold text-white">
+          Volver
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-[#CBD5E1] bg-black shadow-sm">
+      <div className="relative grid h-[500px] grid-rows-2 gap-2 p-2 md:h-[600px]">
+        {/* Remote video (main) */}
+        <div className="relative row-span-2 overflow-hidden rounded-lg bg-gray-900">
+          {remoteStream ? (
+            <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full items-center justify-center">
+              <div className="text-center">
+                <div className="mx-auto mb-2 flex h-20 w-20 items-center justify-center rounded-full bg-gray-700 text-3xl">
+                  👤
+                </div>
+                <p className="text-lg font-bold text-white">Esperando al veterinario...</p>
+                <p className="text-sm text-gray-400">La videollamada comenzará en breve</p>
+              </div>
+            </div>
+          )}
+
+          {/* Local video (PiP) */}
+          <div className="absolute right-4 top-4 h-32 w-44 overflow-hidden rounded-lg border-2 border-white shadow-lg">
+            <video ref={localVideoRef} autoPlay playsInline muted className="h-full w-full object-cover" />
+          </div>
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div className="flex items-center justify-center gap-4 bg-gray-900 px-4 py-4">
+        <button
+          onClick={toggleMute}
+          className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors ${
+            muted ? "bg-red-500 text-white" : "bg-gray-700 text-white hover:bg-gray-600"
+          }`}
+        >
+          {muted ? "🔇" : "🎤"}
+        </button>
+        <button
+          onClick={onEndCall}
+          className="flex h-14 w-14 items-center justify-center rounded-full bg-red-500 text-2xl text-white transition-colors hover:bg-red-600"
+        >
+          📞
+        </button>
+        <button
+          onClick={toggleVideo}
+          className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors ${
+            videoOff ? "bg-red-500 text-white" : "bg-gray-700 text-white hover:bg-gray-600"
+          }`}
+        >
+          {videoOff ? "📹" : "🎥"}
+        </button>
+      </div>
+    </div>
+  );
+}

@@ -33,11 +33,6 @@ http://localhost:3001/health
 → {"status":"ok","database":"connected",...}
 ```
 
-**Si no arranca:**
-- `backend/.env` debe tener credenciales reales de Supabase
-- `JWT_SECRET` debe tener un valor (no `change-me`)
-- El puerto 3001 debe estar libre: `netstat -ano | findstr 3001`
-
 ---
 
 ## 🌐 2. Web (opcional, navegador)
@@ -55,8 +50,6 @@ Registrate como CLIENT o VET y probá login + dashboard por rol.
 
 ## 📱 3. Mobile (Expo) — la app se ve en el celular
 
-La app mobile NO abre en el navegador de la PC. Se renderiza en el celular a través de **Expo Go**.
-
 ### 3.1 Preparar el celu
 
 1. Instalá **Expo Go** de Play Store en tu celular
@@ -64,18 +57,17 @@ La app mobile NO abre en el navegador de la PC. Se renderiza en el celular a tra
 
 ### 3.2 Configurar la IP
 
-El celu necesita llegar al backend de la compu. `localhost` no funciona desde el celu.
+El celu necesita llegar al backend de la compu.
 
 **Sacá tu IP local:**
 ```bash
 ipconfig | findstr IPv4
-# Ej: 192.168.1.100  (o 10.20.40.x)
+# Ej: 192.168.1.100
 ```
 
 **Actualizá `mobile/.env` con tu IP:**
 ```
 EXPO_PUBLIC_API_URL=http://192.168.1.100:3001
-EXPO_PUBLIC_WS_URL=ws://192.168.1.100:3001/ws/queue
 ```
 
 ### 3.3 Iniciar Expo
@@ -84,15 +76,6 @@ EXPO_PUBLIC_WS_URL=ws://192.168.1.100:3001/ws/queue
 cd mobile
 npm install
 npx expo start
-```
-
-**Cuando arranque** vas a ver:
-```
-Starting project at ...
-env: load .env
-env: export EXPO_PUBLIC_API_URL EXPO_PUBLIC_WS_URL EXPO_PUBLIC_LIVEKIT_URL
-Starting Metro Bundler
-...
 ```
 
 Si pregunta `Use port 8082 instead?` → tipeá **Y + Enter**
@@ -117,12 +100,6 @@ Cuando la app cargue en el celu:
 1. **Registrate** (completá nombre, email, contraseña, seleccioná rol)
 2. **Iniciá sesión** con el mismo email y contraseña
 3. Si ves el home → **todo funciona**
-
-**Si no conecta:**
-- El backend debe estar corriendo (`npm run dev` en backend)
-- La IP en `mobile/.env` debe coincidir con la IP de la compu (`ipconfig`)
-- El firewall de Windows puede bloquear el puerto 3001 → permitilo en firewall advanced
-- Probá con `npx expo start --tunnel` (usa internet, no necesita IP local)
 
 ---
 
@@ -154,10 +131,9 @@ Cuando la app cargue en el celu:
 | Pantalla blanca en mobile | Expo Go no puede cargar el bundle | `npx expo start --clear` |
 | "Network request failed" | Mobile no llega al backend | Verificar IP en `.env` y que backend esté corriendo |
 | "Port 3001 already in use" | Otro proceso ocupando el puerto | `netstat -ano \| findstr 3001` y matar el PID |
-| Error al registrarse | Backend caído o sin BD | Verificar `backend/.env` tenga credenciales reales |
 | Expo no muestra QR | Metro/Expo atascado | `npx expo start --clear --tunnel` |
-| CORS error en web | Backend no acepta el origen | Verificar `CORS_ORIGIN` en `backend/.env` (debe incluir `http://localhost:5173` y `http://localhost:8081`) |
-| El QR no se ve en la terminal | Puerto 8081 ocupado por otro proceso | Matar el proceso o aceptar usar puerto 8082 |
+| CORS error en web | Backend no acepta el origen | Verificar `CORS_ORIGIN` en `backend/.env` |
+| El QR no se ve en la terminal | Puerto 8081 ocupado | Aceptar usar puerto 8082 |
 
 ---
 

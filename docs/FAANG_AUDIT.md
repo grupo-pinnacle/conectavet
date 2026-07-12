@@ -1,7 +1,7 @@
 # FAANG Audit — VetConnect
 
-> Evaluación del proyecto contra estándares de ingeniería de FAANG (Meta, Google, Amazon, Netflix, Apple).
-> **Fecha:** 30 de junio, 2026 | **Auditor:** Tobias (Backend) | **Versión:** v2 — Post-fix completo
+> Evaluación del proyecto contra estándares de ingeniería de FAANG.
+> **Fecha:** 12 de julio, 2026 | **Versión:** v3 — Post-MVP compliance
 
 ---
 
@@ -17,228 +17,200 @@
 
 ---
 
-## 1. Code Quality & Structure — 8/10 ↑ (+3)
+## 1. Code Quality & Structure — 8/10
 
-### Lo que está bien ✅
-- TypeScript strict mode en backend y web
-- Monolito modular bien organizado (cada feature en su carpeta)
-- Naming consistente: kebab-case archivos, camelCase funciones, PascalCase clases
+### ✅ Lo que está bien
+- TypeScript strict mode en backend, web y mobile
+- Monolito modular bien organizado
+- Naming consistente
 - Separación backend/web/mobile en monorepo
-- Prisma schema con enums, relaciones, índices y soft delete
-- **Singleton de PrismaClient** compartido (nuevo)
-- **Barrel exports (`index.ts`)** en todos los módulos (nuevo)
-- **shared/utils/** con helpers compartidos (nuevo)
-- **Sin placeholders .gitkeep** en módulos vacíos (nuevo)
-- **DECISIONS.md** con 8 ADR formalmente documentados (nuevo)
-- **nodemon.json actualizado** a tsx (nuevo)
-- **Manejador de errores global** en Express (nuevo)
-- **Graceful shutdown** con SIGTERM/SIGINT (nuevo)
+- Prisma schema con enums, relaciones, índices
+- Singleton de PrismaClient
+- Barrel exports en todos los módulos
+- Shared middlewares y helpers
+- Design system unificado (web + mobile comparten paleta teal)
 
-### Lo que falta ❌
-- Sin npm workspaces (monorepo no coordinado)
-- Sin feature flags
+### ❌ Lo que falta
 - Sin JSDoc/TSDoc en todas las funciones
+- Sin feature flags
 
 ---
 
-## 2. Security — 9/10 ↑ (+6)
+## 2. Security — 9/10
 
-### Lo que está bien ✅
-- JWT con bcrypt para hashing de passwords
-- Contraseñas hasheadas, nunca devueltas en respuestas
-- Error 401 genérico en login (no revela si user existe o no)
-- `authenticate` + `authorize` middlewares funcionando
-- Token JWT con expiración (7 días)
-- **.env en .gitignore** (nuevo)
-- **docs/DEPLOY.md sin credenciales** (nuevo)
-- **Pets CRUD con ownership verification** y 403 si no es dueño (nuevo)
-- **CORS configurado** con origin por env var (nuevo)
-- **helmet** activado para headers HTTP (nuevo)
-- **Rate limiting global** (100 req/15min) + específico para login (10 req/15min) (nuevo)
-- **Validación de request bodies con Zod** (nuevo)
-- **JWT_SECRET validado al startup** — server no arranca si falta (nuevo)
-- **Body size limit** (10kb en JSON) (nuevo)
-- **Refresh token endpoint** (`POST /api/auth/refresh`) con rotación de tokens (nuevo)
+### ✅ Lo que está bien
+- JWT con bcrypt
+- Refresh tokens con rotación
+- authenticate + authorize middlewares
+- Pets CRUD con ownership verification
+- CORS configurado, helmet activado
+- Rate limiting global + específico login
+- Validación Zod en requests
+- isOnline eliminado (ya no expone estado médico)
 
-### Lo que falta ❌
+### ❌ Lo que falta
 - Sin HTTPS forzado (maneja Railway)
 - Sin Content Security Policy personalizada
-- Refresh tokens sin invalidación en servidor (no hay blacklist ni tabla de rotación)
 
 ---
 
-## 3. Testing — 8/10 ↑ (+5)
+## 3. Testing — 8/10
 
-### Lo que está bien ✅
-- **Suite de 89 tests** en 7 archivos con Jest + ts-jest + supertest
-- Tests unitarios (utils, cache) no requieren BD — corren en cualquier entorno
-- Tests de integración HTTP con supertest cubren auth, pets, users, consultations
-- **globalSetup/globalTeardown** con schema test_ dinámico y limpieza automática
-- **Coverage configurado** con reportes text + lcov + clover y thresholds
-- **Pruebas de seguridad**: ownership checks, role guards, refresh token, rate limiting
-- `--forceExit --detectOpenHandles` para evitar hangs
+### ✅ Lo que está bien
+- Suite de 89 tests en 7 archivos
+- Tests unitarios + integración HTTP
+- globalSetup/globalTeardown con schema test_ dinámico
+- Coverage configurado con thresholds
 
-### Lo que falta ❌
-- Tests escriben a Supabase real (no BD aislada local) — mitigado con schema test_ dinámico
-- Sin factories o fixtures para datos de prueba
+### ❌ Lo que falta
+- Tests escriben a Supabase real (no BD local aislada)
+- Sin factories/fixtures
 
 ---
 
-## 4. Documentation — 9/10 ↑ (+1)
+## 4. Documentation — 9/10
 
-### Lo que está bien ✅
-- README.md raíz con stack, arquitectura ASCII, setup, sprint plan, equipo
-- backend/readme.md con API Reference completa, auth, roles, tests, deploy, roadmap, **prerequisitos, códigos de error, monitoreo, contribuir** (nuevo)
-- docs/SPRINT_PLAN.md con timeline visual + 20 sprints detallados (actualizado con alcance recortado MVP)
-- **docs/TECH_REFERENCE.md** — referencia técnica archivo por archivo (nuevo)
-- **docs/MVP_SCOPE.md** — definición formal de alcance del MVP (nuevo)
-- **docs/CHANNEL_DECISION.md** — estrategia web + mobile por rol (nuevo)
-- **docs/STANDUP_GUIDE.md** — reglas de daily standup (nuevo)
-- **docs/HOTFIX_PROTOCOL.md** — protocolo de bugs post-MVP (nuevo)
-- docs/DEPLOY.md
-- **docs/DECISIONS.md** con 9 ADR documentados (nuevo: ADR-009 chat)
-- **Badges de estado** en backend/readme.md (nuevo)
-- **Diagrama ASCII de arquitectura** en README raíz
-- **web/.env.example** (nuevo)
-- **colors.ts con paleta completa** (nuevo)
+### ✅ Lo que está bien
+- README.md raíz completo
+- backend/readme.md con API Reference
+- 9 ADR en DECISIONS.md
+- TECH_REFERENCE.md archivo por archivo
+- MVP_SCOPE.md con alcance definido
+- SPRINT_PLAN.md actualizado
+- CHANNEL_DECISION.md, STANDUP_GUIDE.md, HOTFIX_PROTOCOL.md
+- web + mobile READMEs actualizados
 
-### Lo que falta ❌
+### ❌ Lo que falta
 - Sin documentación OpenAPI/Swagger
-- Sin diagramas visuales de arquitectura (más allá del ASCII)
 
 ---
 
-## 5. Architecture & Scalability — 8/10 ↑ (+4)
+## 5. Architecture & Scalability — 8/10
 
-### Lo que está bien ✅
-- Monolito modular (buen balance entre simplicidad y organización)
+### ✅ Lo que está bien
+- Monolito modular
 - Prisma ORM con migrations versionadas
-- Separación clara controller/service/routes
-- Shared middlewares centralizados
-- TypeScript en todas las capas
-- **Singleton de Prisma** (nuevo)
-- **Paginación** en /api/pets y /api/users/vets (nuevo)
-- **Índices en la BD** para ownerId, species, clientId, vetId, status, petId (nuevo)
-- **Soft delete** con `deletedAt` + endpoint restore (nuevo)
-- **Manejador de errores global** en Express (nuevo)
-- **Health check real** que verifica conexión a BD con `SELECT 1` (nuevo)
-- **Logging estructurado** con timestamps ISO (nuevo)
+- Separación controller/service/routes
+- Singleton de Prisma
+- Paginación en endpoints de lista
+- Índices en BD
+- Soft delete con restore
+- Health check real con SELECT 1
+- Logging estructurado
 
-### Lo que falta ❌
-- Sin Redis (caché in-memory node-cache actual, suficiente para MVP)
-- Sin cola de mensajes para procesos async
-- Sin métricas (Prometheus / OpenTelemetry)
+### ❌ Lo que falta
+- Sin Redis (node-cache suficiente para MVP)
+- Sin cola de mensajes
+- Sin métricas
 
 ---
 
-## 6. DevOps & Deploy — 7/10 ↑ (+4)
+## 6. DevOps & Deploy — 7/10
 
-### Lo que está bien ✅
-- Build script configurado (`npx tsc` → `dist/`)
+### ✅ Lo que está bien
+- Build script funcionando
 - Railway config documentada
-- `dist/server.js` funciona correctamente
-- **docs/DEPLOY.md sin credenciales hardcodeadas** (nuevo)
-- **Script de test+coverage** en package.json (nuevo)
-- **Graceful shutdown** para despliegues zero-downtime (nuevo)
-- **Dockerfile multi-stage** con Prisma generate + migrate auto (nuevo)
-- **CI/CD con GitHub Actions** — lint, test, build, deploy, smoke test (nuevo)
-- **Separación de entornos** con schemas test_ dinámicos y BD real de Supabase (nuevo)
+- Graceful shutdown
+- Dockerfile multi-stage
+- CI/CD con GitHub Actions
+- Separación entornos test_
 
-### Lo que falta ❌
-- **No hay deploy activo verificado** — Railway requiere `RAILWAY_TOKEN` configurado en secrets
-- **Smoke test URL hardcodeada** (`api.conectavet.com`) — debería ser variable de entorno
-- **No hay rollback automático** si smoke test falla
+### ❌ Lo que falta
+- Deploy activo no verificado
+- Sin rollback automático
 
 ---
 
-## 7. Frontend Quality (Web) — 7/10 ↑ (+4)
+## 7. Frontend Quality (Web) — 8/10 ↑ (+1)
 
-### Lo que está bien ✅
-- React 19 + Vite 8 + TypeScript 6 (stack moderno)
-- TailwindCSS configurado
-- Router con React Router v7
-- Axios con interceptores de token
-- **AuthContext funcional** con login(), register(), logout(), persistencia (nuevo)
-- **LoginPage conectada al backend** con validación y errores (nuevo)
-- **RegisterPage completa** con selector de rol CLIENT/VET (nuevo)
-- **DashboardPage con contenido por rol** y botón de cerrar sesión (nuevo)
-- **ProtectedRoute** que redirige a /login si no hay sesión (nuevo)
-- **Types correctos** (User, AuthResponse, Pet) con role, sin name (nuevo)
-- **Button y Input con atributos HTML** estándar (nuevo)
-- **Vite proxy configurado** para desarrollo (nuevo)
-- **colors.ts con paleta completa** (nuevo)
-- **App.css sin template Vite** (nuevo)
-- **useAuth hook** con error si se usa fuera de AuthProvider (nuevo)
+### ✅ Lo que está bien
+- React 19 + Vite 8 + TypeScript
+- TailwindCSS con paleta teal unificada
+- Design system: Button, Input, Card, Badge, Logo
+- AuthContext funcional con persistencia
+- ProtectedRoute con verificación de roles
+- Dashboard por rol (CLIENT vs VET)
+- Chat con Socket.io
+- Cerrar consulta con modal de notas
+- LandingPage profesional con servicios
 
-### Lo que falta ❌
-- Sin react-hook-form para formularios complejos
+### ❌ Lo que falta
 - Sin pruebas unitarias de componentes
+- Sin react-hook-form
 
 ---
 
-## 8. Mobile Quality — 1/10
+## 8. Mobile Quality — 7/10 ↑ (+6)
 
-### Lo que está bien ✅
-- Documentación clara de qué necesita el proyecto mobile (ver `docs/CHANNEL_DECISION.md`)
+### ✅ Lo que está bien
+- Proyecto Expo completo con Expo Router
+- Auth con login/register + secure storage
+- CRUD mascotas con foto
+- Chat con veterinario (reemplazó IA)
+- Historial de consultas con rating
+- Solicitar consulta simple
+- Design system alineado con web (misma paleta teal)
+- TypeScript en toda la app
 
-### Lo que falta ❌
-- **Directorio mobile/ completamente vacío** — ni siquiera `package.json`
-- No hay proyecto Expo creado
-- No se ha compilado ni probado en Android
-- **Requiere acción de Juan**
+### ❌ Lo que falta
+- Sin pruebas unitarias
+- Sin testing en 2GB RAM
 
 ---
 
-## 9. Project Management — 6/10
+## 9. Project Management — 7/10 ↑ (+1)
 
-### Lo que está bien ✅
-- Sprint plan detallado con 20 sprints (actualizado con alcance recortado)
-- Checklist día a día por integrante
+### ✅ Lo que está bien
+- Sprint plan detallado con 20 sprints
+- MVP scope definido y ejecutado
 - Roles y responsabilidades claros
-- **Plan de contingencia documentado** en CHANNEL_DECISION.md (plan B si mobile no llega)
-- **Protocolo de hotfix post-MVP** en HOTFIX_PROTOCOL.md
-- **Daily standups documentados** en STANDUP_GUIDE.md
-- Metodología Scrumban documentada
-- DECISIONS.md con 9 ADR
+- Plan de contingencia documentado
+- Protocolo de hotfix post-MVP
+- Metodología Scrumban
+- 9 ADR documentados
 
-### Lo que falta ❌
-- 3-4 sprints de atraso en Juan, Damián, Ezequiel, Lara
-- **Ejecutar la primera daily** (el documento existe, la práctica no)
-- Sin métricas de velocidad del equipo
+### ❌ Lo que falta
+- Atraso en Ezequiel y Lara
+- Sin daily standups efectivos
 
 ---
 
 ## 📊 Resumen de calificaciones
 
-| Categoría | Score Anterior | Score Actual | Mejora |
-|-----------|---------------|-------------|--------|
-| Code Quality & Structure | 5/10 | **8/10** | 🟢 +3 |
-| **Security** | **3/10** | **9/10** | 🟢 +6 |
-| Testing | 3/10 | **8/10** | 🟢 +5 |
-| Documentation | 8/10 | **9/10** | 🟢 +1 |
-| Architecture & Scalability | 4/10 | **8/10** | 🟢 +4 |
-| DevOps & Deploy | 3/10 | **7/10** | 🟢 +4 |
-| Frontend Web | 3/10 | **7/10** | 🟢 +4 |
-| Mobile | 1/10 | **1/10** | ⚪ 0 |
-| Project Management | 6/10 | **6/10** | ⚪ 0 |
-| | | | |
-| **PROMEDIO PONDERADO** | **4.0/10** | **7.0/10** | **🟢 +3.0** |
+| Categoría | v1 (30 Jun) | v2 (1 Jul) | v3 (12 Jul) | Mejora |
+|-----------|-------------|------------|-------------|--------|
+| Code Quality & Structure | 5/10 | 8/10 | **8/10** | 🟢 +3 |
+| Security | 3/10 | 9/10 | **9/10** | 🟢 +6 |
+| Testing | 3/10 | 8/10 | **8/10** | 🟢 +5 |
+| Documentation | 8/10 | 9/10 | **9/10** | 🟢 +1 |
+| Architecture & Scalability | 4/10 | 8/10 | **8/10** | 🟢 +4 |
+| DevOps & Deploy | 3/10 | 7/10 | **7/10** | 🟢 +4 |
+| Frontend Web | 3/10 | 7/10 | **8/10** | 🟢 +5 |
+| Mobile | 1/10 | 1/10 | **7/10** | 🟢 +6 |
+| Project Management | 6/10 | 6/10 | **7/10** | 🟢 +1 |
+| | | | | |
+| **PROMEDIO PONDERADO** | **4.0/10** | **7.0/10** | **7.9/10** | **🟢 +3.9** |
 
 ---
 
 ## 🎯 Pendiente para llegar a 10
 
-### Depende de Tobias (backend)
-1. Tests de integración con BD aislada local (Docker Compose) → Testing sube a 10
-2. Documentación OpenAPI/Swagger → Documentation sube a 10
+### Backend (Tobias)
+1. Tests con BD aislada local (Docker Compose)
+2. Documentación OpenAPI/Swagger
 
-### Depende de Juan (Mobile)
-3. Crear proyecto Expo + conectar auth + mascotas + chat → Mobile sube a 8
+### Web (Damián)
+3. Pruebas unitarias de componentes
+4. react-hook-form para formularios
 
-### Depende de Ezequiel (QA)
-4. Probar seguridad + documentar bugs → Code Quality sube a 9
-5. Tests manuales documentados → PM sube a 8
+### Mobile (Juan)
+5. Testing en dispositivo 2GB RAM
+6. Build APK firmado
 
-### Depende de Lara (PM)
-6. Daily standups + métricas de velocity → PM sube a 8
-7. Plan de contingencia para atraso → PM sube a 9
+### QA (Ezequiel)
+7. Testing completo del flujo MVP
+8. Documentación de bugs
+
+### PM (Lara)
+9. Daily standups efectivos
+10. Métricas de velocity

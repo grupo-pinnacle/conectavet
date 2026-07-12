@@ -21,35 +21,21 @@
 
 | Dimensión | Sprint | Estado |
 |-----------|--------|--------|
-| **Equipo (oficial)** | **S5** (29 jun - 1 jul) | 🟡 Activo |
-| **Tobias (individual)** | **S5** ✅ | 🟢 Completó S3, S4, adelantó parte S6 |
-| Juan | S2-S3-S4 | 🔴 Atrasado |
-| Damián | S3-S4 | 🔴 Atrasado |
-| Ezequiel | S2-S3 | 🔴 Atrasado |
-| Lara | S2-S3 | 🔴 Atrasado |
-
-> ⚠️ **Corrección de calendario:** Tobias documentó sprints con numeración distinta en `TOBIAS_STATUS.md` (usó bloques de 6 días en vez de 3 días). La tabla de abajo mapea ambas numeraciones. **La numeración oficial es la de este documento.**
-
-| Numeración oficial (SPRINT_PLAN) | Numeración Tobias (TOBIAS_STATUS) | Fechas | Tema |
-|---|---|---|---|
-| S1 + S2 | S1 | 15-20 jun | Setup + Modelos |
-| S3 + S4 | S2 | 22-27 jun | Auth backend + Conectar frontends |
-| **S5 + S6** | **S3** | **29 jun - 4 jul** | **Roles + Mascotas + Conexión mobile** |
-| S7 + S8 | S4 | 6-11 jul | Chat de texto + Pulido flujo completo |
-| S9 + S10 | S5 | 13-18 jul | Bugs + Freeze |
+| **Equipo** | **S9** (13-15 jul) | 🟡 Activo — Últimos bugs + preparar presentación |
+| **MVP compliance** | Completado | ✅ Proyecto alineado al alcance MVP |
 
 ---
 
 ## Timeline visual
 
 ```
-Jun 15 ─┤ S1 ├────┤ S2 ├────┤ S3 ├────┤ S4 ├────┤ S5 ├────┤ S6 ├────┤ ◄── HOY S5
+Jun 15 ─┤ S1 ├────┤ S2 ├────┤ S3 ├────┤ S4 ├────┤ S5 ├────┤ S6 ├────┤
          lun 15    jue 18    lun 22    jue 25    lun 29    jue 2
 
 Jul  6 ─┤ S7 ├────┤ S8 ├────┤ S9 ├────┤ S10├────▓▓ MVP ▓▓──── VACACIONES ────
          lun 6     jue 9     lun 13    jue 16    lun 20    20-31 jul
          Chat      Pulido    Bugs      Freeze
-         (no LiveKit)
+         (texto)   completo
 
 Ago  3 ─┤ S11├────┤ S12├────┤ S13├────┤ S14├────┤ S15├────┤ S16├────┤
          lun 3     jue 6     lun 10    jue 13    lun 17    jue 20
@@ -66,117 +52,101 @@ Ago 24 ─┤ S17├────┤ S18├────┤ S19├────┤ 
 
 | Quién | Tarea |
 |-------|-------|
-| **Tobias** | Repositorio GitHub. Estructura monorepo (`/backend`, `/mobile`, `/web`). Node + TS + Express + Prisma + PostgreSQL (local). README básico. Push a `main`. |
-| **Juan** | Proyecto Expo en `/mobile`. Verificar en Android físico/emulador. Pushear. |
-| **Damián** | Proyecto React + Vite + TypeScript + TailwindCSS en `/web`. Verificar en navegador. Pushear. |
-| **Ezequiel** | Tablero Scrumban (Trello/Notion). 4 columnas. Cargar tareas S1. `DECISIONS.md` en el repo. |
-| **Lara** | Project Charter actualizado. Roles definitivos. Stack. Arquitectura monolito modular. Sistema honorarios. Metodología Scrumban. Agendar primera review con profesores. |
+| **Tobias** | Repositorio GitHub. Estructura monorepo. Node + TS + Express + Prisma + PostgreSQL. README básico. |
+| **Juan** | Proyecto Expo en `/mobile`. Verificar en Android. |
+| **Damián** | Proyecto React + Vite + TypeScript + TailwindCSS en `/web`. |
+| **Ezequiel** | Tablero Scrumban. 4 columnas. Cargar tareas S1. `DECISIONS.md`. |
+| **Lara** | Project Charter. Roles. Stack. Arquitectura. |
 
 ---
 
 ## Sprint 2 — Modelos + Navegación + Wireframes (18-20 Jun) ⚠️
 
-**Duración:** jue 18 · vie 19 · sáb 20
-
-| Quién | Tarea |
-|-------|-------|
-| **Tobias** | ✅ Modelos Prisma: User, Pet, Consultation, MedicalRecord. Rutas base. Documentar schema. |
-| **Juan** | ❌ Navegación mobile: Login, Registro, Home Cliente, Home Veterinario. Solo estructura (sin lógica). |
-| **Damián** | ❌ Páginas web: Login, Dashboard médico, Historial. Layout con Tailwind (sin lógica). |
-| **Ezequiel** | ❌ Wireframes Figma: registro usuario, inicio consulta, videollamada, historial clínico. |
-| **Lara** | ❌ Seguimiento del sprint. Documentar estado. |
+| Quién | Tarea | Estado |
+|-------|-------|--------|
+| **Tobias** | Modelos Prisma. Rutas base. | ✅ |
+| **Juan** | Navegación mobile. | ❌ |
+| **Damián** | Páginas web layout. | ❌ |
+| **Ezequiel** | Wireframes Figma. | ❌ |
+| **Lara** | Seguimiento. | ❌ |
 
 ---
 
 ## Sprint 3 — Auth Backend (22-24 Jun) ✅
 
-**Duración:** lun 22 · mar 23 · mié 24
-
 | Quién | Tarea | Estado |
 |-------|-------|--------|
-| **Tobias** | POST /api/auth/register. POST /api/auth/login. JWT. Middleware authenticate + authorize. 3 perfiles. | ✅ Completo |
-| **Juan** | Crear LoginScreen y RegisterScreen en mobile (navegación). | ❌ |
-| **Damián** | Crear UI de LoginPage y RegisterPage en web (formularios). | ⚠️ Login UI, Register stub |
-| **Ezequiel** | Probar endpoints auth con Postman. Documentar. | ❌ |
-| **Lara** | Review S3. Actualizar tablero. | ❌ |
+| **Tobias** | Auth register/login/JWT/middlewares/roles. | ✅ |
+| **Juan** | LoginScreen + RegisterScreen mobile. | ❌ |
+| **Damián** | LoginPage + RegisterPage web. | ⚠️ |
+| **Ezequiel** | Testing endpoints. | ❌ |
+| **Lara** | Review S3. | ❌ |
 
 ---
 
 ## Sprint 4 — Conectar Frontends a Auth (25-27 Jun) ⚠️
 
-**Duración:** jue 25 · vie 26 · sáb 27
+| Quién | Tarea | Estado |
+|-------|-------|--------|
+| **Tobias** | Middleware roles, pets CRUD, tests. | ✅ |
+| **Juan** | Conectar mobile a auth. | ❌ |
+| **Damián** | Conectar web a auth. AuthContext. | ❌ |
+| **Ezequiel** | Testing flujo auth. | ❌ |
+| **Lara** | Review S4. | ❌ |
+
+---
+
+## Sprint 5 — Roles + Mascotas (29 Jun - 1 Jul) ✅
 
 | Quién | Tarea | Estado |
 |-------|-------|--------|
-| **Tobias** | ✅ Adelantó: middleware roles, pets CRUD, tests Jest. | ✅ |
-| **Juan** | ❌ Conectar Login y Register mobile al backend. Guardar token en AsyncStorage. |
-| **Damián** | ❌ Conectar Login y Register web al backend. AuthContext funcional. localStorage. |
-| **Ezequiel** | ❌ Probar flujo auth mobile + web. Test CA-01. Reporte bugs. |
-| **Lara** | ❌ Review S4. Actualizar tablero. |
+| **Tobias** | Singleton Prisma, CORS, helmet, rate-limit, Zod, soft delete, paginación, health check, error handler, graceful shutdown, FAANG audit, Web AuthContext + ProtectedRoute + RegisterPage. | ✅ |
+| **Juan** | Redirección por rol mobile. | 🔴 |
+| **Damián** | ProtectedRoute + RegisterPage web. | ✅ Hecho por Tobias |
+| **Ezequiel** | Testing roles. | 🔴 |
+| **Lara** | Review S5. | 🔴 |
 
 ---
 
-## Sprint 5 — Roles + Mascotas (29 Jun - 1 Jul) 🟢 COMPLETADO (Tobias)
+## Sprint 6 — Conexión Mobile + Chat Inicio (2-4 Jul) ✅
 
-**Duración:** lun 29 · mar 30 · mié 1
+**Nota:** Se reemplazó LiveKit por chat de texto según `MVP_SCOPE.md`.
 
 | Quién | Tarea | Estado |
 |-------|-------|--------|
-| **Tobias** | Singleton Prisma. CORS + helmet + rate-limit. Zod validation. Soft delete. Paginación. Health check real. Global error handler. Graceful shutdown. Índices BD. Barrel exports. DECISIONS.md. FAANG audit fix (de 4.0 a 6.3). Web AuthContext funcional + ProtectedRoute + RegisterPage. Push a main + Deploy Railway (bloqueado por remote). | 🟢 Completo |
-| **Juan** | Redirección por rol en mobile (login → home según rol). Pantallas ClientHome y VetHome. | 🔴 Pendiente |
-| **Damián** | ProtectedRoute en web. AuthContext real. Redirección post-login. RegisterPage completa con selector de rol. | ✅ **Hecho por Tobias** |
-| **Ezequiel** | Testing completo CA-01. Intentar romper seguridad de roles. Reporte bugs para Tobias. | 🔴 Pendiente |
-| **Lara** | Review S5. Coordinar catch-up con Juan y Damián. Preparar demo. | 🔴 Pendiente |
+| **Tobias** | Modelo Message en Prisma + migración. Socket.io. Endpoints consultas + chat. | ✅ |
+| **Juan** | Pantallas mascota mobile. Login/Register mobile funcional. | ✅ |
+| **Damián** | Dashboard web médico: lista consultas. | ✅ |
+| **Ezequiel** | Testing mascotas mobile. | 🔴 |
+| **Lara** | Review con profesores. | 🔴 |
 
 ---
 
-## Sprint 6 — Conexión Mobile + Chat Inicio (2-4 Jul)
+## Sprint 7 — Chat de Texto + Historial Básico (6-8 Jul) ✅
 
-**Duración:** jue 2 · vie 3 · sáb 4
-
-| Quién | Tarea |
-|-------|-------|
-| **Tobias** | ✅ Modelo `Message` en Prisma + migración. Setup Socket.io. Endpoints consultas + chat. Ayudar a Juan a conectar mobile. |
-| **Juan** | Pantalla alta mascota. Lista mascotas. Detalle mascota. Conectado al backend. Login/Register mobile funcional. |
-| **Damián** | Dashboard web médico: lista mascotas de consultas. Tailwind según wireframes Ezequiel. |
-| **Ezequiel** | Testing pantallas mascota mobile. Verificar datos guardados/mostrados. Casos CA-03. Actualizar Figma. |
-| **Lara** | Review con profesores. Objetivo: auth + mascotas funcionando en web + mobile. |
+| Quién | Tarea | Estado |
+|-------|-------|--------|
+| **Tobias** | Socket.io + endpoints consultas + paginación + autorización. | ✅ |
+| **Juan** | Chat mobile con veterinario (reemplaza IA + LiveKit). | ✅ |
+| **Damián** | Chat web + cerrar consulta + modal notas. | ✅ |
+| **Ezequiel** | Testing chat. | 🔴 |
+| **Lara** | Coordinar. | 🔴 |
 
 ---
 
-## Sprint 7 — Chat de Texto + Historial Básico (6-8 Jul)
+## Sprint 8 — Pulir Flujo Completo + Testing (9-11 Jul) ✅
 
-**Duración:** lun 6 · mar 7 · mié 8
-
-> **Reemplaza a LiveKit.** Se acordó en `MVP_SCOPE.md`: el MVP usa chat de texto, no videollamada. LiveKit pasa a post-MVP.
-
-| Quién | Tarea |
-|-------|-------|
-| **Tobias** | ✅ WebSocket (Socket.io) + endpoints consultas + paginación + autorización. Tabla `Message`. |
-| **Juan** | Pantalla de chat en mobile. Input de texto + lista de mensajes. Conectar al WebSocket. |
-| **Damián** | Pantalla de chat en web. Input de texto + burbujas de mensajes. Conectar al WebSocket. |
-| **Ezequiel** | Probar chat: enviar/recibir mensajes, ver historial al reconectar. Testing en ambos canales. |
-| **Lara** | Coordinar. Validar que el flujo chat cierra consulta correctamente. |
+| Quién | Tarea | Estado |
+|-------|-------|--------|
+| **Tobias** | MVP compliance backend: migration cleanup, eliminar isOnline/liveKitRoom. | ✅ |
+| **Juan** | MVP compliance mobile: eliminar IA, LiveKit, cola. Agregar chat con vet y solicitud simple. | ✅ |
+| **Damián** | MVP compliance web: eliminar secciones excluidas, agregar cerrar consulta. | ✅ |
+| **Ezequiel** | Testing flujo completo MVP. | 🔴 |
+| **Lara** | Preparar demo. | 🔴 |
 
 ---
 
-## Sprint 8 — Pulir Flujo Completo + Testing (9-11 Jul)
-
-**Duración:** jue 9 · vie 10 · sáb 11
-
-> **Sprint de integración.** No se agregan features nuevas. Solo conectar puntas sueltas.
-
-| Quién | Tarea |
-|-------|-------|
-| **Tobias** | Cerrar endpoints de consulta: crear, asignar VET, cerrar con notas. Validar que el chat persiste correctamente. |
-| **Juan** | Conectar pantalla de registro mascota con lista. Navegación completa mobile: register → login → home → chat. |
-| **Damián** | Dashboard web médico: lista de consultas activas. Botón "iniciar consulta" → chat. Formulario cerrar consulta con notas. |
-| **Ezequiel** | Testing de flujo completo. Registrar CLIENT + VET, crear consulta, chatear, cerrar. Reportar bugs. |
-| **Lara** | Review S8. Preparar demo para profesores. |
-
----
-
-## Sprint 9 — Últimos Bugs + Preparar Presentación (13-15 Jul)
+## Sprint 9 — Últimos Bugs + Preparar Presentación (13-15 Jul) 🟡
 
 **Duración:** lun 13 · mar 14 · mié 15
 
@@ -184,7 +154,7 @@ Ago 24 ─┤ S17├────┤ S18├────┤ S19├────┤ 
 
 | Quién | Tarea |
 |-------|-------|
-| **Tobias** | Bugs backend priorizados (máximo 3). Optimizar queries si es necesario. Ayudar a Damián con lo que trabe. |
+| **Tobias** | Bugs backend priorizados (máximo 3). Optimizar queries si es necesario. |
 | **Juan** | Bugs mobile: navegación, carga de datos, errores de conexión. Probar en Android físico. |
 | **Damián** | Bugs web: responsive, estados de carga/error, edge cases de navegación. |
 | **Ezequiel** | Re-testear bugs corregidos. Armar casos de prueba para la presentación. |
@@ -208,7 +178,7 @@ Ago 24 ─┤ S17├────┤ S18├────┤ S19├────┤ 
 
 | Quién | Tarea |
 |-------|-------|
-| **Todo el equipo** | Cerrar ramas. Commits finales. Nadie empieza nada nuevo. Revisión grupal por la tarde. |
+| **Todo el equipo** | Cerrar ramas. Commits finales. Revisión grupal. |
 
 ### MVP entregado: **Lunes 20 Julio** ✅
 
@@ -226,11 +196,11 @@ Sin sprints. Sin código. Descanso obligatorio.
 
 | Quién | Tarea |
 |-------|-------|
-| **Tobias** | Revisar cola de espera. Endpoint primer vet disponible por especie. |
+| **Tobias** | Online/offline médico + cola de espera. Endpoint primer vet disponible por especie. |
 | **Juan** | Pantalla selección tipo mascota + búsqueda vet. Feedback visual espera. |
 | **Damián** | Botón online/offline médico. Indicador visual. |
-| **Ezequiel** | Testing cola de espera. Chat de texto básico. |
-| **Lara** | Review reactivación. Verificar ritmo. |
+| **Ezequiel** | Testing cola de espera. |
+| **Lara** | Review reactivación. |
 
 ---
 
@@ -240,105 +210,89 @@ Sin sprints. Sin código. Descanso obligatorio.
 
 | Quién | Tarea |
 |-------|-------|
-| **Tobias** | Endpoint recibir/almacenar imágenes. Sistema notificaciones push (vet disponible). |
+| **Tobias** | Endpoint recibir/almacenar imágenes. Sistema notificaciones push. |
 | **Juan** | Botón enviar imagen desde galería. Mostrar imágenes en chat. |
-| **Damián** | Mostrar imágenes recibidas. Pulir dashboard médico con feedback acumulado. |
-| **Ezequiel** | Recorrer mobile buscando inconsistencias UX. Documentar y asignar. |
-| **Lara** | Review. Empieza a sentirse como producto real. |
+| **Damián** | Mostrar imágenes recibidas. Pulir dashboard médico. |
+| **Ezequiel** | UX review mobile. Documentar inconsistencias. |
+| **Lara** | Review. |
 
 ---
 
 ## Sprint 13 — Estabilización (10-12 Ago)
 
-**Duración:** lun 10 · mar 11 · mié 12
-
 > No se agregan features nuevas.
 
 | Quién | Tarea |
 |-------|-------|
-| **Tobias** | Deuda técnica. Optimizar queries Prisma lentas. Revisar seguridad endpoints. |
-| **Juan** | Corregir bugs UX documentados por Ezequiel. Rendimiento en 2GB RAM. |
-| **Damián** | Corregir bugs web. Chrome, Firefox, Edge. |
-| **Ezequiel** | Re-testear correcciones. Actualizar casos de prueba. Reporte para profesores. |
-| **Lara** | Review formal con profesores. Estado del MVP. Feedback pre-QA. |
+| **Tobias** | Deuda técnica. Optimizar queries Prisma. Revisar seguridad. |
+| **Juan** | Bugs UX. Rendimiento en 2GB RAM. |
+| **Damián** | Bugs web. Chrome, Firefox, Edge. |
+| **Ezequiel** | Re-testear. Reporte para profesores. |
+| **Lara** | Review formal. Feedback pre-QA. |
 
 ---
 
 ## Sprint 14 — Testing 2GB RAM (13-15 Ago)
 
-**Duración:** jue 13 · vie 14 · sáb 15
-
 | Quién | Tarea |
 |-------|-------|
-| **Todo el equipo** | Testing en dispositivos Android físicos con 2GB RAM. Tobias prioriza y corrige bugs críticos. Ezequiel documenta en bug tracker. Cerrar CA-06. |
+| **Todo el equipo** | Testing en dispositivos Android físicos con 2GB RAM. |
 
 ---
 
 ## Sprint 15 — Prueba Web Médico (17-19 Ago)
 
-**Duración:** lun 17 · mar 18 · mié 19
-
 | Quién | Tarea |
 |-------|-------|
-| **Todo el equipo** | Prueba completa interfaz web del médico. Damian lidera. Tobias corrige bugs backend. Ezequiel valida CA-07. Juan ayuda testing general. |
+| **Todo el equipo** | Prueba completa interfaz web del médico. |
 
 ---
 
 ## Sprint 16 — Flujo Completo E2E (20-22 Ago)
 
-**Duración:** jue 20 · vie 21 · sáb 22
-
 | Quién | Tarea |
 |-------|-------|
-| **Todo el equipo** | Flujo completo: registro → busca vet → cola → conecta < 5 min → consulta → historial. Cerrar CA-02. Tobias optimiza cola si > 5 min. |
+| **Todo el equipo** | Flujo completo: registro → busca vet → cola → consulta → historial. |
 
 ---
 
 ## Sprint 17 — Deploy Producción (24-26 Ago)
 
-**Duración:** lun 24 · mar 25 · mié 26
-
 | Quién | Tarea |
 |-------|-------|
-| **Tobias** | Deploy Railway. Variables de entorno producción. BD producción separada. |
-| **Damián** | Deploy web en Vercel. Apuntar a backend producción. |
-| **Juan** | Compilar APK Android firmado. Probar en dispositivos físicos. |
-| **Ezequiel** | Smoke testing: registrar usuario real, consulta real, verificar producción. |
-| **Lara** | Verificar links producción. Compartir con profesores. |
+| **Tobias** | Deploy Railway. BD producción separada. |
+| **Damián** | Deploy web en Vercel. |
+| **Juan** | Compilar APK Android firmado. |
+| **Ezequiel** | Smoke testing. |
+| **Lara** | Verificar links. |
 
 ---
 
 ## Sprint 18 — Documentación (27-29 Ago)
 
-**Duración:** jue 27 · vie 28 · sáb 29
-
 | Quién | Tarea |
 |-------|-------|
-| **Tobias** | README técnico completo: cómo correr, arquitectura, variables de entorno, decisiones. |
-| **Damián** | Documentación API: endpoints, qué reciben, qué devuelven (Markdown o Postman). |
-| **Juan** | Instrucciones instalación APK. Guía de uso para cliente. |
-| **Ezequiel** | Manual de usuario: capturas, flujos paso a paso para 3 perfiles. |
-| **Lara** | Revisar y editar toda la documentación. Consistencia y claridad. |
+| **Tobias** | README técnico completo. |
+| **Damián** | Documentación API. |
+| **Juan** | Guía de uso mobile. |
+| **Ezequiel** | Manual de usuario. |
+| **Lara** | Revisar documentación. |
 
 ---
 
 ## Sprint 19 — Presentación Final (31 Ago - 2 Sep)
 
-**Duración:** lun 31 · mar 1 · mié 2
-
 | Quién | Tarea |
 |-------|-------|
-| **Todo el equipo** | Preparar presentación final. Definir quién habla en cada parte. Demo en vivo con casos reales. Ensayar con profesores. |
+| **Todo el equipo** | Preparar presentación final. Demo en vivo. |
 
 ---
 
 ## Sprint 20 — Buffer Final (3-5 Sep)
 
-**Duración:** jue 3 · vie 4 · sáb 5
-
 | Quién | Tarea |
 |-------|-------|
-| **Todo el equipo** | Código congelado. Solo bugs de ensayos. Nadie agrega features. Nadie experimenta. Objetivo: estable para presentación. |
+| **Todo el equipo** | Código congelado. Solo bugs. |
 
 ---
 
@@ -348,7 +302,6 @@ Los sprints terminan el 5 de septiembre. El tiempo restante hasta el 31 de octub
 - Ensayos de presentación
 - Corrección de bugs descubiertos en ensayos
 - Refinamiento de documentación
-- NO se agregan features nuevas
 
 ---
 
@@ -360,11 +313,11 @@ Los sprints terminan el 5 de septiembre. El tiempo restante hasta el 31 de octub
 | S2 | 18-20 Jun | ✅ | ❌ | ❌ | ❌ | ❌ |
 | S3 | 22-24 Jun | ✅ | ❌ | ❌ | ❌ | ❌ |
 | S4 | 25-27 Jun | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **S5** | **29 Jun - 1 Jul** | **🟢** | **🔴** | **🟢** | **🔴** | **🔴** |
-| S6 | 2-4 Jul | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| S7 | 6-8 Jul | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| S8 | 9-11 Jul | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| S9 | 13-15 Jul | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
+| S5 | 29 Jun - 1 Jul | ✅ | 🔴 | ✅ | 🔴 | 🔴 |
+| S6 | 2-4 Jul | ✅ | ✅ | ✅ | 🔴 | 🔴 |
+| S7 | 6-8 Jul | ✅ | ✅ | ✅ | 🔴 | 🔴 |
+| S8 | 9-11 Jul | ✅ | ✅ | ✅ | 🔴 | 🔴 |
+| **S9** | **13-15 Jul** | **🟡** | **🟡** | **🟡** | **🔴** | **🔴** |
 | S10 | 16-18 Jul | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | MVP | 19-20 Jul | 🎯 | 🎯 | 🎯 | 🎯 | 🎯 |
 | S11-S20 | 3 Ago - 5 Sep | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |

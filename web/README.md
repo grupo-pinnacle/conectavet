@@ -1,73 +1,87 @@
-# React + TypeScript + Vite
+# VetConnect — Frontend Web 🖥️🐾
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> Panel de administración para veterinarios y portal para clientes de VetConnect.
+> **Stack:** React 19 + Vite 8 + TypeScript + TailwindCSS
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🧰 Stack
 
-## React Compiler
+| Tecnología | Versión |
+|-----------|---------|
+| React | 19.x |
+| Vite | 8.x |
+| TypeScript | 5.x |
+| TailwindCSS | 3.x |
+| React Router | 7.x |
+| Axios | 1.x |
+| Socket.io client | 4.x |
+| Lucide React | (iconos) |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 📁 Estructura
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+src/
+├── components/
+│   ├── Button.tsx          # 6 variantes, 3 tamaños
+│   ├── input.tsx           # Con label, error, hint, icono
+│   ├── Card.tsx            # Elevated, outlined, ghost
+│   ├── Badge.tsx           # Filled, soft, outlined
+│   ├── Logo.tsx            # Logo SVG + wordmark
+│   ├── ProtectedRoute.tsx  # Guard por autenticación + rol
+│   └── dashboard/
+│       ├── HomeSection.tsx
+│       ├── PetsSection.tsx
+│       ├── ConsultationsSection.tsx
+│       ├── HistorySection.tsx
+│       ├── MessagesSection.tsx
+│       ├── ProfileSection.tsx
+│       └── vet/
+│           ├── VetHomeSection.tsx
+│           ├── PatientsSection.tsx
+│           └── VetMessagesSection.tsx  # Chat + cerrar consulta
+├── pages/
+│   ├── LandingPage.tsx     # Landing profesional
+│   ├── LoginPage.tsx       # Login con validación
+│   ├── RegisterPage.tsx    # Registro con selector de rol
+│   ├── DashboardPage.tsx   # Dashboard cliente (6 secciones)
+│   └── VetDashboardPage.tsx # Dashboard vet (3 secciones)
+├── context/AuthContext.tsx  # Estado global de auth
+├── hooks/useAuth.ts
+├── services/
+│   ├── api.ts              # Axios con interceptores
+│   └── endpoints.ts        # Funciones tipadas por recurso
+├── types/index.ts          # Interfaces compartidas
+└── index.css               # Tailwind + animaciones custom
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🚀 Desarrollo
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev     # http://localhost:5173
+npm run build   # → dist/
 ```
+
+**Requiere el backend corriendo** en `http://localhost:3001`.
+
+---
+
+## 🎨 Design System
+
+Paleta unificada con la app mobile:
+
+| Token | Color |
+|-------|-------|
+| Primary | `teal-700` (#0F766E) |
+| Accent | `green-600` (#16A34A) |
+| Surface | `slate-50` (#F8FAFC) |
+| Ink | `slate-900` (#0F172A) |
+| Border | `slate-200` (#E2E8F0) |
+| Danger | `red-600` (#DC2626) |
+
+Componentes: Button, Input, Card, Badge, Logo — mismos variants que mobile.

@@ -22,7 +22,7 @@ interface AuthProviderProps {
 function parseUserFromToken(token: string): User | null {
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
-    const roleMap: Record<string, string> = { CLIENT: "owner", VET: "vet", ADMIN: "admin" };
+    const roleMap: Record<string, "owner" | "vet" | "admin"> = { CLIENT: "owner", VET: "vet", ADMIN: "admin" };
     return {
       id: payload.sub || payload.id || "",
       name: payload.name || "",
@@ -60,11 +60,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   function normalizeUser(u: any): User {
+    const roleMap: Record<string, "owner" | "vet" | "admin"> = { CLIENT: "owner", VET: "vet", ADMIN: "admin" };
     return {
       id: u.id,
       name: u.name || [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email,
       email: u.email,
-      role: ({ CLIENT: "owner", VET: "vet", ADMIN: "admin" } as Record<string, string>)[u.role] || "owner",
+      role: roleMap[u.role] || "owner",
     };
   }
 

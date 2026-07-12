@@ -1,23 +1,3 @@
-/**
- * Root Expo Router layout.
- *
- * Sets up the global providers:
- *  - SafeAreaProvider (notch / status bar handling)
- *  - QueryClientProvider (React Query — server state)
- *  - Toast (react-native-toast-message)
- *  - Online/offline banner
- *  - Session-expired redirect
- *
- * Then delegates to `(auth)` or `(app)` group based on `isAuthenticated`.
- *
- * ── Polyfill notice ─────────────────────────────────────────────────────────
- * The first import **must** be @/polyfills because Hermes does not provide
- * `DOMException` natively.  Libraries such as `@react-navigation/native`
- * (router-store.js) and `livekit-client` (DeferrableMap) rely on
- * `AbortController` which internally creates a `DOMException` on abort, and
- * will crash with "Property 'DOMException' doesn't exist" if it is missing.
- * ────────────────────────────────────────────────────────────────────────────
- */
 import '@/polyfills';
 
 import { useEffect } from 'react';
@@ -27,28 +7,41 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
 import { useNetworkStatus } from '@/hooks/useNetwork';
-import { colors } from '@/theme';
+import { ThemeProvider, useTheme, fontSizes, fontWeights, spacing, radius } from '@/theme';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: {
-      staleTime: 30_000,
-      retry: 1,
-      refetchOnReconnect: true,
-    },
+    queries: { staleTime: 30_000, retry: 1, refetchOnReconnect: true },
   },
 });
 
 function OfflineBanner() {
+  const { colors: c } = useTheme();
   const { isOnline } = useNetworkStatus();
   if (isOnline) return null;
   return (
-    <View style={{ backgroundColor: colors.danger, paddingVertical: 6, paddingHorizontal: 14 }}>
-      <Text style={{ color: '#fff', textAlign: 'center', fontSize: 13, fontWeight: '600' }}>
+    <View style={{ backgroundColor: c.danger, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm }}>
+      <MaterialCommunityIcons name="wifi-off" size={16} color={c.white} />
+      <Text style={{ color: c.white, textAlign: 'center', fontSize: fontSizes.label, fontWeight: fontWeights.semibold }}>
         Sin conexión · Reintentando…
       </Text>
+    </View>
+  );
+}
+
+function LoadingScreen() {
+  const { colors: c } = useTheme();
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: c.background, gap: spacing.lg }}>
+      <View style={{ width: 64, height: 64, borderRadius: radius.full, backgroundColor: c.primaryBg, justifyContent: 'center', alignItems: 'center' }}>
+        <MaterialCommunityIcons name="paw" size={32} color={c.primary} />
+      </View>
+      <Text style={{ color: c.primary, fontSize: fontSizes.heading, fontWeight: fontWeights.bold, letterSpacing: -0.5 }}>VetConnect</Text>
+      <Text style={{ color: c.inkMuted, fontSize: fontSizes.body }}>Cargando…</Text>
     </View>
   );
 }
@@ -57,6 +50,7 @@ function RouteGuard() {
   const { isAuthenticated, isHydrated, sessionExpired, clearSessionExpired } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const { colors: c } = useTheme();
 
   useEffect(() => {
     if (!isHydrated) return;
@@ -70,29 +64,18 @@ function RouteGuard() {
 
   useEffect(() => {
     if (sessionExpired) {
-      Toast.show({
-        type: 'error',
-        text1: 'Sesión expirada',
-        text2: 'Iniciá sesión nuevamente.',
-      });
+      Toast.show({ type: 'error', text1: 'Sesión expirada', text2: 'Iniciá sesión nuevamente.' });
       clearSessionExpired();
       router.replace('/(auth)/login');
     }
   }, [sessionExpired, clearSessionExpired, router]);
 
-  if (!isHydrated) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-        <Text style={{ color: colors.primary, fontSize: 20, fontWeight: '700' }}>VetConnect</Text>
-        <Text style={{ color: colors.inkMuted, marginTop: 6 }}>Cargando…</Text>
-      </View>
-    );
-  }
+  if (!isHydrated) return <LoadingScreen />;
 
   return (
     <>
       <OfflineBanner />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.background }, animation: 'slide_from_right' }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(app)" />
         <Stack.Screen name="+not-found" options={{ title: 'No encontrado' }} />
@@ -104,11 +87,15 @@ function RouteGuard() {
 export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
-      <SafeAreaProvider>
-        <StatusBar style="dark" />
-        <RouteGuard />
-        <Toast />
-      </SafeAreaProvider>
+      <ThemeProvider>
+        <SafeAreaProvider>
+          <StatusBar style="dark" />
+          <ErrorBoundary>
+            <RouteGuard />
+          </ErrorBoundary>
+          <Toast />
+        </SafeAreaProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

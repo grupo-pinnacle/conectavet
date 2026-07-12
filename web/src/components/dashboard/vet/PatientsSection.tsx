@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getAllPets } from "../../../services/endpoints";
 import type { Pet } from "../../../types";
+import { Search } from "lucide-react";
 
 const avatarList = ["🐶", "🐱", "🐩", "🐕", "🐕‍🦺", "🐦", "🐰", "🐹"];
 
@@ -38,7 +39,7 @@ export default function PatientsSection() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#2563EB] border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-teal-700 border-t-transparent" />
       </div>
     );
   }
@@ -47,8 +48,8 @@ export default function PatientsSection() {
     <div>
       <div className="mb-6 flex items-start justify-between gap-4 md:items-center">
         <div>
-          <h1 className="text-2xl font-bold text-[#0F172A]">Pacientes</h1>
-          <p className="text-[#475569]">{patients.length} pacientes registrados</p>
+          <h1 className="text-2xl font-bold text-ink">Pacientes</h1>
+          <p className="text-slate-500">{patients.length} pacientes registrados</p>
         </div>
       </div>
 
@@ -58,13 +59,13 @@ export default function PatientsSection() {
 
       <div className="mb-6 flex flex-wrap items-center gap-4">
         <div className="relative flex-1 max-w-md">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]">🔍</span>
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar paciente o dueño..."
-            className="w-full rounded-lg border border-[#CBD5E1] bg-white py-2.5 pl-10 pr-4 text-sm text-[#0F172A] placeholder:text-[#94A3B8] focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20"
+            className="w-full rounded-lg border border-border bg-white py-2.5 pl-10 pr-4 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20"
           />
         </div>
         <div className="flex flex-wrap gap-2">
@@ -74,8 +75,8 @@ export default function PatientsSection() {
               onClick={() => setFilterSpecies(s)}
               className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
                 filterSpecies === s
-                  ? "bg-[#2563EB] text-white"
-                  : "border border-[#CBD5E1] bg-white text-[#475569] hover:bg-gray-50"
+                  ? "bg-teal-700 text-white"
+                  : "border border-border bg-white text-slate-500 hover:bg-slate-100"
               }`}
             >
               {s}
@@ -86,49 +87,49 @@ export default function PatientsSection() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {filtered.map((p, i) => (
-          <div key={p.id} className="rounded-xl border border-[#CBD5E1] bg-white p-5 shadow-sm transition-colors hover:bg-gray-50">
+          <div key={p.id} className="rounded-xl border border-border bg-white p-5 shadow-sm transition-colors hover:bg-slate-100">
             <div className="mb-4 flex items-center gap-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-2xl">
                 {avatarList[i % avatarList.length]}
               </div>
               <div className="flex-1">
-                <p className="text-lg font-bold text-[#0F172A]">{p.name}</p>
-                <p className="text-sm text-[#475569]">{p.breed || p.species}</p>
+                <p className="text-lg font-bold text-ink">{p.name}</p>
+                <p className="text-sm text-slate-500">{p.breed || p.species}</p>
               </div>
-              <span className="rounded-full bg-[#F1F5F9] px-3 py-1 text-xs font-semibold text-[#475569]">
+              <span className="rounded-full bg-[#F1F5F9] px-3 py-1 text-xs font-semibold text-slate-500">
                 {p.age} años
               </span>
             </div>
             <div className="mb-4 grid grid-cols-2 gap-2 border-t border-[#F1F5F9] pt-4 text-sm">
               <div>
-                <p className="text-xs text-[#94A3B8]">Dueño</p>
-                <p className="font-semibold text-[#0F172A]">{p.ownerName || "—"}</p>
+                <p className="text-xs text-slate-400">Dueño</p>
+                <p className="font-semibold text-ink">{p.ownerName || "—"}</p>
               </div>
               <div>
-                <p className="text-xs text-[#94A3B8]">Peso</p>
-                <p className="font-semibold text-[#0F172A]">{p.weight || "—"}</p>
+                <p className="text-xs text-slate-400">Peso</p>
+                <p className="font-semibold text-ink">{p.weight || "—"}</p>
               </div>
               <div>
-                <p className="text-xs text-[#94A3B8]">Última visita</p>
-                <p className="font-semibold text-[#0F172A]">{p.lastVisit || "—"}</p>
+                <p className="text-xs text-slate-400">Última visita</p>
+                <p className="font-semibold text-ink">{p.lastVisit || "—"}</p>
               </div>
               <div>
-                <p className="text-xs text-[#94A3B8]">Próxima visita</p>
-                <p className="font-semibold text-[#2563EB]">{p.nextVet || "—"}</p>
+                <p className="text-xs text-slate-400">Próxima visita</p>
+                <p className="font-semibold text-teal-700">{p.nextVet || "—"}</p>
               </div>
             </div>
             <div className="flex gap-2">
-              <button className="flex-1 rounded-lg border border-[#CBD5E1] py-2 text-sm font-semibold text-[#475569] hover:bg-gray-50">
+              <button className="flex-1 rounded-lg border border-border py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100">
                 Historial
               </button>
-              <button className="flex-1 rounded-lg bg-[#2563EB] py-2 text-sm font-bold text-white transition-opacity hover:opacity-90">
+              <button className="flex-1 rounded-lg bg-teal-700 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90">
                 Nueva consulta
               </button>
             </div>
           </div>
         ))}
         {filtered.length === 0 && (
-          <div className="col-span-full py-10 text-center text-[#94A3B8]">
+          <div className="col-span-full py-10 text-center text-slate-400">
             No se encontraron pacientes
           </div>
         )}

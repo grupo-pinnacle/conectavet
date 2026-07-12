@@ -19,10 +19,12 @@ function LogoIcon({ size }: { size: number }) {
       fill="none"
       style={{ flexShrink: 0 }}
     >
-      <rect x="0.5" y="0.5" width="47" height="47" rx="11" fill="#2563EB" />
-      <rect x="19" y="8" width="10" height="32" rx="4" fill="white" />
-      <rect x="8" y="19" width="32" height="10" rx="4" fill="white" />
-      <circle cx="24" cy="24" r="5" fill="#16A34A" />
+      <rect x="0.5" y="0.5" width="47" height="47" rx="11" fill="#0F766E" />
+      <circle cx="24" cy="24" r="16" fill="white" />
+      <path d="M16 28c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#0F766E" strokeWidth="2.5" strokeLinecap="round" />
+      <circle cx="18" cy="20" r="2" fill="#0F766E" />
+      <circle cx="30" cy="20" r="2" fill="#0F766E" />
+      <path d="M20 30c1 1.5 2.5 2 4 2s3-0.5 4-2" stroke="#0F766E" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -43,7 +45,7 @@ export default function Logo({
         className={`font-extrabold ${s.text}`}
         style={{ letterSpacing: "-0.02em", fontFamily: "Inter, system-ui, sans-serif" }}
       >
-        <span className="text-[#2563EB]">Vet</span>
+        <span className="text-[#0F766E]">Vet</span>
         <span className="text-[#16A34A]">Connect</span>
       </span>
     </span>

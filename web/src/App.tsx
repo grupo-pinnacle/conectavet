@@ -9,15 +9,36 @@ import LandingPage from "./pages/LandingPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuth } from "./hooks/useAuth";
 
+function SplashScreen() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-teal-50 to-white gap-6">
+      <div className="relative">
+        <svg width={72} height={72} viewBox="0 0 48 48" fill="none" className="animate-[fadeIn_0.6s_ease-out]">
+          <rect x="0.5" y="0.5" width="47" height="47" rx="11" fill="#0F766E" />
+          <circle cx="24" cy="24" r="16" fill="white" />
+          <path d="M16 28c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#0F766E" strokeWidth="2.5" strokeLinecap="round" />
+          <circle cx="18" cy="20" r="2" fill="#0F766E" />
+          <circle cx="30" cy="20" r="2" fill="#0F766E" />
+          <path d="M20 30c1 1.5 2.5 2 4 2s3-0.5 4-2" stroke="#0F766E" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+        <div className="absolute -inset-2 rounded-full bg-teal-100/50 animate-pulse" style={{ animationDuration: "2s" }} />
+      </div>
+      <div className="flex flex-col items-center animate-[fadeIn_0.8s_ease-out_0.2s_both]">
+        <h1 className="text-heading font-extrabold tracking-tight">
+          <span className="text-teal-700">Vet</span>
+          <span className="text-green-600">Connect</span>
+        </h1>
+        <p className="text-body text-slate-500 mt-1">Telesalud veterinaria, siempre al alcance</p>
+      </div>
+    </div>
+  );
+}
+
 function RootRedirect() {
   const { isAuthenticated, user, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC]">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#2563EB] border-t-transparent" />
-      </div>
-    );
+    return <SplashScreen />;
   }
 
   if (!isAuthenticated) return <LandingPage />;

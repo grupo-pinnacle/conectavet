@@ -1,5 +1,8 @@
+import { useEffect } from 'react';
 import { Text, View } from 'react-native';
-import { colors } from '@/theme';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withDelay, Easing } from 'react-native-reanimated';
+import { useTheme, spacing, radius, fontSizes, fontWeights, shadows, motion } from '@/theme';
 import type { Message } from '@/types';
 
 interface ChatBubbleProps {
@@ -8,65 +11,82 @@ interface ChatBubbleProps {
 }
 
 export function ChatBubble({ message, showFlaggedBanner = true }: ChatBubbleProps) {
+  const { colors: c } = useTheme();
   const isUser = message.role === 'USER';
   const isAssistant = message.role === 'ASSISTANT';
 
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(10);
+
+  useEffect(() => {
+    opacity.value = withDelay(30, withTiming(1, { duration: motion.duration.fast }));
+    translateY.value = withDelay(30, withTiming(0, { duration: motion.duration.fast }));
+  }, []);
+
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
   if (message.role === 'SYSTEM') {
     return (
-      <View style={{ alignItems: 'center', marginVertical: 8 }}>
-        <Text style={{ fontSize: 12, color: colors.inkMuted, fontStyle: 'italic' }}>
-          {message.content}
-        </Text>
+      <View style={{ alignItems: 'center', marginVertical: spacing.sm }} accessibilityRole="text" accessibilityLabel={`Mensaje del sistema: ${message.content}`}>
+        <View style={{ backgroundColor: c.borderLight, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.full }}>
+          <Text style={{ fontSize: fontSizes.label, color: c.inkMuted, fontStyle: 'italic' }}>
+            {message.content}
+          </Text>
+        </View>
       </View>
     );
   }
 
   return (
-    <View style={{ marginVertical: 4, alignItems: isUser ? 'flex-end' : 'flex-start' }}>
+    <Animated.View style={[{ marginVertical: spacing.xs, alignItems: isUser ? 'flex-end' : 'flex-start' }, animStyle]}>
       {isAssistant && (
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 6,
-            marginBottom: 2,
-            marginLeft: 4,
-          }}
-        >
-          <Text style={{ fontSize: 14 }}>🤖</Text>
-          <Text style={{ fontSize: 11, color: colors.inkMuted, fontWeight: '600' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xs, marginLeft: spacing.xs }}>
+          <View style={{ width: 20, height: 20, borderRadius: radius.full, backgroundColor: c.primaryBg, justifyContent: 'center', alignItems: 'center' }}>
+            <MaterialCommunityIcons name="robot" size={12} color={c.primary} />
+          </View>
+          <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted, fontWeight: fontWeights.semibold }}>
             Asistente VetConnect
           </Text>
         </View>
       )}
       <View
         style={{
-          maxWidth: '85%',
-          backgroundColor: isUser ? colors.primary : colors.surface,
-          paddingHorizontal: 14,
-          paddingVertical: 10,
-          borderRadius: 16,
-          borderBottomRightRadius: isUser ? 4 : 16,
-          borderBottomLeftRadius: isUser ? 16 : 4,
+          maxWidth: '82%',
+          backgroundColor: isUser ? c.primary : c.surface,
+          paddingHorizontal: spacing.lg,
+          paddingVertical: spacing.md,
+          borderRadius: radius.xl,
+          borderBottomRightRadius: isUser ? radius.xs : radius.xl,
+          borderBottomLeftRadius: isUser ? radius.xl : radius.xs,
           borderWidth: isUser ? 0 : 1,
-          borderColor: colors.border,
+          borderColor: c.border,
+          ...(isUser ? {} : shadows.subtle),
         }}
+        accessibilityRole="text"
+        accessibilityLabel={`${isUser ? 'Vos' : 'Asistente'}: ${message.content}`}
       >
         <Text
           style={{
-            color: isUser ? '#fff' : colors.ink,
-            fontSize: 14,
+            color: isUser ? c.white : c.ink,
+            fontSize: fontSizes.body,
             lineHeight: 20,
+            letterSpacing: 0.1,
           }}
         >
           {message.content}
         </Text>
       </View>
       {showFlaggedBanner && message.flagged && (
-        <Text style={{ fontSize: 11, color: colors.danger, marginTop: 2, marginHorizontal: 4 }}>
-          ⚠ Mensaje marcado por seguridad
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs, marginHorizontal: spacing.xs }}>
+          <MaterialCommunityIcons name="alert-circle" size={14} color={c.danger} />
+          <Text style={{ fontSize: fontSizes.caption, color: c.danger, fontWeight: fontWeights.medium }}>
+            Mensaje marcado por seguridad
+          </Text>
+        </View>
       )}
-    </View>
+    </Animated.View>
   );
 }

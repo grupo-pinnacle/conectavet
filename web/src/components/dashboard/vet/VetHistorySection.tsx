@@ -22,21 +22,21 @@ export default function VetHistorySection() {
     <div>
       <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#0F172A]">Historial clínico</h1>
-          <p className="text-[#475569]">Registro de consultas de todos los pacientes</p>
+          <h1 className="text-2xl font-bold text-ink">Historial clínico</h1>
+          <p className="text-slate-500">Registro de consultas de todos los pacientes</p>
         </div>
         <div className="flex gap-2">
           <select
             value={filterPet}
             onChange={(e) => setFilterPet(e.target.value)}
-            className="rounded-lg border border-[#CBD5E1] bg-white px-4 py-2 text-sm text-[#0F172A] focus:border-[#2563EB] focus:outline-none"
+            className="rounded-lg border border-border bg-white px-4 py-2 text-sm text-ink focus:border-teal-600 focus:outline-none"
           >
             <option value="Todos">Todos los pacientes</option>
             {patientNames.map((name) => (
               <option key={name} value={name}>{name}</option>
             ))}
           </select>
-          <button className="rounded-lg border border-[#CBD5E1] px-4 py-2 text-sm font-semibold text-[#475569] hover:bg-gray-50">
+          <button className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100">
             Exportar
           </button>
         </div>
@@ -46,7 +46,7 @@ export default function VetHistorySection() {
         {filtered.map((r, i) => (
           <div
             key={i}
-            className="rounded-xl border border-[#CBD5E1] bg-white p-5 shadow-sm"
+            className="rounded-xl border border-border bg-white p-5 shadow-sm"
           >
             <div className="mb-4 flex items-start justify-between">
               <div className="flex items-center gap-3">
@@ -55,27 +55,27 @@ export default function VetHistorySection() {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="font-bold text-[#0F172A]">{r.pet}</p>
-                    <span className="rounded-full bg-[#F1F5F9] px-2 py-0.5 text-xs text-[#475569]">
+                    <p className="font-bold text-ink">{r.pet}</p>
+                    <span className="rounded-full bg-[#F1F5F9] px-2 py-0.5 text-xs text-slate-500">
                       {r.type}
                     </span>
                   </div>
-                  <p className="text-sm text-[#475569]">{r.owner} · {r.date}</p>
+                  <p className="text-sm text-slate-500">{r.owner} · {r.date}</p>
                 </div>
               </div>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
               <div>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-[#475569]">Diagnóstico</p>
-                <p className="text-sm font-semibold text-[#0F172A]">{r.diagnosis}</p>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">Diagnóstico</p>
+                <p className="text-sm font-semibold text-ink">{r.diagnosis}</p>
               </div>
               <div>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-[#475569]">Tratamiento</p>
-                <p className="text-sm text-[#0F172A]">{r.treatment}</p>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">Tratamiento</p>
+                <p className="text-sm text-ink">{r.treatment}</p>
               </div>
               <div>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-[#475569]">Notas</p>
-                <p className="text-sm text-[#475569]">{r.notes}</p>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">Notas</p>
+                <p className="text-sm text-slate-500">{r.notes}</p>
               </div>
             </div>
           </div>

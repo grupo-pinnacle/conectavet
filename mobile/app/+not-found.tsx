@@ -1,20 +1,24 @@
 import { Link, Stack } from 'expo-router';
 import { Text, View } from 'react-native';
-import { colors } from '@/theme';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
 
 export default function NotFoundScreen() {
+  const { colors: c } = useTheme();
   return (
     <>
       <Stack.Screen options={{ title: 'No encontrado' }} />
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: colors.background }}>
-        <Text style={{ fontSize: 56 }}>🐾</Text>
-        <Text style={{ fontSize: 20, fontWeight: '700', color: colors.ink, marginTop: 12 }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xxl, backgroundColor: c.background, gap: spacing.lg }}>
+        <View style={{ width: 80, height: 80, borderRadius: radius.full, backgroundColor: c.primaryBg, justifyContent: 'center', alignItems: 'center' }}>
+          <MaterialCommunityIcons name="paw-off" size={40} color={c.primary} />
+        </View>
+        <Text style={{ fontSize: fontSizes.title, fontWeight: fontWeights.bold, color: c.ink, textAlign: 'center' }}>
           Página no encontrada
         </Text>
-        <Text style={{ fontSize: 14, color: colors.inkMuted, marginTop: 4, marginBottom: 16 }}>
+        <Text style={{ fontSize: fontSizes.body, color: c.inkMuted, textAlign: 'center', maxWidth: 280 }}>
           Es posible que el link haya expirado o que la pantalla no exista.
         </Text>
-        <Link href="/(app)" style={{ color: colors.primary, fontWeight: '600' }}>
+        <Link href="/(app)" style={{ color: c.primary, fontWeight: fontWeights.semibold, fontSize: fontSizes.body, marginTop: spacing.md }}>
           Volver al inicio
         </Link>
       </View>

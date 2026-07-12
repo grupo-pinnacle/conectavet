@@ -23,70 +23,70 @@ export default function ReportsSection() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#0F172A]">Reportes</h1>
-          <p className="text-[#475569]">Estadísticas y análisis de tu clínica</p>
+          <h1 className="text-2xl font-bold text-ink">Reportes</h1>
+          <p className="text-slate-500">Estadísticas y análisis de tu clínica</p>
         </div>
         <div className="flex gap-2">
-          <select className="rounded-lg border border-[#CBD5E1] bg-white px-4 py-2 text-sm text-[#0F172A] focus:outline-none">
+          <select className="rounded-lg border border-border bg-white px-4 py-2 text-sm text-ink focus:outline-none">
             <option>Últimos 6 meses</option>
             <option>Último año</option>
           </select>
-          <button className="rounded-lg border border-[#CBD5E1] px-4 py-2 text-sm font-semibold text-[#475569] hover:bg-gray-50">
+          <button className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100">
             Exportar
           </button>
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-[#CBD5E1] bg-white p-6 shadow-sm">
-          <h3 className="mb-4 text-lg font-bold text-[#0F172A]">Consultas por mes</h3>
+        <div className="rounded-xl border border-border bg-white p-6 shadow-sm">
+          <h3 className="mb-4 text-lg font-bold text-ink">Consultas por mes</h3>
           <div className="flex items-end gap-2" style={{ height: 160 }}>
             {monthlyStats.map((s) => (
               <div key={s.month} className="flex flex-1 flex-col items-center gap-2">
-                <span className="text-xs font-semibold text-[#475569]">{s.consultas}</span>
+                <span className="text-xs font-semibold text-slate-500">{s.consultas}</span>
                 <div
-                  className="w-full rounded-t bg-[#2563EB] transition-all hover:opacity-80"
+                  className="w-full rounded-t bg-teal-700 transition-all hover:opacity-80"
                   style={{ height: `${(s.consultas / maxConsultas) * 120}px` }}
                 />
-                <span className="text-xs text-[#94A3B8]">{s.month}</span>
+                <span className="text-xs text-slate-400">{s.month}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="rounded-xl border border-[#CBD5E1] bg-white p-6 shadow-sm">
-          <h3 className="mb-4 text-lg font-bold text-[#0F172A]">Ingresos por mes</h3>
+        <div className="rounded-xl border border-border bg-white p-6 shadow-sm">
+          <h3 className="mb-4 text-lg font-bold text-ink">Ingresos por mes</h3>
           <div className="flex items-end gap-2" style={{ height: 160 }}>
             {monthlyStats.map((s) => (
               <div key={s.month} className="flex flex-1 flex-col items-center gap-2">
-                <span className="text-xs font-semibold text-[#16A34A]">${(s.ingresos / 1000).toFixed(1)}k</span>
+                <span className="text-xs font-semibold text-success">${(s.ingresos / 1000).toFixed(1)}k</span>
                 <div
-                  className="w-full rounded-t bg-[#16A34A] transition-all hover:opacity-80"
+                  className="w-full rounded-t bg-success transition-all hover:opacity-80"
                   style={{ height: `${(s.ingresos / maxIngresos) * 120}px` }}
                 />
-                <span className="text-xs text-[#94A3B8]">{s.month}</span>
+                <span className="text-xs text-slate-400">{s.month}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="rounded-xl border border-[#CBD5E1] bg-white p-6 shadow-sm lg:col-span-2">
-          <h3 className="mb-4 text-lg font-bold text-[#0F172A]">Diagnósticos más frecuentes</h3>
+        <div className="rounded-xl border border-border bg-white p-6 shadow-sm lg:col-span-2">
+          <h3 className="mb-4 text-lg font-bold text-ink">Diagnósticos más frecuentes</h3>
           <div className="space-y-3">
             {topDiagnostics.map((d) => (
               <div key={d.condition} className="flex items-center gap-2 md:gap-4">
-                <p className="w-32 shrink-0 text-sm font-semibold text-[#0F172A] md:w-48">{d.condition}</p>
+                <p className="w-32 shrink-0 text-sm font-semibold text-ink md:w-48">{d.condition}</p>
                 <div className="flex-1">
                   <div className="h-4 w-full rounded-full bg-[#F1F5F9]">
                     <div
-                      className="h-4 rounded-full bg-[#2563EB] transition-all"
+                      className="h-4 rounded-full bg-teal-700 transition-all"
                       style={{ width: `${d.percentage}%` }}
                     />
                   </div>
                 </div>
                 <div className="flex w-16 shrink-0 items-center justify-end gap-1 md:w-24 md:gap-2">
-                  <span className="text-xs font-bold text-[#0F172A] md:text-sm">{d.count}</span>
-                  <span className="text-xs text-[#94A3B8]">{d.percentage}%</span>
+                  <span className="text-xs font-bold text-ink md:text-sm">{d.count}</span>
+                  <span className="text-xs text-slate-400">{d.percentage}%</span>
                 </div>
               </div>
             ))}

@@ -11,8 +11,8 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC]">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#2563EB] border-t-transparent" />
+      <div className="flex min-h-screen items-center justify-center bg-surface">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-teal-600 border-t-transparent" />
       </div>
     );
   }

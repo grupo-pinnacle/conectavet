@@ -4,22 +4,19 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { View, Text, Pressable, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Button, Input } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { registerSchema, type RegisterPayload, ApiError } from '@/types';
-import { colors } from '@/theme';
+import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const { colors: c } = useTheme();
   const { register } = useAuth();
   const [submitting, setSubmitting] = useState(false);
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<RegisterPayload>({
+  const { control, handleSubmit, formState: { errors } } = useForm<RegisterPayload>({
     resolver: zodResolver(registerSchema),
     defaultValues: { email: '', password: '', firstName: '', lastName: '', phone: '' },
   });
@@ -28,54 +25,39 @@ export default function RegisterScreen() {
     setSubmitting(true);
     try {
       await register(values);
-      Toast.show({ type: 'success', text1: 'Cuenta creada 🎉' });
+      Toast.show({ type: 'success', text1: 'Cuenta creada con éxito', text2: 'Bienvenido a VetConnect.' });
       router.replace('/(app)');
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : 'No se pudo crear la cuenta.';
-      Toast.show({ type: 'error', text1: 'Error', text2: msg });
+      const msg = err instanceof ApiError ? err.message : 'No pudimos crear tu cuenta. Intentá de nuevo.';
+      Toast.show({ type: 'error', text1: 'Error al registrarte', text2: msg });
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
-        contentContainerStyle={{
-          flexGrow: 1,
-          padding: 24,
-          justifyContent: 'center',
-          backgroundColor: colors.background,
-        }}
+        contentContainerStyle={{ flexGrow: 1, padding: spacing.xxl, justifyContent: 'center', backgroundColor: c.background }}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={{ alignItems: 'center', marginBottom: 24 }}>
-          <Text style={{ fontSize: 40 }}>🐾</Text>
-          <Text style={{ fontSize: 24, fontWeight: '800', color: colors.primary, marginTop: 6 }}>
+        <View style={{ alignItems: 'center', marginBottom: spacing.xxl }}>
+          <Text style={{ fontSize: fontSizes.heading, fontWeight: fontWeights.bold, color: c.ink, letterSpacing: -0.5 }}>
             Crear cuenta
           </Text>
-          <Text style={{ fontSize: 13, color: colors.inkMuted, marginTop: 4, textAlign: 'center' }}>
-            Como dueño de mascota podés registrar sus mascotas, chatear con la IA y pedir videollamadas.
+          <Text style={{ fontSize: fontSizes.body, color: c.inkMuted, marginTop: spacing.xs, textAlign: 'center', maxWidth: 300 }}>
+            Registrá tus mascotas, consultá al asistente IA y pedí videollamadas veterinarias al instante.
           </Text>
         </View>
 
-        <View style={{ gap: 4 }}>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View style={{ gap: spacing.md }}>
+          <View style={{ flexDirection: 'row', gap: spacing.md }}>
             <View style={{ flex: 1 }}>
               <Controller
                 control={control}
                 name="firstName"
                 render={({ field: { onChange, value } }) => (
-                  <Input
-                    label="Nombre"
-                    placeholder="María"
-                    value={value}
-                    onChangeText={onChange}
-                    error={errors.firstName?.message}
-                  />
+                  <Input label="Nombre" placeholder="María" value={value} onChangeText={onChange} error={errors.firstName?.message} leftIcon="account-outline" />
                 )}
               />
             </View>
@@ -84,13 +66,7 @@ export default function RegisterScreen() {
                 control={control}
                 name="lastName"
                 render={({ field: { onChange, value } }) => (
-                  <Input
-                    label="Apellido"
-                    placeholder="Pérez"
-                    value={value}
-                    onChangeText={onChange}
-                    error={errors.lastName?.message}
-                  />
+                  <Input label="Apellido" placeholder="Pérez" value={value} onChangeText={onChange} error={errors.lastName?.message} />
                 )}
               />
             </View>
@@ -100,16 +76,7 @@ export default function RegisterScreen() {
             control={control}
             name="email"
             render={({ field: { onChange, value } }) => (
-              <Input
-                label="Email"
-                placeholder="vos@email.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                value={value}
-                onChangeText={onChange}
-                error={errors.email?.message}
-              />
+              <Input label="Correo electrónico" placeholder="tu@email.com" keyboardType="email-address" autoCapitalize="none" autoCorrect={false} value={value} onChangeText={onChange} error={errors.email?.message} leftIcon="email-outline" />
             )}
           />
 
@@ -117,14 +84,7 @@ export default function RegisterScreen() {
             control={control}
             name="phone"
             render={({ field: { onChange, value } }) => (
-              <Input
-                label="Teléfono"
-                placeholder="+54 11 5555-5555"
-                keyboardType="phone-pad"
-                value={value}
-                onChangeText={onChange}
-                error={errors.phone?.message}
-              />
+              <Input label="Teléfono" placeholder="+54 11 5555-5555" keyboardType="phone-pad" value={value} onChangeText={onChange} error={errors.phone?.message} leftIcon="phone-outline" />
             )}
           />
 
@@ -132,27 +92,18 @@ export default function RegisterScreen() {
             control={control}
             name="password"
             render={({ field: { onChange, value } }) => (
-              <Input
-                label="Contraseña"
-                placeholder="Mín. 8 caracteres, 1 mayús, 1 núm, 1 símbolo"
-                secureTextEntry
-                value={value}
-                onChangeText={onChange}
-                error={errors.password?.message}
-              />
+              <Input label="Contraseña" placeholder="8+ caracteres, 1 mayúscula, 1 número, 1 símbolo" secureTextEntry value={value} onChangeText={onChange} error={errors.password?.message} leftIcon="lock-outline" hint="Mínimo 8 caracteres, una mayúscula, un número y un símbolo" />
             )}
           />
 
-          <Button onPress={handleSubmit(onSubmit)} loading={submitting} size="lg" style={{ marginTop: 8 }}>
+          <Button onPress={handleSubmit(onSubmit)} loading={submitting} size="lg" fullWidth style={{ marginTop: spacing.md }}>
             Crear cuenta
           </Button>
 
-          <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 16 }}>
-            <Text style={{ color: colors.inkMuted, fontSize: 14 }}>¿Ya tenés cuenta? </Text>
-            <Pressable onPress={() => router.push('/(auth)/login')}>
-              <Text style={{ color: colors.primary, fontSize: 14, fontWeight: '600' }}>
-                Iniciar sesión
-              </Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: spacing.lg }}>
+            <Text style={{ color: c.inkMuted, fontSize: fontSizes.body }}>¿Ya tenés cuenta? </Text>
+            <Pressable onPress={() => router.push('/(auth)/login')} accessibilityRole="button" accessibilityLabel="Iniciar sesión">
+              <Text style={{ color: c.primary, fontSize: fontSizes.body, fontWeight: fontWeights.semibold }}>Iniciar sesión</Text>
             </Pressable>
           </View>
         </View>

@@ -8,78 +8,78 @@ export default function SettingsSection() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[#0F172A]">Configuración</h1>
-        <p className="text-[#475569]">Administra tu perfil y preferencias</p>
+        <h1 className="text-2xl font-bold text-ink">Configuración</h1>
+        <p className="text-slate-500">Administra tu perfil y preferencias</p>
       </div>
 
       <div className="grid gap-6">
-        <div className="rounded-xl border border-[#CBD5E1] bg-white p-6 shadow-sm">
-          <h3 className="mb-4 text-lg font-bold text-[#0F172A]">Perfil profesional</h3>
+        <div className="rounded-xl border border-border bg-white p-6 shadow-sm">
+          <h3 className="mb-4 text-lg font-bold text-ink">Perfil profesional</h3>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#475569]">Nombre completo</label>
-              <input type="text" defaultValue="Dr. Martín López" className="w-full rounded-lg border border-[#CBD5E1] bg-white px-4 py-2.5 text-sm text-[#0F172A] focus:border-[#2563EB] focus:outline-none" />
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Nombre completo</label>
+              <input type="text" defaultValue="Dr. Martín López" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink focus:border-teal-600 focus:outline-none" />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#475569]">Especialidad</label>
-              <input type="text" defaultValue="Cardiología Veterinaria" className="w-full rounded-lg border border-[#CBD5E1] bg-white px-4 py-2.5 text-sm text-[#0F172A] focus:border-[#2563EB] focus:outline-none" />
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Especialidad</label>
+              <input type="text" defaultValue="Cardiología Veterinaria" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink focus:border-teal-600 focus:outline-none" />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#475569]">Correo electrónico</label>
-              <input type="email" defaultValue="martin.lopez@vetconnect.com" className="w-full rounded-lg border border-[#CBD5E1] bg-white px-4 py-2.5 text-sm text-[#0F172A] focus:border-[#2563EB] focus:outline-none" />
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Correo electrónico</label>
+              <input type="email" defaultValue="martin.lopez@vetconnect.com" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink focus:border-teal-600 focus:outline-none" />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#475569]">Teléfono</label>
-              <input type="text" defaultValue="+52 55 1234 5678" className="w-full rounded-lg border border-[#CBD5E1] bg-white px-4 py-2.5 text-sm text-[#0F172A] focus:border-[#2563EB] focus:outline-none" />
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Teléfono</label>
+              <input type="text" defaultValue="+52 55 1234 5678" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink focus:border-teal-600 focus:outline-none" />
             </div>
           </div>
-          <button className="mt-4 rounded-lg bg-[#2563EB] px-6 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90">
+          <button className="mt-4 rounded-lg bg-teal-700 px-6 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90">
             Guardar cambios
           </button>
         </div>
 
-        <div className="rounded-xl border border-[#CBD5E1] bg-white p-6 shadow-sm">
-          <h3 className="mb-4 text-lg font-bold text-[#0F172A]">Horario laboral</h3>
+        <div className="rounded-xl border border-border bg-white p-6 shadow-sm">
+          <h3 className="mb-4 text-lg font-bold text-ink">Horario laboral</h3>
           <div className="space-y-4">
             {weekDays.map((day) => (
               <div key={day} className="flex items-center gap-4">
-                <p className="w-24 text-sm font-semibold text-[#0F172A]">{day}</p>
+                <p className="w-24 text-sm font-semibold text-ink">{day}</p>
                 <input
                   type="checkbox"
                   defaultChecked={day !== "Sábado"}
-                  className="h-4 w-4 rounded border-[#CBD5E1] text-[#2563EB] focus:ring-[#2563EB]"
+                  className="h-4 w-4 rounded border-border text-teal-700 focus:ring-teal-600"
                 />
-                <span className="text-xs text-[#475569]">Disponible</span>
+                <span className="text-xs text-slate-500">Disponible</span>
               </div>
             ))}
           </div>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#475569]">Horario inicio</label>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Horario inicio</label>
               <input
                 type="time"
                 value={workingHours.start}
                 onChange={(e) => setWorkingHours((prev) => ({ ...prev, start: e.target.value }))}
-                className="w-full rounded-lg border border-[#CBD5E1] bg-white px-4 py-2.5 text-sm text-[#0F172A] focus:border-[#2563EB] focus:outline-none"
+                className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink focus:border-teal-600 focus:outline-none"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-[#475569]">Horario fin</label>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Horario fin</label>
               <input
                 type="time"
                 value={workingHours.end}
                 onChange={(e) => setWorkingHours((prev) => ({ ...prev, end: e.target.value }))}
-                className="w-full rounded-lg border border-[#CBD5E1] bg-white px-4 py-2.5 text-sm text-[#0F172A] focus:border-[#2563EB] focus:outline-none"
+                className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink focus:border-teal-600 focus:outline-none"
               />
             </div>
           </div>
-          <button className="mt-4 rounded-lg bg-[#2563EB] px-6 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90">
+          <button className="mt-4 rounded-lg bg-teal-700 px-6 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90">
             Guardar horario
           </button>
         </div>
 
-        <div className="rounded-xl border border-[#CBD5E1] bg-white p-6 shadow-sm">
-          <h3 className="mb-4 text-lg font-bold text-[#0F172A]">Notificaciones</h3>
+        <div className="rounded-xl border border-border bg-white p-6 shadow-sm">
+          <h3 className="mb-4 text-lg font-bold text-ink">Notificaciones</h3>
           <div className="space-y-4">
             {[
               { label: "Nuevas consultas agendadas", enabled: true },
@@ -89,10 +89,10 @@ export default function SettingsSection() {
               { label: "Ofertas y promociones", enabled: false },
             ].map((setting) => (
               <div key={setting.label} className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-[#0F172A]">{setting.label}</p>
+                <p className="text-sm font-semibold text-ink">{setting.label}</p>
                 <div
                   className={`h-6 w-11 cursor-pointer rounded-full transition-colors ${
-                    setting.enabled ? "bg-[#2563EB]" : "bg-[#CBD5E1]"
+                    setting.enabled ? "bg-teal-700" : "bg-border"
                   }`}
                 >
                   <div

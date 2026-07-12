@@ -1,121 +1,87 @@
 import { Tabs } from 'expo-router';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View, Platform } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
-import { colors } from '@/theme';
+import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { Avatar } from '@/components/ui';
 
-function TabIcon({ label, emoji, focused }: { label: string; emoji: string; focused: boolean }) {
+type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
+
+const tabs: { name: string; label: string; icon: IconName; iconFocused: IconName }[] = [
+  { name: 'index', label: 'Inicio', icon: 'home-outline', iconFocused: 'home' },
+  { name: 'pets/index', label: 'Mascotas', icon: 'paw-outline', iconFocused: 'paw' },
+  { name: 'chat/index', label: 'Chat IA', icon: 'chat-processing-outline', iconFocused: 'chat-processing' },
+  { name: 'queue/index', label: 'Cola', icon: 'timer-sand', iconFocused: 'timer-sand' },
+  { name: 'history/index', label: 'Historial', icon: 'clipboard-text-outline', iconFocused: 'clipboard-text' },
+];
+
+function TabIcon({ icon, focused }: { icon: IconName; focused: boolean }) {
+  const { colors: c } = useTheme();
   return (
-    <View style={{ alignItems: 'center', paddingTop: 6 }}>
-      <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.6 }}>{emoji}</Text>
-      <Text
-        style={{
-          fontSize: 11,
-          color: focused ? colors.primary : colors.inkMuted,
-          fontWeight: focused ? '700' : '500',
-          marginTop: 2,
-        }}
-      >
-        {label}
-      </Text>
+    <View style={{ alignItems: 'center', justifyContent: 'center', paddingTop: spacing.xs }}>
+      <MaterialCommunityIcons name={icon} size={24} color={focused ? c.primary : c.inkMuted} />
+      {focused && <View style={{ width: 20, height: 3, backgroundColor: c.primary, borderRadius: radius.full, marginTop: 3 }} />}
     </View>
   );
 }
 
 function HeaderRight() {
+  const { colors: c } = useTheme();
   const { user, logout } = useAuth();
   return (
     <Pressable
       onPress={() => logout()}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        paddingHorizontal: 14,
-        paddingVertical: 6,
-        marginRight: 8,
-      }}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, marginRight: spacing.xs }}
+      accessibilityRole="button"
+      accessibilityLabel="Cerrar sesión"
+      accessibilityHint="Presioná para cerrar tu sesión actual"
     >
-      <View
-        style={{
-          width: 32,
-          height: 32,
-          borderRadius: 16,
-          backgroundColor: colors.primary,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Text style={{ color: '#fff', fontWeight: '700' }}>
-          {(user?.firstName?.[0] ?? '?').toUpperCase()}
-        </Text>
-      </View>
+      <Avatar name={`${user?.firstName ?? ''} ${user?.lastName ?? ''}`} size={32} />
     </Pressable>
   );
 }
 
 export default function AppLayout() {
-  // Open the queue WebSocket for the lifetime of the (app) group
+  const { colors: c } = useTheme();
+  const insets = useSafeAreaInsets();
   useWebSocket(true);
 
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: colors.surface },
-        headerTitleStyle: { color: colors.ink, fontWeight: '700' },
-        headerTintColor: colors.primary,
+        headerStyle: { backgroundColor: c.surface },
+        headerTitleStyle: { color: c.ink, fontWeight: fontWeights.bold, fontSize: fontSizes.subtitle, letterSpacing: -0.3 },
+        headerTintColor: c.primary,
+        headerShadowVisible: false,
         headerRight: () => <HeaderRight />,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.inkMuted,
+        tabBarActiveTintColor: c.primary,
+        tabBarInactiveTintColor: c.inkMuted,
         tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
-          height: 60,
-          paddingBottom: 6,
+          backgroundColor: c.surface,
+          borderTopColor: c.borderLight,
+          borderTopWidth: 1,
+          height: Platform.OS === 'android' ? 56 + insets.bottom : 64,
+          paddingBottom: insets.bottom + 4,
+          paddingTop: 6,
+          paddingHorizontal: spacing.sm,
         },
+        tabBarLabelStyle: { fontSize: fontSizes.caption, fontWeight: fontWeights.semibold, marginTop: 0 },
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Inicio',
-          headerTitle: 'VetConnect',
-          tabBarIcon: ({ focused }) => <TabIcon label="Inicio" emoji="🏠" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="pets"
-        options={{
-          title: 'Mascotas',
-          headerTitle: 'Mis mascotas',
-          tabBarIcon: ({ focused }) => <TabIcon label="Mascotas" emoji="🐾" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="chat"
-        options={{
-          title: 'Chat IA',
-          headerTitle: 'Asistente IA',
-          tabBarIcon: ({ focused }) => <TabIcon label="Chat" emoji="💬" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="queue"
-        options={{
-          title: 'Cola',
-          headerTitle: 'Cola de espera',
-          tabBarIcon: ({ focused }) => <TabIcon label="Cola" emoji="⏳" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="history"
-        options={{
-          title: 'Historial',
-          headerTitle: 'Consultas',
-          tabBarIcon: ({ focused }) => <TabIcon label="Historial" emoji="📋" focused={focused} />,
-        }}
-      />
-      {/* Hidden routes — rendered as full-screen pushes, not tabs */}
+      {tabs.map((tab) => (
+        <Tabs.Screen
+          key={tab.name}
+          name={tab.name}
+          options={{
+            title: tab.label,
+            headerTitle: tab.name === 'index' ? 'VetConnect' : tab.label,
+            tabBarIcon: ({ focused }) => <TabIcon icon={focused ? tab.iconFocused : tab.icon} focused={focused} />,
+            tabBarAccessibilityLabel: `${tab.label} ${tab.name === 'index' ? '— pantalla principal' : ''}`,
+          }}
+        />
+      ))}
       <Tabs.Screen name="pets/[id]" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="pets/new" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="chat/[conversationId]" options={{ href: null, headerShown: false }} />

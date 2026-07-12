@@ -1,172 +1,121 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ScrollView, View, Text, RefreshControl } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useVetCard } from '@/hooks/usePets';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { SkeletonCard } from '@/components/ui/Skeleton';
-import { colors, speciesEmoji, speciesLabel, statusColors, statusLabel } from '@/theme';
-import { formatAge, formatDate, formatDateTime } from '@/utils/format';
+import { Card, Badge, Button, SkeletonCard } from '@/components/ui';
+import { useTheme, spacing, radius, fontSizes, fontWeights, speciesIcon, speciesLabel } from '@/theme';
+import { formatAge, formatDate } from '@/utils/format';
 
 export default function PetDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { colors: c } = useTheme();
   const { data: vetCard, isLoading, refetch, isFetching } = useVetCard(id);
 
   if (isLoading) {
-    return (
-      <View style={{ padding: 16, gap: 12 }}>
-        <SkeletonCard />
-        <SkeletonCard />
-      </View>
-    );
+    return <View style={{ padding: spacing.lg, gap: spacing.md }}><SkeletonCard /><SkeletonCard /></View>;
   }
 
   if (!vetCard) {
-    return (
-      <View style={{ padding: 16 }}>
-        <Card>
-          <Text style={{ color: colors.inkMuted }}>No se encontró la mascota.</Text>
-        </Card>
-      </View>
-    );
+    return <View style={{ padding: spacing.lg }}><Card><Text style={{ color: c.inkMuted }}>No encontramos esta mascota.</Text></Card></View>;
   }
 
   const { pet, stats, allergies, chronicConditions, recentConsultations } = vetCard;
+  const iconName = (speciesIcon[pet.species] ?? 'paw') as keyof typeof MaterialCommunityIcons.glyphMap;
 
   return (
-    <ScrollView
-      contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-      refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} />}
-    >
-      {/* Header */}
-      <Card padding={0}>
+    <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.huge }} refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={c.primary} />}>
+      <Card padding={0} style={{ overflow: 'hidden' }}>
         <View style={{ flexDirection: 'row' }}>
-          <View
-            style={{
-              width: 100,
-              height: 100,
-              backgroundColor: colors.border,
-              borderTopLeftRadius: 12,
-              borderBottomLeftRadius: 12,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text style={{ fontSize: 50 }}>{speciesEmoji[pet.species] ?? '🐾'}</Text>
+          <View style={{ width: 100, height: 100, backgroundColor: c.primaryBg, borderTopLeftRadius: radius.xl, borderBottomLeftRadius: radius.xl, alignItems: 'center', justifyContent: 'center' }}>
+            <MaterialCommunityIcons name={iconName} size={50} color={c.primary} />
           </View>
-          <View style={{ flex: 1, padding: 14, gap: 4 }}>
-            <Text style={{ fontSize: 20, fontWeight: '700', color: colors.ink }}>{pet.name}</Text>
-            <Text style={{ fontSize: 14, color: colors.inkSoft }}>
-              {speciesLabel[pet.species]}
-              {pet.breed ? ` · ${pet.breed}` : ''}
-            </Text>
-            <Text style={{ fontSize: 13, color: colors.inkMuted }}>
-              {formatAge(pet.birthDate)} · {pet.sex === 'MALE' ? '♂ Macho' : pet.sex === 'FEMALE' ? '♀ Hembra' : 'Sexo —'}
+          <View style={{ flex: 1, padding: spacing.lg, gap: spacing.xs }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontSize: fontSizes.subtitle, fontWeight: fontWeights.bold, color: c.ink, letterSpacing: -0.3 }}>{pet.name}</Text>
+              {pet.isDeceased && <Badge label="En memoria" bg={c.inkMuted} icon="heart" size="sm" />}
+            </View>
+            <Text style={{ fontSize: fontSizes.body, color: c.inkSoft }}>{speciesLabel[pet.species]}{pet.breed ? ` · ${pet.breed}` : ''}</Text>
+            <Text style={{ fontSize: fontSizes.label, color: c.inkMuted }}>
+              {formatAge(pet.birthDate)} · {pet.sex === 'MALE' ? 'Macho' : pet.sex === 'FEMALE' ? 'Hembra' : 'Sexo —'}
               {pet.weightKg ? ` · ${pet.weightKg} kg` : ''}
             </Text>
-            {pet.isDeceased && <Badge label="🌈 En memoria" bg={colors.inkMuted} />}
           </View>
         </View>
       </Card>
 
-      {/* Stats */}
-      <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-        <Card style={{ flex: 1, alignItems: 'center' }} padding={12}>
-          <Text style={{ fontSize: 22, fontWeight: '700', color: colors.primary }}>
-            {stats.totalConsultations}
-          </Text>
-          <Text style={{ fontSize: 11, color: colors.inkMuted, textAlign: 'center' }}>
-            Consultas
-          </Text>
+      <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.md }}>
+        <Card style={{ flex: 1, alignItems: 'center' }} padding={spacing.lg}>
+          <View style={{ width: 40, height: 40, borderRadius: radius.full, backgroundColor: c.primaryBg, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.xs }}>
+            <MaterialCommunityIcons name="stethoscope" size={20} color={c.primary} />
+          </View>
+          <Text style={{ fontSize: fontSizes.title, fontWeight: fontWeights.bold, color: c.primary }}>{stats.totalConsultations}</Text>
+          <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted, textAlign: 'center' }}>Consultas</Text>
         </Card>
-        <Card style={{ flex: 1, alignItems: 'center' }} padding={12}>
-          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}>
-            {stats.lastConsultationDate ? formatDate(stats.lastConsultationDate) : '—'}
-          </Text>
-          <Text style={{ fontSize: 11, color: colors.inkMuted, textAlign: 'center' }}>
-            Última consulta
-          </Text>
+        <Card style={{ flex: 1, alignItems: 'center' }} padding={spacing.lg}>
+          <View style={{ width: 40, height: 40, borderRadius: radius.full, backgroundColor: c.accentBg, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.xs }}>
+            <MaterialCommunityIcons name="calendar-outline" size={20} color={c.accentDark} />
+          </View>
+          <Text style={{ fontSize: fontSizes.input, fontWeight: fontWeights.bold, color: c.ink }}>{stats.lastConsultationDate ? formatDate(stats.lastConsultationDate) : '—'}</Text>
+          <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted, textAlign: 'center' }}>Última consulta</Text>
         </Card>
-        <Card style={{ flex: 1, alignItems: 'center' }} padding={12}>
-          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}>
-            {pet.microchip ?? '—'}
-          </Text>
-          <Text style={{ fontSize: 11, color: colors.inkMuted, textAlign: 'center' }}>
-            Microchip
-          </Text>
+        <Card style={{ flex: 1, alignItems: 'center' }} padding={spacing.lg}>
+          <View style={{ width: 40, height: 40, borderRadius: radius.full, backgroundColor: c.borderLight, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.xs }}>
+            <MaterialCommunityIcons name="chip" size={20} color={c.inkMuted} />
+          </View>
+          <Text style={{ fontSize: fontSizes.input, fontWeight: fontWeights.bold, color: c.ink }}>{pet.microchip ?? '—'}</Text>
+          <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted, textAlign: 'center' }}>Microchip</Text>
         </Card>
       </View>
 
-      {/* Allergies / Conditions */}
       {(allergies.length > 0 || chronicConditions.length > 0) && (
-        <Card style={{ marginTop: 12 }}>
-          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.ink, marginBottom: 8 }}>
-            ⚠ Alergias y condiciones
-          </Text>
+        <Card style={{ marginTop: spacing.md }}>
+          <Text style={{ fontSize: fontSizes.subtitle, fontWeight: fontWeights.bold, color: c.ink, letterSpacing: -0.3, marginBottom: spacing.md }}>Alergias y condiciones</Text>
           {allergies.length > 0 && (
-            <View style={{ marginBottom: 8 }}>
-              <Text style={{ fontSize: 12, color: colors.inkMuted, marginBottom: 4 }}>Alergias</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                {allergies.map((a: string) => (
-                  <Badge key={a} label={a} bg={colors.accentDark} color="#fff" />
-                ))}
+            <View style={{ marginBottom: chronicConditions.length > 0 ? spacing.md : 0 }}>
+              <Text style={{ fontSize: fontSizes.label, color: c.inkMuted, marginBottom: spacing.xs }}>Alergias</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+                {allergies.map((a: string) => <Badge key={a} label={a} variant="soft" bg={c.accentBg} color={c.accentDark} icon="alert" />)}
               </View>
             </View>
           )}
           {chronicConditions.length > 0 && (
             <View>
-              <Text style={{ fontSize: 12, color: colors.inkMuted, marginBottom: 4 }}>Condiciones crónicas</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                {chronicConditions.map((c: string) => (
-                  <Badge key={c} label={c} bg={colors.danger} color="#fff" />
-                ))}
+              <Text style={{ fontSize: fontSizes.label, color: c.inkMuted, marginBottom: spacing.xs }}>Condiciones crónicas</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+                {chronicConditions.map((cond: string) => <Badge key={cond} label={cond} variant="filled" bg={c.danger} color={c.white} icon="alert-circle" />)}
               </View>
             </View>
           )}
         </Card>
       )}
 
-      {/* Recent consultations */}
-      <Text style={{ fontSize: 16, fontWeight: '700', color: colors.ink, marginTop: 20, marginBottom: 8 }}>
-        Consultas recientes
-      </Text>
+      <Text style={{ fontSize: fontSizes.subtitle, fontWeight: fontWeights.bold, color: c.ink, letterSpacing: -0.3, marginTop: spacing.xxl, marginBottom: spacing.md }}>Consultas recientes</Text>
       {recentConsultations.length === 0 ? (
         <Card>
-          <Text style={{ color: colors.inkMuted, textAlign: 'center' }}>
-            Sin consultas previas. Cuando atiendas a {pet.name} por videollamada, aparecerá acá.
-          </Text>
+          <View style={{ alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md }}>
+            <MaterialCommunityIcons name="clipboard-text-outline" size={32} color={c.inkMuted} />
+            <Text style={{ color: c.inkMuted, textAlign: 'center' }}>Sin consultas previas. Cuando atiendas a {pet.name} por videollamada, aparecerá acá.</Text>
+          </View>
         </Card>
       ) : (
-        recentConsultations.map((c: { id: string; reason: string; status: string; completedAt: string | null; joinedAt: string; createdAt: string }) => (
-          <Card key={c.id} style={{ marginBottom: 8 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.ink, flex: 1 }}>
-                {c.reason}
-              </Text>
-              <Badge
-                label={statusLabel[c.status] ?? c.status}
-                bg={statusColors[c.status] ?? colors.primary}
-              />
+        recentConsultations.map((consult: { id: string; reason: string; status: string; completedAt: string | null }) => (
+          <Card key={consult.id} style={{ marginBottom: spacing.md }} padding={spacing.lg}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs }}>
+              <Text style={{ fontSize: fontSizes.body, fontWeight: fontWeights.semibold, color: c.ink, flex: 1 }}>{consult.reason}</Text>
+              <Badge label={consult.status === 'COMPLETED' ? 'Completada' : consult.status === 'CANCELLED' ? 'Cancelada' : consult.status === 'IN_CONSULTATION' ? 'En curso' : consult.status} bg={consult.status === 'COMPLETED' ? c.successBg : consult.status === 'CANCELLED' ? c.dangerBg : c.primaryBg} color={consult.status === 'COMPLETED' ? c.successDark : consult.status === 'CANCELLED' ? c.dangerDark : c.primary} size="sm" />
             </View>
-            <Text style={{ fontSize: 12, color: colors.inkMuted }}>
-              {formatDateTime(c.completedAt ?? c.joinedAt ?? c.createdAt)}
-            </Text>
+            <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted }}>{consult.completedAt ? formatDate(consult.completedAt) : ''}</Text>
           </Card>
         ))
       )}
 
-      {/* Quick CTA */}
-      <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
-        <Button variant="secondary" style={{ flex: 1 }} onPress={() => router.push('/(app)/chat')}>
-          💬 Preguntar a la IA
+      <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg }}>
+        <Button variant="secondary" onPress={() => router.push('/(app)/chat')} icon={<MaterialCommunityIcons name="chat-processing" size={18} color={c.white} />} style={{ flex: 1 }}>
+          Consultar IA
         </Button>
-        <Button
-          variant="primary"
-          style={{ flex: 1 }}
-          onPress={() => router.push({ pathname: '/(app)/queue', params: { petId: pet.id } })}
-        >
-          ⏳ Pedir videollamada
+        <Button variant="primary" onPress={() => router.push({ pathname: '/(app)/queue', params: { petId: pet.id } })} icon={<MaterialCommunityIcons name="video-outline" size={18} color={c.white} />} style={{ flex: 1 }}>
+          Videollamada
         </Button>
       </View>
     </ScrollView>

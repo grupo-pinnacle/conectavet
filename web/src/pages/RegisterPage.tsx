@@ -52,9 +52,7 @@ export default function RegisterPage() {
               VetConnect.
             </h1>
             <p className="mt-4 max-w-lg text-body leading-relaxed text-slate-500">
-              Creá tu cuenta y accedé a consultas veterinarias en línea,
-              historial clínico digital y asistencia IA para el cuidado de tu
-              mascota.
+              Creá tu cuenta y accedé a consultas veterinarias en línea e historial clínico digital para el cuidado de tu mascota.
             </p>
           </div>
           <div className="flex flex-wrap gap-4">

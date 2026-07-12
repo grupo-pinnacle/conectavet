@@ -2,30 +2,18 @@ import { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Calendar, PawPrint, ClipboardList, Pill,
-  MessageCircle, BarChart3, DollarSign, Settings, LogOut,
+  LayoutDashboard, PawPrint,
+  MessageCircle, LogOut,
 } from "lucide-react";
 import Logo from "../components/Logo";
 import VetHomeSection from "../components/dashboard/vet/VetHomeSection";
-import AgendaSection from "../components/dashboard/vet/AgendaSection";
 import PatientsSection from "../components/dashboard/vet/PatientsSection";
-import VetHistorySection from "../components/dashboard/vet/VetHistorySection";
-import VetPrescriptionsSection from "../components/dashboard/vet/VetPrescriptionsSection";
 import VetMessagesSection from "../components/dashboard/vet/VetMessagesSection";
-import ReportsSection from "../components/dashboard/vet/ReportsSection";
-import FinancesSection from "../components/dashboard/vet/FinancesSection";
-import SettingsSection from "../components/dashboard/vet/SettingsSection";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, key: "home" },
-  { label: "Agenda", icon: Calendar, key: "agenda" },
   { label: "Pacientes", icon: PawPrint, key: "patients" },
-  { label: "Historial", icon: ClipboardList, key: "history" },
-  { label: "Recetas", icon: Pill, key: "prescriptions" },
   { label: "Mensajes", icon: MessageCircle, key: "messages" },
-  { label: "Reportes", icon: BarChart3, key: "reports" },
-  { label: "Finanzas", icon: DollarSign, key: "finances" },
-  { label: "Configuración", icon: Settings, key: "settings" },
 ];
 
 export default function VetDashboardPage() {
@@ -41,14 +29,8 @@ export default function VetDashboardPage() {
   const renderSection = () => {
     switch (activeTab) {
       case "home": return <VetHomeSection />;
-      case "agenda": return <AgendaSection />;
       case "patients": return <PatientsSection />;
-      case "history": return <VetHistorySection />;
-      case "prescriptions": return <VetPrescriptionsSection />;
       case "messages": return <VetMessagesSection />;
-      case "reports": return <ReportsSection />;
-      case "finances": return <FinancesSection />;
-      case "settings": return <SettingsSection />;
       default: return <VetHomeSection />;
     }
   };

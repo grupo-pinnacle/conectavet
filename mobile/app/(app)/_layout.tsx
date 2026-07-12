@@ -4,7 +4,6 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
-import { useWebSocket } from '@/hooks/useWebSocket';
 import { Avatar } from '@/components/ui';
 
 type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
@@ -12,8 +11,8 @@ type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
 const tabs: { name: string; label: string; icon: IconName; iconFocused: IconName }[] = [
   { name: 'index', label: 'Inicio', icon: 'home-outline', iconFocused: 'home' },
   { name: 'pets/index', label: 'Mascotas', icon: 'paw-outline', iconFocused: 'paw' },
-  { name: 'chat/index', label: 'Chat IA', icon: 'chat-processing-outline', iconFocused: 'chat-processing' },
-  { name: 'queue/index', label: 'Cola', icon: 'timer-sand', iconFocused: 'timer-sand' },
+  { name: 'queue/index', label: 'Consultas', icon: 'stethoscope', iconFocused: 'stethoscope' },
+  { name: 'chat/index', label: 'Chat', icon: 'chat-processing-outline', iconFocused: 'chat-processing' },
   { name: 'history/index', label: 'Historial', icon: 'clipboard-text-outline', iconFocused: 'clipboard-text' },
 ];
 
@@ -46,7 +45,6 @@ function HeaderRight() {
 export default function AppLayout() {
   const { colors: c } = useTheme();
   const insets = useSafeAreaInsets();
-  useWebSocket(true);
 
   return (
     <Tabs
@@ -84,8 +82,7 @@ export default function AppLayout() {
       ))}
       <Tabs.Screen name="pets/[id]" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="pets/new" options={{ href: null, headerShown: false }} />
-      <Tabs.Screen name="chat/[conversationId]" options={{ href: null, headerShown: false }} />
-      <Tabs.Screen name="call/[entryId]" options={{ href: null, headerShown: false }} />
+      <Tabs.Screen name="chat/[consultationId]" options={{ href: null, headerShown: false }} />
     </Tabs>
   );
 }

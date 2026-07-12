@@ -1,19 +1,5 @@
-/**
- * Replica of the `@vetconnect/shared-types` package (Zod schemas + derived TS types).
- *
- * The web app imports these from `packages/shared-types`. In the mobile app we
- * keep a local copy because Expo's bundler cannot always resolve a sibling
- * workspace package cleanly without extra Metro config, and because the mobile
- * build must remain self-contained when distributed as an APK.
- *
- * Schemas here MUST be kept in sync with `packages/shared-types/src/*` in the
- * monorepo. See INTEGRATION.md for the contract.
- */
 import { z } from 'zod';
 
-// ─────────────────────────────────────────────
-// Common
-// ─────────────────────────────────────────────
 export const paginationSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
@@ -47,9 +33,6 @@ export class ApiError extends Error {
   }
 }
 
-// ─────────────────────────────────────────────
-// Auth + Users
-// ─────────────────────────────────────────────
 export const roleSchema = z.enum(['OWNER', 'VET', 'ADMIN']);
 export type Role = z.infer<typeof roleSchema>;
 
@@ -92,13 +75,10 @@ export type LoginPayload = z.infer<typeof loginSchema>;
 export const authResponseSchema = z.object({
   user: userSchema,
   accessToken: z.string(),
-  refreshToken: z.string().optional(), // Mobile: returned in body; web: httpOnly cookie
+  refreshToken: z.string().optional(),
 });
 export type AuthResponse = z.infer<typeof authResponseSchema>;
 
-// ─────────────────────────────────────────────
-// Pets + VetCard
-// ─────────────────────────────────────────────
 export const speciesSchema = z.enum(['DOG', 'CAT', 'BIRD', 'REPTILE', 'RODENT', 'OTHER']);
 export type Species = z.infer<typeof speciesSchema>;
 
@@ -174,118 +154,39 @@ export const vetCardSchema = z.object({
 });
 export type VetCard = z.infer<typeof vetCardSchema>;
 
-// ─────────────────────────────────────────────
-// Queue
-// ─────────────────────────────────────────────
-export const queueEntryStatusSchema = z.enum([
+export const consultationStatusSchema = z.enum([
   'WAITING',
   'ASSIGNED',
   'IN_CONSULTATION',
   'COMPLETED',
   'CANCELLED',
 ]);
-export type QueueEntryStatus = z.infer<typeof queueEntryStatusSchema>;
+export type ConsultationStatus = z.infer<typeof consultationStatusSchema>;
 
-export const queueEntrySchema = z.object({
+export const consultationSchema = z.object({
   id: z.string(),
   userId: z.string(),
   petId: z.string(),
   vetId: z.string().nullable(),
-  status: queueEntryStatusSchema,
+  status: consultationStatusSchema,
   reason: z.string(),
+  diagnosis: z.string().nullable(),
+  treatment: z.string().nullable(),
+  consultationNotes: z.string().nullable(),
+  consultationSummary: z.string().nullable(),
+  followUpRecommended: z.boolean().nullable(),
+  followUpDate: z.string().datetime().nullable(),
+  durationSeconds: z.number().nullable(),
+  petName: z.string().optional(),
+  vetName: z.string().optional(),
   joinedAt: z.string().datetime(),
   assignedAt: z.string().datetime().nullable(),
   consultationStartedAt: z.string().datetime().nullable(),
   completedAt: z.string().datetime().nullable(),
   cancelledAt: z.string().datetime().nullable(),
   cancellationReason: z.string().nullable(),
-  livekitRoomName: z.string().nullable(),
-  position: z.number().int().positive().optional(),
-  livekitToken: z.string().optional(), // Returned on ENTRY_ASSIGNED WS event
-});
-export type QueueEntry = z.infer<typeof queueEntrySchema>;
-
-export const joinQueueSchema = z.object({
-  petId: z.string(),
-  reason: z.string().min(5).max(500),
-});
-export type JoinQueuePayload = z.infer<typeof joinQueueSchema>;
-
-// WebSocket message shapes (server → client)
-export const wsMessageSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('pong') }),
-  z.object({ type: z.literal('ENTRY_STATE'), entry: queueEntrySchema.nullable() }),
-  z.object({
-    type: z.literal('ENTRY_ASSIGNED'),
-    entry: queueEntrySchema,
-    livekitToken: z.string(),
-    livekitRoomName: z.string(),
-  }),
-  z.object({ type: z.literal('CONSULTATION_STARTED'), entry: queueEntrySchema }),
-  z.object({ type: z.literal('CONSULTATION_FINALIZED'), entry: queueEntrySchema }),
-  z.object({ type: z.literal('ENTRY_REQUEUED'), entry: queueEntrySchema }),
-  z.object({ type: z.literal('QUEUE_UPDATED') }),
-]);
-export type WsMessage = z.infer<typeof wsMessageSchema>;
-
-// ─────────────────────────────────────────────
-// AI Assistant
-// ─────────────────────────────────────────────
-export const conversationStatusSchema = z.enum(['ACTIVE', 'ARCHIVED', 'ESCALATED']);
-export type ConversationStatus = z.infer<typeof conversationStatusSchema>;
-
-export const conversationSchema = z.object({
-  id: z.string(),
-  userId: z.string(),
-  petId: z.string().nullable(),
-  status: conversationStatusSchema,
-  title: z.string().nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
-});
-export type Conversation = z.infer<typeof conversationSchema>;
-
-export const messageRoleSchema = z.enum(['USER', 'ASSISTANT', 'SYSTEM']);
-export type MessageRole = z.infer<typeof messageRoleSchema>;
-
-export const messageSchema = z.object({
-  id: z.string(),
-  conversationId: z.string(),
-  role: messageRoleSchema,
-  content: z.string(),
-  tokenInput: z.number(),
-  tokenOutput: z.number(),
-  costUsd: z.number(),
-  flagged: z.boolean(),
-  createdAt: z.string().datetime(),
-});
-export type Message = z.infer<typeof messageSchema>;
-
-export const createConversationSchema = z.object({
-  petId: z.string().optional(),
-  title: z.string().max(120).optional(),
-});
-export type CreateConversationPayload = z.infer<typeof createConversationSchema>;
-
-export const sendMessageSchema = z.object({
-  content: z.string().min(1).max(4000),
-});
-export type SendMessagePayload = z.infer<typeof sendMessageSchema>;
-
-// ─────────────────────────────────────────────
-// Consultations
-// ─────────────────────────────────────────────
-export const consultationSchema = queueEntrySchema.extend({
-  consultationNotes: z.string().nullable(),
-  consultationSummary: z.string().nullable(),
-  diagnosis: z.string().nullable(),
-  treatment: z.string().nullable(),
-  followUpRecommended: z.boolean().nullable(),
-  followUpDate: z.string().datetime().nullable(),
-  durationSeconds: z.number().nullable(),
-  videoCallQuality: z.string().nullable(),
-  petName: z.string().optional(),
-  vetName: z.string().optional(),
 });
 export type Consultation = z.infer<typeof consultationSchema>;
 
@@ -294,3 +195,22 @@ export const rateConsultationSchema = z.object({
   comment: z.string().max(1000).optional(),
 });
 export type RateConsultationPayload = z.infer<typeof rateConsultationSchema>;
+
+export const createConsultationSchema = z.object({
+  petId: z.string(),
+  reason: z.string().min(5).max(500),
+});
+export type CreateConsultationPayload = z.infer<typeof createConsultationSchema>;
+
+export const chatMessageRoleSchema = z.enum(['USER', 'VET']);
+export type ChatMessageRole = z.infer<typeof chatMessageRoleSchema>;
+
+export const chatMessageSchema = z.object({
+  id: z.string(),
+  consultationId: z.string(),
+  userId: z.string(),
+  role: chatMessageRoleSchema,
+  content: z.string(),
+  createdAt: z.string().datetime(),
+});
+export type ChatMessage = z.infer<typeof chatMessageSchema>;

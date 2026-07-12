@@ -1,16 +1,6 @@
 import { Platform, Linking } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
-export async function requestCameraAndMicPermissions(): Promise<boolean> {
-  if (Platform.OS === 'web') return true;
-
-  const { Camera } = await import('expo-camera');
-  const camStatus = await Camera.requestCameraPermissionsAsync();
-  const micStatus = await Camera.requestMicrophonePermissionsAsync();
-
-  return camStatus.status === 'granted' && micStatus.status === 'granted';
-}
-
 export async function requestMediaLibraryPermission(): Promise<boolean> {
   if (Platform.OS === 'web') return true;
   const status = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -33,19 +23,11 @@ export async function pickImage(): Promise<{ uri: string; mimeType?: string } | 
   return { uri: result.assets[0].uri, mimeType: result.assets[0].mimeType };
 }
 
-/**
- * Uploads a local image URI to Cloudinary (free tier) and returns the public
- * URL. The backend persists only the URL string (SP-02 spec).
- *
- * If Cloudinary env vars are not configured, returns the local `file://` URI
- * — fine for local dev but won't render on other devices.
- */
 export async function uploadPetPhoto(localUri: string): Promise<string> {
   const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const preset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
   if (!cloudName || !preset) {
-    // Fallback: just persist the local URI. Acceptable for dev only.
     return localUri;
   }
 

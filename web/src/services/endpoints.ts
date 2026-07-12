@@ -1,5 +1,5 @@
 import api from "./api";
-import type { Pet, Consultation, MedicalRecord, Prescription, LiveKitRoom } from "../types";
+import type { Pet, Consultation, MedicalRecord } from "../types";
 
 // Pets
 export async function getMyPets(): Promise<Pet[]> {
@@ -60,24 +60,4 @@ export async function createMedicalRecord(data: Partial<MedicalRecord>): Promise
   return res.data.data;
 }
 
-// Prescriptions
-export async function getPrescriptions(): Promise<Prescription[]> {
-  const res = await api.get("/api/prescriptions");
-  return res.data.data;
-}
 
-export async function createPrescription(data: Partial<Prescription>): Promise<Prescription> {
-  const res = await api.post("/api/prescriptions", data);
-  return res.data.data;
-}
-
-// LiveKit
-export async function createLiveKitRoom(): Promise<LiveKitRoom> {
-  const res = await api.post("/api/livekit/room");
-  return res.data.data;
-}
-
-export async function joinLiveKitRoom(roomName: string): Promise<LiveKitRoom> {
-  const res = await api.post("/api/livekit/join", { roomName });
-  return res.data.data;
-}

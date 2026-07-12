@@ -228,19 +228,4 @@ describe('GET /api/consultations/:id', () => {
   });
 });
 
-describe('POST /api/auth/logout', () => {
-  test('200 — VET logout setea isOnline=false', async () => {
-    const loginRes = await request(app)
-      .post('/api/auth/login')
-      .send({ email: `${prefix}-vet@test.com`, password: '123456' });
-    expect(loginRes.body.data.user.isOnline).toBe(true);
 
-    const logoutRes = await request(app)
-      .post('/api/auth/logout')
-      .set('Authorization', `Bearer ${vetToken}`);
-    expect(logoutRes.status).toBe(200);
-
-    const user = await prisma.user.findUnique({ where: { id: vetUser.id } });
-    expect(user?.isOnline).toBe(false);
-  });
-});

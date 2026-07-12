@@ -22,7 +22,7 @@ export async function listVets(page = 1, limit = 20) {
   const [vets, total] = await Promise.all([
     prisma.user.findMany({
       where: { role: 'VET' },
-      select: { id: true, email: true, role: true, isOnline: true, createdAt: true },
+      select: { id: true, email: true, role: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
       skip,
       take: limit,

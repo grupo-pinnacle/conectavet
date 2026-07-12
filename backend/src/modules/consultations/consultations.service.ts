@@ -96,8 +96,8 @@ export async function getAvailableVets() {
   const cached = getCached<any[]>('vets:available');
   if (cached) return cached;
   const vets = await prisma.user.findMany({
-    where: { role: 'VET', isOnline: true },
-    select: { id: true, email: true, isOnline: true },
+    where: { role: 'VET' },
+    select: { id: true, email: true },
   });
   setCache('vets:available', vets, 30);
   return vets;

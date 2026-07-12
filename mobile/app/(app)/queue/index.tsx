@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Card, Button, Input, EmptyState, SkeletonCard } from '@/components/ui';
-import { QueueStatus } from '@/components/QueueStatus';
-import { useQueue } from '@/hooks/useQueue';
+import { useCreateConsultation } from '@/hooks/useConsultations';
 import { usePets } from '@/hooks/usePets';
 import { useTheme, spacing, radius, fontSizes, fontWeights, speciesIcon, speciesLabel } from '@/theme';
 import { formatAge } from '@/utils/format';
@@ -15,14 +14,14 @@ export default function QueueScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ petId?: string }>();
   const { colors: c } = useTheme();
-  const { myEntry, join, cancel, isFetching } = useQueue();
   const { list } = usePets();
+  const createConsultation = useCreateConsultation();
   const [selectedPetId, setSelectedPetId] = useState<string | null>(params.petId ?? null);
   const [reason, setReason] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const pets = list.data ?? [];
 
-  const onJoin = async () => {
+  const onSubmit = async () => {
     if (!selectedPetId) {
       Toast.show({ type: 'error', text1: 'Seleccioná una mascota', text2: 'Elegí cuál de tus mascotas necesita atención.' });
       return;
@@ -31,47 +30,36 @@ export default function QueueScreen() {
       Toast.show({ type: 'error', text1: 'Describí el motivo', text2: 'Contanos brevemente qué le pasa a tu mascota (mín. 5 caracteres).' });
       return;
     }
-    setSubmitting(true);
     try {
-      await join.mutateAsync({ petId: selectedPetId, reason: reason.trim() });
-      Toast.show({ type: 'success', text1: 'Te uniste a la cola', text2: 'Te notificaremos cuando un veterinario esté disponible.' });
+      await createConsultation.mutateAsync({ petId: selectedPetId, reason: reason.trim() });
+      setSubmitted(true);
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : 'No pudimos agregarte a la cola. Intentá de nuevo.';
+      const msg = err instanceof ApiError ? err.message : 'No pudimos crear la consulta. Intentá de nuevo.';
       Toast.show({ type: 'error', text1: 'Error', text2: msg });
-    } finally {
-      setSubmitting(false);
     }
   };
 
-  const onCancel = async () => {
-    Alert.alert('Cancelar consulta', '¿Estás seguro de que querés salir de la cola?', [
-      { text: 'Seguir esperando', style: 'cancel' },
-      { text: 'Salir', style: 'destructive', onPress: async () => {
-        try {
-          await cancel.mutateAsync();
-          Toast.show({ type: 'success', text1: 'Saliste de la cola', text2: 'Podés volver a unirte cuando quieras.' });
-        } catch (err) {
-          const msg = err instanceof ApiError ? err.message : 'No se pudo cancelar.';
-          Toast.show({ type: 'error', text2: msg });
-        }
-      }},
-    ]);
-  };
-
-  if (isFetching && !myEntry) {
-    return <View style={{ padding: spacing.lg, gap: spacing.md }}><SkeletonCard /></View>;
-  }
-
-  if (myEntry && myEntry.status !== 'COMPLETED' && myEntry.status !== 'CANCELLED') {
+  if (submitted) {
+    const selectedPet = pets.find((p) => p.id === selectedPetId);
     return (
-      <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <QueueStatus entry={myEntry} onCancel={onCancel} isCancelling={cancel.isPending} onJoinCall={myEntry.livekitToken && myEntry.livekitRoomName ? () => router.push(`/(app)/call/${myEntry.id}`) : undefined} />
-        <Card variant="outlined" style={{ marginTop: spacing.md }}>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
-            <MaterialCommunityIcons name="lightbulb-outline" size={18} color={c.accent} style={{ marginTop: 2 }} />
-            <Text style={{ fontSize: fontSizes.label, color: c.inkMuted, lineHeight: 18, flex: 1 }}>
-              Mantené la app abierta mientras esperás. Si perdés conexión, tenés 60 segundos para reconectarte sin perder tu lugar en la cola.
-            </Text>
+      <ScrollView contentContainerStyle={{ padding: spacing.lg, flex: 1, justifyContent: 'center' }}>
+        <Card style={{ alignItems: 'center', padding: spacing.xxl }}>
+          <View style={{ width: 64, height: 64, borderRadius: radius.full, backgroundColor: c.successBg, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.lg }}>
+            <MaterialCommunityIcons name="check-circle" size={36} color={c.success} />
+          </View>
+          <Text style={{ fontSize: fontSizes.subtitle, fontWeight: fontWeights.bold, color: c.ink, textAlign: 'center', marginBottom: spacing.md }}>
+            Consulta solicitada
+          </Text>
+          <Text style={{ fontSize: fontSizes.body, color: c.inkMuted, textAlign: 'center', lineHeight: 20, marginBottom: spacing.lg }}>
+            {selectedPet?.name ? `Recibimos tu consulta sobre ${selectedPet.name}.` : 'Recibimos tu consulta.'} Un veterinario la atenderá a la brevedad. Te notificaremos cuando haya novedades.
+          </Text>
+          <View style={{ gap: spacing.md, width: '100%' }}>
+            <Button onPress={() => router.push('/(app)/chat')} size="md" fullWidth>
+              Ir a mis consultas
+            </Button>
+            <Button variant="outline" onPress={() => router.push('/(app)')} size="md" fullWidth>
+              Volver al inicio
+            </Button>
           </View>
         </Card>
       </ScrollView>
@@ -81,10 +69,10 @@ export default function QueueScreen() {
   return (
     <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.huge }}>
       <Text style={{ fontSize: fontSizes.title, fontWeight: fontWeights.bold, color: c.ink, letterSpacing: -0.5, marginBottom: spacing.xs }}>
-        Pedir videollamada
+        Solicitar consulta
       </Text>
       <Text style={{ fontSize: fontSizes.body, color: c.inkMuted, marginBottom: spacing.xxl, maxWidth: 300 }}>
-        Te conectaremos con el primer veterinario disponible, por orden de llegada.
+        Describí el motivo para que el veterinario pueda prepararse.
       </Text>
 
       <Text style={{ fontSize: fontSizes.subtitle, fontWeight: fontWeights.semibold, color: c.ink, marginBottom: spacing.md }}>
@@ -95,7 +83,7 @@ export default function QueueScreen() {
         <SkeletonCard />
       ) : pets.length === 0 ? (
         <Card>
-          <EmptyState icon="paw" title="Sin mascotas registradas" subtitle="Agregá una mascota antes de pedir una videollamada." ctaLabel="Agregar mascota" onCta={() => router.push('/(app)/pets/new')} />
+          <EmptyState icon="paw" title="Sin mascotas registradas" subtitle="Agregá una mascota antes de pedir una consulta." ctaLabel="Agregar mascota" onCta={() => router.push('/(app)/pets/new')} />
         </Card>
       ) : (
         <View style={{ gap: spacing.md, marginBottom: spacing.xxl }}>
@@ -144,8 +132,8 @@ export default function QueueScreen() {
         leftIcon="clipboard-text-outline"
       />
 
-      <Button onPress={onJoin} loading={submitting} disabled={pets.length === 0} size="lg" fullWidth style={{ marginTop: spacing.lg }} icon={<MaterialCommunityIcons name="clock-outline" size={20} color={c.white} />}>
-        Unirme a la cola
+      <Button onPress={onSubmit} loading={createConsultation.isPending} disabled={pets.length === 0} size="lg" fullWidth style={{ marginTop: spacing.lg }} icon={<MaterialCommunityIcons name="send" size={20} color={c.white} />}>
+        Solicitar consulta
       </Button>
     </ScrollView>
   );

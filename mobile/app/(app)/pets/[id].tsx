@@ -95,7 +95,7 @@ export default function PetDetailScreen() {
         <Card>
           <View style={{ alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md }}>
             <MaterialCommunityIcons name="clipboard-text-outline" size={32} color={c.inkMuted} />
-            <Text style={{ color: c.inkMuted, textAlign: 'center' }}>Sin consultas previas. Cuando atiendas a {pet.name} por videollamada, aparecerá acá.</Text>
+            <Text style={{ color: c.inkMuted, textAlign: 'center' }}>Sin consultas previas. Cuando solicites una consulta para {pet.name}, aparecerá acá.</Text>
           </View>
         </Card>
       ) : (
@@ -111,11 +111,8 @@ export default function PetDetailScreen() {
       )}
 
       <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg }}>
-        <Button variant="secondary" onPress={() => router.push('/(app)/chat')} icon={<MaterialCommunityIcons name="chat-processing" size={18} color={c.white} />} style={{ flex: 1 }}>
-          Consultar IA
-        </Button>
-        <Button variant="primary" onPress={() => router.push({ pathname: '/(app)/queue', params: { petId: pet.id } })} icon={<MaterialCommunityIcons name="video-outline" size={18} color={c.white} />} style={{ flex: 1 }}>
-          Videollamada
+        <Button variant="primary" onPress={() => router.push({ pathname: '/(app)/queue', params: { petId: pet.id } })} icon={<MaterialCommunityIcons name="stethoscope" size={18} color={c.white} />} style={{ flex: 1 }}>
+          Solicitar consulta
         </Button>
       </View>
     </ScrollView>

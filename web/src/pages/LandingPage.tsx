@@ -57,7 +57,7 @@ function Hero() {
             <span className="text-teal-700">siempre al alcance</span>
           </h1>
           <p className="mb-10 max-w-lg text-body leading-relaxed text-slate-600">
-            Consultá con veterinarios certificados por videollamada, chat con asistente IA y gestioná el historial clínico de tus mascotas desde un solo lugar.
+            Consultá con veterinarios certificados por chat en tiempo real y gestioná el historial clínico de tus mascotas desde un solo lugar.
           </p>
           <div className="flex flex-col gap-4 sm:flex-row">
             <Link
@@ -122,7 +122,7 @@ function StatCard({ number, label }: { number: string; label: string }) {
 
 const services = [
   { title: "Consultas generales", desc: "Revisiones de rutina, consejos de nutrición y cuidados preventivos desde casa.", icon: Stethoscope },
-  { title: "Asistente IA", desc: "Chat inteligente para resolver dudas no urgentes al instante.", icon: MessageCircle },
+  { title: "Chat con veterinario", desc: "Comunicate en tiempo real con tu veterinario asignado.", icon: MessageCircle },
   { title: "Recetas y recetas", desc: "Renová recetas existentes mediante consulta virtual.", icon: Pill },
   { title: "Triaje de urgencia", desc: "Evaluación inmediata para determinar si tu mascota necesita atención presencial.", icon: AmbulanceIcon },
 ];
@@ -166,7 +166,7 @@ function Services() {
 function HowItWorks() {
   const steps = [
     { icon: Star, title: "Creá tu cuenta", desc: "Registrate en segundos y agregá tus mascotas." },
-    { icon: MessageCircle, title: "Consultá al asistente IA", desc: "Resolvé dudas no urgentes al instante con nuestro chat inteligente." },
+    { icon: MessageCircle, title: "Chateá con el veterinario", desc: "Comunicate en tiempo real con el veterinario asignado." },
     { icon: Video, title: "Videollamada con veterinario", desc: "Si necesitás atención en vivo, te conectamos con un profesional." },
     { icon: Shield, title: "Seguimiento completo", desc: "Historial clínico, diagnósticos y recetas siempre disponibles." },
   ];

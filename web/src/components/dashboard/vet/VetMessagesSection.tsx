@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Paperclip } from "lucide-react";
+import Button from "../../Button";
 
 const chats = [
   { id: 1, name: "Juan Pérez", pet: "Firulais", avatar: "J", online: true, lastMsg: "Gracias doctor, ya está mucho mejor", unread: 2, messages: [
@@ -26,6 +27,8 @@ export default function VetMessagesSection() {
   const [activeChat, setActiveChat] = useState(chats[0]);
   const [showList, setShowList] = useState(true);
   const [input, setInput] = useState("");
+  const [showCloseModal, setShowCloseModal] = useState(false);
+  const [closeNotes, setCloseNotes] = useState("");
 
   const handleSend = () => {
     if (!input.trim()) return;
@@ -88,6 +91,9 @@ export default function VetMessagesSection() {
             <p className="font-bold text-ink">{activeChat.name}</p>
             <p className="text-xs text-slate-500">{activeChat.pet} · {activeChat.online ? "En línea" : "Desconectado"}</p>
           </div>
+          <Button variant="danger" size="sm" onClick={() => setShowCloseModal(true)} className="ml-auto w-auto">
+            Cerrar consulta
+          </Button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 md:px-5">
@@ -125,6 +131,29 @@ export default function VetMessagesSection() {
           </div>
         </div>
       </div>
+      {showCloseModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <h3 className="mb-2 text-lg font-bold text-ink">Cerrar consulta</h3>
+            <p className="mb-4 text-sm text-slate-500">Agregá notas de cierre (opcional):</p>
+            <textarea
+              value={closeNotes}
+              onChange={(e) => setCloseNotes(e.target.value)}
+              placeholder="Escribí las notas finales de la consulta..."
+              rows={4}
+              className="w-full rounded-lg border border-border px-4 py-3 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20"
+            />
+            <div className="mt-4 flex justify-end gap-3">
+              <Button variant="ghost" size="md" fullWidth={false} onClick={() => { setShowCloseModal(false); setCloseNotes(""); }}>
+                Cancelar
+              </Button>
+              <Button variant="danger" size="md" fullWidth={false} onClick={() => { setShowCloseModal(false); setCloseNotes(""); }}>
+                Confirmar cierre
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -9,7 +9,6 @@ import { StatusBar } from 'expo-status-bar';
 import { View, Text } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
-import { useNetworkStatus } from '@/hooks/useNetwork';
 import { ThemeProvider, useTheme, fontSizes, fontWeights, spacing, radius } from '@/theme';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
@@ -18,20 +17,6 @@ const queryClient = new QueryClient({
     queries: { staleTime: 30_000, retry: 1, refetchOnReconnect: true },
   },
 });
-
-function OfflineBanner() {
-  const { colors: c } = useTheme();
-  const { isOnline } = useNetworkStatus();
-  if (isOnline) return null;
-  return (
-    <View style={{ backgroundColor: c.danger, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm }}>
-      <MaterialCommunityIcons name="wifi-off" size={16} color={c.white} />
-      <Text style={{ color: c.white, textAlign: 'center', fontSize: fontSizes.label, fontWeight: fontWeights.semibold }}>
-        Sin conexión · Reintentando…
-      </Text>
-    </View>
-  );
-}
 
 function LoadingScreen() {
   const { colors: c } = useTheme();
@@ -74,7 +59,6 @@ function RouteGuard() {
 
   return (
     <>
-      <OfflineBanner />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.background }, animation: 'slide_from_right' }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(app)" />

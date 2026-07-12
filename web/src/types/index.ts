@@ -50,20 +50,4 @@ export interface MedicalRecord {
   notes: string;
 }
 
-export interface Prescription {
-  id: string;
-  petId: string;
-  petName?: string;
-  ownerId?: string;
-  ownerName?: string;
-  vetId: string;
-  vetName?: string;
-  date: string;
-  medications: { name: string; dosis: string; duracion: string }[];
-  status: "active" | "expired";
-}
 
-export interface LiveKitRoom {
-  roomName: string;
-  token: string;
-}

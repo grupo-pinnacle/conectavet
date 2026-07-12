@@ -2,7 +2,6 @@ import { View, Text, Pressable, RefreshControl, ScrollView } from 'react-native'
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { usePets } from '@/hooks/usePets';
-import { useQueue } from '@/hooks/useQueue';
 import { useAuth } from '@/hooks/useAuth';
 import { PetCard } from '@/components/PetCard';
 import { Card, Button, SkeletonCard, EmptyState, Badge } from '@/components/ui';
@@ -14,7 +13,6 @@ export default function HomeScreen() {
   const { colors: c } = useTheme();
   const { user } = useAuth();
   const { list } = usePets();
-  const { myEntry } = useQueue();
   const pets = list.data ?? [];
 
   return (
@@ -34,58 +32,35 @@ export default function HomeScreen() {
       <View style={{ flexDirection: 'row', gap: spacing.md, marginBottom: spacing.xl }}>
         <Pressable
           style={{ flex: 1 }}
-          onPress={() => router.push('/(app)/chat')}
+          onPress={() => router.push('/(app)/queue')}
           accessibilityRole="button"
-          accessibilityLabel="Consultar al asistente IA"
-          accessibilityHint="Abrí el chat con el asistente virtual para resolver dudas no urgentes"
+          accessibilityLabel="Consultar veterinario"
+          accessibilityHint="Solicitá una consulta para tu mascota"
         >
           <View style={{ backgroundColor: c.primaryBg, borderRadius: radius.xl, padding: spacing.lg, gap: spacing.sm }}>
-            <MaterialCommunityIcons name="chat-processing" size={32} color={c.primary} />
+            <MaterialCommunityIcons name="stethoscope" size={32} color={c.primary} />
             <View>
-              <Text style={{ fontSize: fontSizes.subtitle, fontWeight: fontWeights.bold, color: c.ink, letterSpacing: -0.3 }}>Asistente IA</Text>
-              <Text style={{ fontSize: fontSizes.label, color: c.inkMuted }}>Dudas no urgentes</Text>
+              <Text style={{ fontSize: fontSizes.subtitle, fontWeight: fontWeights.bold, color: c.ink, letterSpacing: -0.3 }}>Consultar veterinario</Text>
+              <Text style={{ fontSize: fontSizes.label, color: c.inkMuted }}>Atención profesional</Text>
             </View>
           </View>
         </Pressable>
         <Pressable
           style={{ flex: 1 }}
-          onPress={() => router.push('/(app)/queue')}
+          onPress={() => router.push('/(app)/pets')}
           accessibilityRole="button"
-          accessibilityLabel="Pedir videollamada"
-          accessibilityHint="Unite a la cola de espera para una videollamada con un veterinario"
+          accessibilityLabel="Mis mascotas"
+          accessibilityHint="Ver todas tus mascotas"
         >
           <View style={{ backgroundColor: c.accentBg, borderRadius: radius.xl, padding: spacing.lg, gap: spacing.sm }}>
-            <MaterialCommunityIcons name="video-outline" size={32} color={c.accentDark} />
+            <MaterialCommunityIcons name="paw" size={32} color={c.accentDark} />
             <View>
-              <Text style={{ fontSize: fontSizes.subtitle, fontWeight: fontWeights.bold, color: c.ink, letterSpacing: -0.3 }}>Videollamada</Text>
-              <Text style={{ fontSize: fontSizes.label, color: c.inkMuted }}>Atención en vivo</Text>
+              <Text style={{ fontSize: fontSizes.subtitle, fontWeight: fontWeights.bold, color: c.ink, letterSpacing: -0.3 }}>Mis mascotas</Text>
+              <Text style={{ fontSize: fontSizes.label, color: c.inkMuted }}>Gestioná tus mascotas</Text>
             </View>
           </View>
         </Pressable>
       </View>
-
-      {myEntry && myEntry.status !== 'COMPLETED' && myEntry.status !== 'CANCELLED' && (
-        <Pressable onPress={() => router.push('/(app)/queue')} style={{ marginBottom: spacing.xl }} accessibilityRole="button" accessibilityLabel="Ver consulta en curso">
-          <Card variant="outlined">
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-              <View style={{ width: 44, height: 44, borderRadius: radius.full, backgroundColor: c.primaryBg, justifyContent: 'center', alignItems: 'center' }}>
-                <MaterialCommunityIcons name="stethoscope" size={22} color={c.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: fontSizes.label, fontWeight: fontWeights.semibold, color: c.ink }}>Consulta en curso</Text>
-                <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted, marginTop: 1 }} numberOfLines={1}>{myEntry.reason}</Text>
-              </View>
-              <Badge
-                label={myEntry.status === 'ASSIGNED' ? 'Listo' : 'En espera'}
-                variant="soft"
-                bg={myEntry.status === 'ASSIGNED' ? c.successBg : c.accentBg}
-                color={myEntry.status === 'ASSIGNED' ? c.successDark : c.accentDark}
-                icon={myEntry.status === 'ASSIGNED' ? 'check-circle' : 'clock-outline'}
-              />
-            </View>
-          </Card>
-        </Pressable>
-      )}
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md }}>
         <Text style={{ fontSize: fontSizes.subtitle, fontWeight: fontWeights.bold, color: c.ink, letterSpacing: -0.3 }}>Tus mascotas</Text>
@@ -101,7 +76,7 @@ export default function HomeScreen() {
         </View>
       ) : pets.length === 0 ? (
         <Card>
-          <EmptyState icon="paw" title="Aún no tenés mascotas" subtitle="Cargá tu primera mascota para pedir consultas y chatear con la IA." ctaLabel="Agregar mascota" onCta={() => router.push('/(app)/pets/new')} />
+          <EmptyState icon="paw" title="Aún no tenés mascotas" subtitle="Cargá tu primera mascota para pedir consultas." ctaLabel="Agregar mascota" onCta={() => router.push('/(app)/pets/new')} />
         </Card>
       ) : (
         pets.map((pet: Pet) => (

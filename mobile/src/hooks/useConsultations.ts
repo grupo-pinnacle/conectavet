@@ -1,6 +1,6 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { consultationsService } from '@/services';
-import type { Consultation, RateConsultationPayload } from '@/types';
+import type { ChatMessage, Consultation, CreateConsultationPayload, RateConsultationPayload } from '@/types';
 
 export function useConsultationHistory(params?: { page?: number; limit?: number }) {
   return useQuery({
@@ -19,6 +19,15 @@ export function useConsultation(id: string | undefined) {
   });
 }
 
+export function useCreateConsultation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateConsultationPayload) =>
+      consultationsService.create(payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['consultations'] }),
+  });
+}
+
 export function useRateConsultation() {
   return useMutation({
     mutationFn: ({ entryId, payload }: { entryId: string; payload: RateConsultationPayload }) =>
@@ -26,8 +35,39 @@ export function useRateConsultation() {
   });
 }
 
-export function useConsultationPing() {
-  return useMutation({
-    mutationFn: (entryId: string) => consultationsService.ping(entryId),
+export function useConsultationMessages(consultationId: string | undefined) {
+  const qc = useQueryClient();
+  const key = ['consultations', consultationId, 'messages'] as const;
+
+  const list = useQuery({
+    queryKey: key,
+    queryFn: async () => (await consultationsService.getMessages(consultationId!)) as ChatMessage[],
+    enabled: Boolean(consultationId),
+    staleTime: 0,
+    refetchInterval: 3000,
   });
+
+  const send = useMutation({
+    mutationFn: (content: string) => consultationsService.sendMessage(consultationId!, content),
+    onMutate: async (content: string) => {
+      const optimistic: ChatMessage = {
+        id: `optimistic-${Date.now()}`,
+        consultationId: consultationId!,
+        userId: '',
+        role: 'USER',
+        content,
+        createdAt: new Date().toISOString(),
+      };
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<ChatMessage[]>(key);
+      qc.setQueryData<ChatMessage[]>(key, (old = []) => [...old, optimistic]);
+      return { previous };
+    },
+    onError: (_err, _content, ctx) => {
+      if (ctx?.previous) qc.setQueryData(key, ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: key }),
+  });
+
+  return { list, send };
 }

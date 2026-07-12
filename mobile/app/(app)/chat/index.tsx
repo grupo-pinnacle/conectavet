@@ -1,59 +1,57 @@
 import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useConversations } from '@/hooks/useChat';
-import { Card, Badge, SkeletonCard, EmptyState, Button } from '@/components/ui';
+import { useConsultationHistory } from '@/hooks/useConsultations';
+import { Card, Badge, SkeletonCard, EmptyState } from '@/components/ui';
 import { useTheme, spacing, fontSizes, fontWeights } from '@/theme';
 import { formatDateTime } from '@/utils/format';
+import type { Consultation } from '@/types';
 
 export default function ChatListScreen() {
   const router = useRouter();
   const { colors: c } = useTheme();
-  const { list, create } = useConversations();
-  const conversations = list.data ?? [];
+  const { data, isFetching, refetch, isLoading } = useConsultationHistory({ limit: 50 });
+  const consultations = (data ?? []).filter(
+    (c: Consultation) => c.status !== 'WAITING'
+  );
 
-  const onCreate = async () => {
-    try {
-      const conv = await create.mutateAsync({});
-      router.push(`/(app)/chat/${conv.id}`);
-    } catch {}
-  };
-
-  if (list.isLoading) {
+  if (isLoading) {
     return <View style={{ padding: spacing.lg, gap: spacing.md }}><SkeletonCard /><SkeletonCard /></View>;
   }
 
   return (
     <View style={{ flex: 1 }}>
       <FlatList
-        data={conversations}
+        data={consultations}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: 80 }}
         ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
-        refreshControl={<RefreshControl refreshing={list.isFetching} onRefresh={list.refetch} tintColor={c.primary} />}
-        ListHeaderComponent={
-          <Button onPress={onCreate} loading={create.isPending} size="md" fullWidth style={{ marginBottom: spacing.md }} icon={<MaterialCommunityIcons name="plus" size={18} color={c.white} />}>
-            Nueva conversación
-          </Button>
-        }
+        refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={c.primary} />}
         ListEmptyComponent={
-          <EmptyState icon="chat-processing" title="No tenés conversaciones" subtitle="Iniciá una nueva charla con el asistente IA veterinario para resolver dudas no urgentes." ctaLabel="Iniciar conversación" onCta={onCreate} />
+          <EmptyState icon="chat-processing" title="Sin consultas activas" subtitle="Cuando solicites una consulta y un veterinario la atienda, podrás chatear aquí." ctaLabel="Solicitar consulta" onCta={() => router.push('/(app)/queue')} />
         }
-        renderItem={({ item }) => (
-          <Pressable onPress={() => router.push(`/(app)/chat/${item.id}`)} accessibilityRole="button" accessibilityLabel={item.title ?? 'Conversación'} accessibilityHint="Abrir conversación">
-            <Card padding={spacing.lg}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 }}>
-                  <MaterialCommunityIcons name={item.status === 'ESCALATED' ? 'alert-circle' : 'chat-processing'} size={20} color={item.status === 'ESCALATED' ? c.danger : c.primary} />
-                  <Text style={{ fontSize: fontSizes.body, fontWeight: fontWeights.semibold, color: c.ink, flex: 1 }}>{item.title ?? 'Conversación sin título'}</Text>
+        renderItem={({ item }) => {
+          const statusIcon = item.status === 'COMPLETED' ? 'check-circle' : item.status === 'CANCELLED' ? 'close-circle' : item.status === 'IN_CONSULTATION' ? 'progress-check' : 'chat-processing';
+          const statusIconColor = item.status === 'COMPLETED' ? c.success : item.status === 'CANCELLED' ? c.danger : item.status === 'IN_CONSULTATION' ? c.primary : c.accent;
+          const statusLabel = item.status === 'COMPLETED' ? 'Completada' : item.status === 'CANCELLED' ? 'Cancelada' : item.status === 'IN_CONSULTATION' ? 'En curso' : 'Asignado';
+          return (
+            <Pressable onPress={() => router.push(`/(app)/chat/${item.id}`)} accessibilityRole="button" accessibilityLabel={`Chat con ${item.vetName ?? 'veterinario'}`} accessibilityHint="Abrir chat de la consulta">
+              <Card padding={spacing.lg}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 }}>
+                    <MaterialCommunityIcons name={statusIcon} size={20} color={statusIconColor} />
+                    <Text style={{ fontSize: fontSizes.body, fontWeight: fontWeights.semibold, color: c.ink, flex: 1 }} numberOfLines={1}>
+                      {item.vetName ?? 'Veterinario'} · {item.petName ?? 'Mascota'}
+                    </Text>
+                  </View>
+                  <Badge label={statusLabel} size="sm" bg={item.status === 'COMPLETED' ? c.successBg : item.status === 'CANCELLED' ? c.dangerBg : c.primaryBg} color={item.status === 'COMPLETED' ? c.successDark : item.status === 'CANCELLED' ? c.dangerDark : c.primary} />
                 </View>
-                {item.status === 'ESCALATED' && <Badge label="Emergencia" bg={c.danger} color={c.white} size="sm" icon="alert" />}
-                {item.status === 'ARCHIVED' && <Badge label="Archivada" bg={c.inkMuted} color={c.white} size="sm" />}
-              </View>
-              <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted, marginLeft: spacing.xxxl }}>{formatDateTime(item.updatedAt)}</Text>
-            </Card>
-          </Pressable>
-        )}
+                <Text style={{ fontSize: fontSizes.body, color: c.inkMuted, marginLeft: spacing.xxxl }} numberOfLines={1}>{item.reason}</Text>
+                <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted, marginLeft: spacing.xxxl, marginTop: spacing.xs }}>{formatDateTime(item.updatedAt)}</Text>
+              </Card>
+            </Pressable>
+          );
+        }}
       />
     </View>
   );

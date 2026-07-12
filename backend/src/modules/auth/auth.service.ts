@@ -29,10 +29,6 @@ export class AuthError extends Error {
 }
 
 export async function logout(userId: string) {
-  await prisma.user.update({
-    where: { id: userId },
-    data: { isOnline: false },
-  });
   clearCache('vets:');
 }
 
@@ -94,14 +90,6 @@ export async function login(input: LoginInput) {
     throw new AuthError('Credenciales inválidas', 401);
   }
 
-  if (user.role === 'VET') {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { isOnline: true },
-    });
-    clearCache('vets:');
-  }
-
   const token = jwt.sign(
     {
       userId: user.id,
@@ -123,7 +111,7 @@ export async function login(input: LoginInput) {
   return {
     accessToken: token,
     refreshToken: refreshTokenValue,
-    user: { ...userWithoutPassword, isOnline: user.role === 'VET' ? true : userWithoutPassword.isOnline }
+    user: userWithoutPassword
   };
 }
 

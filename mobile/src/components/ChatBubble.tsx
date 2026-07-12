@@ -3,17 +3,17 @@ import { Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withDelay, Easing } from 'react-native-reanimated';
 import { useTheme, spacing, radius, fontSizes, fontWeights, shadows, motion } from '@/theme';
-import type { Message } from '@/types';
+import type { ChatMessage } from '@/types';
 
 interface ChatBubbleProps {
-  message: Message;
-  showFlaggedBanner?: boolean;
+  message: ChatMessage;
+  vetName?: string;
 }
 
-export function ChatBubble({ message, showFlaggedBanner = true }: ChatBubbleProps) {
+export function ChatBubble({ message, vetName = 'Veterinario' }: ChatBubbleProps) {
   const { colors: c } = useTheme();
   const isUser = message.role === 'USER';
-  const isAssistant = message.role === 'ASSISTANT';
+  const isVet = message.role === 'VET';
 
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(10);
@@ -28,7 +28,7 @@ export function ChatBubble({ message, showFlaggedBanner = true }: ChatBubbleProp
     transform: [{ translateY: translateY.value }],
   }));
 
-  if (message.role === 'SYSTEM') {
+  if (message.role !== 'USER' && message.role !== 'VET') {
     return (
       <View style={{ alignItems: 'center', marginVertical: spacing.sm }} accessibilityRole="text" accessibilityLabel={`Mensaje del sistema: ${message.content}`}>
         <View style={{ backgroundColor: c.borderLight, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.full }}>
@@ -42,13 +42,13 @@ export function ChatBubble({ message, showFlaggedBanner = true }: ChatBubbleProp
 
   return (
     <Animated.View style={[{ marginVertical: spacing.xs, alignItems: isUser ? 'flex-end' : 'flex-start' }, animStyle]}>
-      {isAssistant && (
+      {isVet && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xs, marginLeft: spacing.xs }}>
           <View style={{ width: 20, height: 20, borderRadius: radius.full, backgroundColor: c.primaryBg, justifyContent: 'center', alignItems: 'center' }}>
-            <MaterialCommunityIcons name="robot" size={12} color={c.primary} />
+            <MaterialCommunityIcons name="stethoscope" size={12} color={c.primary} />
           </View>
           <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted, fontWeight: fontWeights.semibold }}>
-            Asistente VetConnect
+            {vetName}
           </Text>
         </View>
       )}
@@ -66,7 +66,7 @@ export function ChatBubble({ message, showFlaggedBanner = true }: ChatBubbleProp
           ...(isUser ? {} : shadows.subtle),
         }}
         accessibilityRole="text"
-        accessibilityLabel={`${isUser ? 'Vos' : 'Asistente'}: ${message.content}`}
+        accessibilityLabel={`${isUser ? 'Vos' : vetName}: ${message.content}`}
       >
         <Text
           style={{
@@ -79,14 +79,7 @@ export function ChatBubble({ message, showFlaggedBanner = true }: ChatBubbleProp
           {message.content}
         </Text>
       </View>
-      {showFlaggedBanner && message.flagged && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs, marginHorizontal: spacing.xs }}>
-          <MaterialCommunityIcons name="alert-circle" size={14} color={c.danger} />
-          <Text style={{ fontSize: fontSizes.caption, color: c.danger, fontWeight: fontWeights.medium }}>
-            Mensaje marcado por seguridad
-          </Text>
-        </View>
-      )}
+
     </Animated.View>
   );
 }

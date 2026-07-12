@@ -1,26 +1,21 @@
 import { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { Home, PawPrint, Calendar, ClipboardList, Pill, MessageCircle, Bell, User, LogOut } from "lucide-react";
+import { Home, PawPrint, Calendar, ClipboardList, MessageCircle, User, LogOut } from "lucide-react";
 import Logo from "../components/Logo";
 import HomeSection from "../components/dashboard/HomeSection";
 import PetsSection from "../components/dashboard/PetsSection";
 import ConsultationsSection from "../components/dashboard/ConsultationsSection";
 import HistorySection from "../components/dashboard/HistorySection";
-import PrescriptionsSection from "../components/dashboard/PrescriptionsSection";
 import MessagesSection from "../components/dashboard/MessagesSection";
 import ProfileSection from "../components/dashboard/ProfileSection";
-import NotificationsSection from "../components/dashboard/NotificationsSection";
-import WaitingRoom from "../components/dashboard/WaitingRoom";
 
 const navItems = [
   { label: "Inicio", icon: Home, key: "home" },
   { label: "Mascotas", icon: PawPrint, key: "pets" },
   { label: "Consultas", icon: Calendar, key: "consultations" },
   { label: "Historial", icon: ClipboardList, key: "history" },
-  { label: "Recetas", icon: Pill, key: "prescriptions" },
   { label: "Mensajes", icon: MessageCircle, key: "messages" },
-  { label: "Notificaciones", icon: Bell, key: "notifications" },
   { label: "Perfil", icon: User, key: "profile" },
 ];
 
@@ -40,11 +35,8 @@ export default function DashboardPage() {
       case "pets": return <PetsSection />;
       case "consultations": return <ConsultationsSection />;
       case "history": return <HistorySection />;
-      case "prescriptions": return <PrescriptionsSection />;
       case "messages": return <MessagesSection />;
-      case "notifications": return <NotificationsSection />;
       case "profile": return <ProfileSection />;
-      case "waiting": return <WaitingRoom onBack={() => setActiveTab("home")} />;
       default: return <HomeSection onNavigate={setActiveTab} />;
     }
   };
@@ -96,12 +88,6 @@ export default function DashboardPage() {
       <header className="flex items-center justify-between border-b border-border bg-white px-5 py-4 md:hidden">
         <Logo size="sm" />
         <div className="flex items-center gap-3">
-          <button onClick={() => setActiveTab("notifications")} className="relative">
-            <Bell className="w-5 h-5 text-slate-500" />
-            <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[10px] font-bold text-white">
-              3
-            </span>
-          </button>
           <button
             onClick={handleLogout}
             className="flex items-center gap-1 text-sm font-semibold text-danger"

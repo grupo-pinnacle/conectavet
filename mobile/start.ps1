@@ -32,7 +32,7 @@ if ($ADB) {
         exit 1
     }
     # Verificar que haya un dispositivo conectado
-    $devices = & $adbPath devices 2>&1 | Select-String -Pattern "^[a-fA-F0-9]+\s+device$"
+    $devices = & $adbPath devices 2>&1 | Select-String -Pattern "\s+device$" | Where-Object { $_ -notmatch "List of devices attached|^\s*$" }
     if (-not $devices) {
         Write-Host "No hay ningun dispositivo Android conectado por USB con depuracion activada." -ForegroundColor Red
         Write-Host "1. Conecta el celular por USB" -ForegroundColor Yellow
@@ -40,9 +40,15 @@ if ($ADB) {
         Write-Host "3. Acepta el permiso en la pantalla del celular" -ForegroundColor Yellow
         exit 1
     }
+    # Obtener serial del primer dispositivo
+    $serial = ($devices[0] -replace '\s+device.*', '').Trim()
+    Write-Host "Dispositivo: $serial" -ForegroundColor Cyan
+
     Write-Host "Configurando ADB reverse ports..." -ForegroundColor Yellow
-    & $adbPath reverse tcp:8081 tcp:8081
-    & $adbPath reverse tcp:3001 tcp:3001
+    & $adbPath -s $serial reverse tcp:8081 tcp:8081
+    if ($LASTEXITCODE -ne 0) { Write-Host "  Error en puerto 8081" -ForegroundColor Red; exit 1 }
+    & $adbPath -s $serial reverse tcp:3001 tcp:3001
+    if ($LASTEXITCODE -ne 0) { Write-Host "  Error en puerto 3001" -ForegroundColor Red; exit 1 }
     Write-Host "  Puertos 8081 y 3001 redirigidos por USB" -ForegroundColor Green
     Write-Host "  (No necesita WiFi - usa el cable USB)" -ForegroundColor Green
     Write-Host ""

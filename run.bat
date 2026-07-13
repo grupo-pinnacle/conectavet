@@ -14,10 +14,12 @@ if "%IP%"=="" (
 )
 echo       IP detectada: %IP%
 
-:: Kill old node processes
-echo [1/5] Cerrando procesos anteriores...
-taskkill /f /im node.exe >nul 2>&1
-timeout /t 3 /nobreak >nul
+:: Free ports 8081 (Expo) and 8082 (Expo fallback) — without killing other Node processes
+echo [1/5] Liberando puertos 8081 y 8082...
+for %%p in (8081 8082) do (
+    powershell -Command "$procId = netstat -ano | Select-String ':%%p ' | ForEach-Object { $_ -replace '.*\s+(\d+)$', '$1' } | Select-Object -First 1; if ($procId) { Stop-Process -Id $procId -Force; Write-Output '  Puerto %%p liberado' }" >nul 2>&1
+)
+timeout /t 2 /nobreak >nul
 
 :: Start Backend
 echo [2/5] Iniciando Backend (puerto 3001)...

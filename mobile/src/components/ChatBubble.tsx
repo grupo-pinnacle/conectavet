@@ -1,85 +1,139 @@
-import { useEffect } from 'react';
 import { Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, withDelay, Easing } from 'react-native-reanimated';
-import { useTheme, spacing, radius, fontSizes, fontWeights, shadows, motion } from '@/theme';
+import Animated, { FadeInUp } from 'react-native-reanimated';
+import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
 import type { ChatMessage } from '@/types';
 
 interface ChatBubbleProps {
   message: ChatMessage;
-  vetName?: string;
+  isOwn?: boolean;
+  senderName?: string;
 }
 
-export function ChatBubble({ message, vetName = 'Veterinario' }: ChatBubbleProps) {
+function formatTime(iso: string) {
+  const d = new Date(iso);
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  const time = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  if (isToday) return time;
+  return `${d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })} ${time}`;
+}
+
+function Avatar({ name, role, size = 32 }: { name: string; role: string; size?: number }) {
   const { colors: c } = useTheme();
-  const isUser = message.role === 'USER';
-  const isVet = message.role === 'VET';
+  const bg = role === 'VET' || role === 'ADMIN' ? c.primaryBg : c.accentBg;
+  const iconColor = role === 'VET' || role === 'ADMIN' ? c.primary : c.accentDark;
+  const iconName = role === 'VET' || role === 'ADMIN' ? 'stethoscope' : 'account';
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: bg, justifyContent: 'center', alignItems: 'center' }}>
+      <MaterialCommunityIcons name={iconName} size={size * 0.52} color={iconColor} />
+    </View>
+  );
+}
 
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(10);
+export function ChatBubble({ message, isOwn = false, senderName = 'Veterinario' }: ChatBubbleProps) {
+  const { colors: c } = useTheme();
+  const role = message.sender?.role;
+  const isOptimistic = message.id.startsWith('optimistic-');
 
-  useEffect(() => {
-    opacity.value = withDelay(30, withTiming(1, { duration: motion.duration.fast }));
-    translateY.value = withDelay(30, withTiming(0, { duration: motion.duration.fast }));
-  }, []);
-
-  const animStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
-  }));
-
-  if (message.role !== 'USER' && message.role !== 'VET') {
+  if (!role || (role !== 'CLIENT' && role !== 'VET' && role !== 'ADMIN')) {
     return (
-      <View style={{ alignItems: 'center', marginVertical: spacing.sm }} accessibilityRole="text" accessibilityLabel={`Mensaje del sistema: ${message.content}`}>
-        <View style={{ backgroundColor: c.borderLight, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.full }}>
-          <Text style={{ fontSize: fontSizes.label, color: c.inkMuted, fontStyle: 'italic' }}>
-            {message.content}
-          </Text>
+      <Animated.View entering={FadeInUp.duration(200).springify()} style={{ alignItems: 'center', marginVertical: spacing.xs }}>
+        <View style={{ backgroundColor: c.borderLight, paddingHorizontal: spacing.lg, paddingVertical: spacing.xs, borderRadius: radius.full }}>
+          <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted, fontStyle: 'italic' }}>{message.content}</Text>
         </View>
-      </View>
+      </Animated.View>
     );
   }
 
   return (
-    <Animated.View style={[{ marginVertical: spacing.xs, alignItems: isUser ? 'flex-end' : 'flex-start' }, animStyle]}>
-      {isVet && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xs, marginLeft: spacing.xs }}>
-          <View style={{ width: 20, height: 20, borderRadius: radius.full, backgroundColor: c.primaryBg, justifyContent: 'center', alignItems: 'center' }}>
-            <MaterialCommunityIcons name="stethoscope" size={12} color={c.primary} />
-          </View>
-          <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted, fontWeight: fontWeights.semibold }}>
-            {vetName}
-          </Text>
-        </View>
-      )}
-      <View
-        style={{
-          maxWidth: '82%',
-          backgroundColor: isUser ? c.primary : c.surface,
-          paddingHorizontal: spacing.lg,
-          paddingVertical: spacing.md,
-          borderRadius: radius.xl,
-          borderBottomRightRadius: isUser ? radius.xs : radius.xl,
-          borderBottomLeftRadius: isUser ? radius.xl : radius.xs,
-          borderWidth: isUser ? 0 : 1,
-          borderColor: c.border,
-          ...(isUser ? {} : shadows.subtle),
-        }}
-        accessibilityRole="text"
-        accessibilityLabel={`${isUser ? 'Vos' : vetName}: ${message.content}`}
-      >
-        <Text
-          style={{
-            color: isUser ? c.white : c.ink,
-            fontSize: fontSizes.body,
-            lineHeight: 20,
-            letterSpacing: 0.1,
-          }}
-        >
-          {message.content}
-        </Text>
+    <Animated.View
+      entering={FadeInUp.duration(200).springify().damping(24).stiffness(200)}
+      style={{
+        marginVertical: 3,
+        flexDirection: isOwn ? 'row-reverse' : 'row',
+        alignItems: 'flex-end',
+        gap: spacing.sm,
+        paddingHorizontal: spacing.sm,
+      }}
+    >
+      {/* Avatar column — always show for others, hide for own */}
+      <View style={{ width: 30, alignItems: 'center' }}>
+        {!isOwn && <Avatar name={senderName} role={role!} size={30} />}
       </View>
 
+      {/* Bubble column */}
+      <View style={{ maxWidth: '74%' }}>
+        {/* Sender label for received messages */}
+        {!isOwn && (
+          <Text
+            style={{
+              fontSize: 11,
+              color: role === 'VET' || role === 'ADMIN' ? c.primary : c.accentDark,
+              fontWeight: fontWeights.semibold,
+              marginBottom: 3,
+              marginLeft: 4,
+            }}
+          >
+            {role === 'VET' || role === 'ADMIN' ? senderName : 'Tú'}
+          </Text>
+        )}
+
+        <View
+          style={{
+            backgroundColor: isOwn ? c.primary : c.surface,
+            paddingHorizontal: spacing.lg,
+            paddingVertical: spacing.md,
+            borderRadius: 20,
+            borderBottomRightRadius: isOwn ? 6 : 20,
+            borderBottomLeftRadius: isOwn ? 20 : 6,
+            borderWidth: isOwn ? 0 : 1,
+            borderColor: c.border,
+            shadowColor: isOwn ? c.primary : '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: isOwn ? 0.08 : 0.04,
+            shadowRadius: 3,
+            elevation: isOwn ? 2 : 1,
+          }}
+        >
+          <Text
+            style={{
+              color: isOwn ? c.white : c.ink,
+              fontSize: fontSizes.body,
+              lineHeight: 21,
+            }}
+          >
+            {message.content}
+          </Text>
+
+          {/* Timestamp + state row */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              gap: 4,
+              marginTop: 6,
+            }}
+          >
+            <Text
+              style={{
+                color: isOwn ? 'rgba(255,255,255,0.6)' : c.inkMuted,
+                fontSize: 10,
+              }}
+            >
+              {formatTime(message.createdAt)}
+            </Text>
+            {isOwn && (
+              isOptimistic ? (
+                <MaterialCommunityIcons name="clock-outline" size={11} color="rgba(255,255,255,0.45)" />
+              ) : (
+                <MaterialCommunityIcons name="check" size={11} color="rgba(255,255,255,0.55)" />
+              )
+            )}
+          </View>
+        </View>
+      </View>
     </Animated.View>
   );
 }

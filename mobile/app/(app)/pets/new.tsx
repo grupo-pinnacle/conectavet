@@ -3,6 +3,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { View, Text, ScrollView, Pressable, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button, Input, Card } from '@/components/ui';
@@ -15,6 +16,7 @@ const SPECIES: Species[] = ['DOG', 'CAT', 'BIRD', 'REPTILE', 'RODENT', 'OTHER'];
 
 export default function NewPetScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { colors: c } = useTheme();
   const { create } = usePets();
   const [photoUri, setPhotoUri] = useState<string | null>(null);
@@ -50,7 +52,7 @@ export default function NewPetScreen() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.huge }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ paddingTop: insets.top + spacing.lg, paddingHorizontal: spacing.lg, paddingBottom: insets.bottom + spacing.huge }} keyboardShouldPersistTaps="handled">
         <Card>
           <Pressable onPress={onPickPhoto} style={{ alignItems: 'center', marginBottom: spacing.lg }} accessibilityRole="button" accessibilityLabel={photoUri ? 'Cambiar foto' : 'Agregar foto'}>
             <View style={{ width: 96, height: 96, borderRadius: radius.full, backgroundColor: c.borderLight, justifyContent: 'center', alignItems: 'center', overflow: 'hidden', borderWidth: 2, borderColor: c.border }}>

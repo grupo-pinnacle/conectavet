@@ -7,7 +7,6 @@ import type {
   CreatePetPayload,
   LoginPayload,
   Pet,
-  RateConsultationPayload,
   RegisterPayload,
   UpdatePetPayload,
   VetCard,
@@ -41,8 +40,6 @@ export const consultationsService = {
   getById: (id: string) => api.get<Consultation>(`/consultations/${id}`),
   myHistory: (params?: { page?: number; limit?: number; status?: string }) =>
     api.get<Consultation[]>('/consultations/my-history', { params }),
-  rate: (entryId: string, payload: RateConsultationPayload) =>
-    api.post(`/consultations/${entryId}/rate`, payload),
   getMessages: (consultationId: string) =>
     api.get<ChatMessage[]>(`/consultations/${consultationId}/messages`),
   sendMessage: (consultationId: string, content: string) =>

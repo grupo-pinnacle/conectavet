@@ -35,8 +35,7 @@ export default function VetDashboardPage() {
     }
   };
 
-  const getUnreadBadge = (key: string) => {
-    if (key === "messages") return "3";
+  const getUnreadBadge = (_key: string) => {
     return null;
   };
 

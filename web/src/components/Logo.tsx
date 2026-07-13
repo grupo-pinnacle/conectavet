@@ -19,12 +19,11 @@ function LogoIcon({ size }: { size: number }) {
       fill="none"
       style={{ flexShrink: 0 }}
     >
-      <rect x="0.5" y="0.5" width="47" height="47" rx="11" fill="#0F766E" />
-      <circle cx="24" cy="24" r="16" fill="white" />
-      <path d="M16 28c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#0F766E" strokeWidth="2.5" strokeLinecap="round" />
-      <circle cx="18" cy="20" r="2" fill="#0F766E" />
-      <circle cx="30" cy="20" r="2" fill="#0F766E" />
-      <path d="M20 30c1 1.5 2.5 2 4 2s3-0.5 4-2" stroke="#0F766E" strokeWidth="2" strokeLinecap="round" />
+      <rect width="48" height="48" rx="10" fill="#0F766E" />
+      <path
+        d="M24 15C24 15 19 9 14 9C9.5 9 7 12 7 17C7 23 24 39 24 39C24 39 41 23 41 17C41 12 38.5 9 34 9C29 9 24 15 24 15Z"
+        fill="white"
+      />
     </svg>
   );
 }

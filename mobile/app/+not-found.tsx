@@ -1,14 +1,16 @@
 import { Link, Stack } from 'expo-router';
 import { Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
 
 export default function NotFoundScreen() {
+  const insets = useSafeAreaInsets();
   const { colors: c } = useTheme();
   return (
     <>
       <Stack.Screen options={{ title: 'No encontrado' }} />
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xxl, backgroundColor: c.background, gap: spacing.lg }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.xxl, paddingTop: insets.top + spacing.xxl, paddingBottom: insets.bottom + spacing.xxl, backgroundColor: c.background, gap: spacing.lg }}>
         <View style={{ width: 80, height: 80, borderRadius: radius.full, backgroundColor: c.primaryBg, justifyContent: 'center', alignItems: 'center' }}>
           <MaterialCommunityIcons name="paw-off" size={40} color={c.primary} />
         </View>

@@ -1,58 +1,148 @@
-import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, Text, View, Platform } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useConsultationHistory } from '@/hooks/useConsultations';
 import { Card, Badge, SkeletonCard, EmptyState } from '@/components/ui';
-import { useTheme, spacing, fontSizes, fontWeights } from '@/theme';
+import { useTheme, spacing, fontSizes, fontWeights, radius } from '@/theme';
 import { formatDateTime } from '@/utils/format';
 import type { Consultation } from '@/types';
 
 export default function ChatListScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { colors: c } = useTheme();
-  const { data, isFetching, refetch, isLoading } = useConsultationHistory({ limit: 50 });
+  const { data, isFetching, refetch, isLoading, isError, error } = useConsultationHistory({ limit: 50 });
   const consultations = (data ?? []).filter(
     (c: Consultation) => c.status !== 'WAITING'
   );
 
+  const activeConsultations = consultations.filter(c => c.status === 'ACTIVE');
+  const pastConsultations = consultations.filter(c => c.status !== 'ACTIVE');
+
   if (isLoading) {
-    return <View style={{ padding: spacing.lg, gap: spacing.md }}><SkeletonCard /><SkeletonCard /></View>;
+    return (
+      <View style={{ flex: 1, padding: spacing.lg, gap: spacing.md }}>
+        <SkeletonCard />
+        <SkeletonCard />
+      </View>
+    );
   }
 
+  if (isError) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', padding: spacing.lg }}>
+        <EmptyState
+          icon="alert-circle-outline"
+          title="Error al cargar"
+          subtitle={(error as any)?.message ?? 'No pudimos cargar tus consultas. Revisá tu conexión.'}
+          ctaLabel="Reintentar"
+          onCta={() => refetch()}
+        />
+      </View>
+    );
+  }
+
+  const allSections: { type: 'active' | 'past'; data: Consultation[] }[] = [
+    ...(activeConsultations.length > 0 ? [{ type: 'active' as const, data: activeConsultations }] : []),
+    ...(pastConsultations.length > 0 ? [{ type: 'past' as const, data: pastConsultations }] : []),
+  ];
+
   return (
-    <View style={{ flex: 1 }}>
+    <Animated.View style={{ flex: 1 }} entering={FadeIn.duration(300)}>
       <FlatList
-        data={consultations}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: spacing.lg, paddingBottom: 80 }}
-        ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
+        data={allSections}
+        keyExtractor={(item) => item.type}
+        contentContainerStyle={{ padding: spacing.lg, paddingBottom: insets.bottom + spacing.lg }}
         refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={c.primary} />}
         ListEmptyComponent={
-          <EmptyState icon="chat-processing" title="Sin consultas activas" subtitle="Cuando solicites una consulta y un veterinario la atienda, podrás chatear aquí." ctaLabel="Solicitar consulta" onCta={() => router.push('/(app)/queue')} />
+          <EmptyState
+            icon="chat-processing"
+            title="Sin consultas activas"
+            subtitle="Cuando solicites una consulta y un veterinario la atienda, podrás chatear aquí."
+            ctaLabel="Solicitar consulta"
+            onCta={() => router.push('/(app)/queue')}
+          />
         }
-        renderItem={({ item }) => {
-          const statusIcon = item.status === 'COMPLETED' ? 'check-circle' : item.status === 'CANCELLED' ? 'close-circle' : item.status === 'IN_CONSULTATION' ? 'progress-check' : 'chat-processing';
-          const statusIconColor = item.status === 'COMPLETED' ? c.success : item.status === 'CANCELLED' ? c.danger : item.status === 'IN_CONSULTATION' ? c.primary : c.accent;
-          const statusLabel = item.status === 'COMPLETED' ? 'Completada' : item.status === 'CANCELLED' ? 'Cancelada' : item.status === 'IN_CONSULTATION' ? 'En curso' : 'Asignado';
-          return (
-            <Pressable onPress={() => router.push(`/(app)/chat/${item.id}`)} accessibilityRole="button" accessibilityLabel={`Chat con ${item.vetName ?? 'veterinario'}`} accessibilityHint="Abrir chat de la consulta">
-              <Card padding={spacing.lg}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.xs }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 }}>
-                    <MaterialCommunityIcons name={statusIcon} size={20} color={statusIconColor} />
-                    <Text style={{ fontSize: fontSizes.body, fontWeight: fontWeights.semibold, color: c.ink, flex: 1 }} numberOfLines={1}>
-                      {item.vetName ?? 'Veterinario'} · {item.petName ?? 'Mascota'}
-                    </Text>
-                  </View>
-                  <Badge label={statusLabel} size="sm" bg={item.status === 'COMPLETED' ? c.successBg : item.status === 'CANCELLED' ? c.dangerBg : c.primaryBg} color={item.status === 'COMPLETED' ? c.successDark : item.status === 'CANCELLED' ? c.dangerDark : c.primary} />
-                </View>
-                <Text style={{ fontSize: fontSizes.body, color: c.inkMuted, marginLeft: spacing.xxxl }} numberOfLines={1}>{item.reason}</Text>
-                <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted, marginLeft: spacing.xxxl, marginTop: spacing.xs }}>{formatDateTime(item.updatedAt)}</Text>
-              </Card>
-            </Pressable>
-          );
-        }}
+        renderItem={({ item: section }) => (
+          <View style={{ marginBottom: spacing.xxl }}>
+            {section.type === 'past' && activeConsultations.length > 0 && (
+              <Text style={{ fontSize: fontSizes.label, fontWeight: fontWeights.semibold, color: c.inkMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: spacing.md, marginLeft: spacing.xs }}>
+                Anteriores
+              </Text>
+            )}
+            <View style={{ gap: spacing.sm }}>
+              {section.data.map((item: Consultation) => {
+                const isActive = item.status === 'ACTIVE';
+                const isCompleted = item.status === 'COMPLETED';
+                const iconName = isActive ? 'chat-processing' : isCompleted ? 'check-circle-outline' : 'close-circle-outline';
+                const iconColor = isActive ? c.primary : isCompleted ? c.success : c.inkMuted;
+                const label = isActive ? 'En curso' : isCompleted ? 'Completada' : 'Cancelada';
+                const bgColor = isActive ? c.primaryBg : isCompleted ? c.successBg : c.dangerBg;
+                const textColor = isActive ? c.primary : isCompleted ? c.successDark : c.dangerDark;
+                const petDisplay = item.pet?.name || 'Mascota';
+                const vetDisplay = item.vet?.firstName || item.vet?.email;
+
+                return (
+                  <Pressable
+                    key={item.id}
+                    onPress={() => router.push(`/(app)/chat/${item.id}`)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Chat${vetDisplay ? ` con ${vetDisplay}` : ''}, ${petDisplay}`}
+                    style={{ opacity: isActive ? 1 : 0.7 }}
+                  >
+                    <View style={{
+                      flexDirection: 'row', borderRadius: radius.xl,
+                      backgroundColor: c.surface, overflow: 'hidden',
+                      ...Platform.select({
+                        ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isActive ? 0.08 : 0.04, shadowRadius: 6 },
+                        android: { elevation: isActive ? 3 : 1 },
+                      }),
+                    }}>
+                      {/* Active consultations get a colored left border */}
+                      {isActive && (
+                        <View style={{ width: 4, backgroundColor: c.primary, borderTopLeftRadius: radius.xl, borderBottomLeftRadius: radius.xl }} />
+                      )}
+                      <View style={{ flex: 1, padding: spacing.lg, paddingLeft: isActive ? spacing.md : spacing.lg }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 }}>
+                            {/* Avatar circle */}
+                            <View style={{
+                              width: 40, height: 40, borderRadius: 20,
+                              backgroundColor: isActive ? c.primaryBg : c.borderLight,
+                              justifyContent: 'center', alignItems: 'center',
+                            }}>
+                              <MaterialCommunityIcons
+                                name={isActive ? 'chat-processing' : (isCompleted ? 'check-circle-outline' : 'close-circle-outline')}
+                                size={20} color={isActive ? c.primary : c.inkMuted}
+                              />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontSize: fontSizes.body, fontWeight: fontWeights.semibold, color: c.ink }} numberOfLines={1}>
+                                {petDisplay}
+                              </Text>
+                              {vetDisplay ? (
+                                <Text style={{ fontSize: fontSizes.label, color: c.inkMuted, marginTop: 1 }} numberOfLines={1}>
+                                  con {vetDisplay}
+                                </Text>
+                              ) : null}
+                            </View>
+                          </View>
+                          <Badge label={label} size="sm" bg={bgColor} color={textColor} />
+                        </View>
+                        <Text style={{ fontSize: fontSizes.caption, color: c.inkSoft, marginTop: spacing.sm, marginLeft: 52 }}>
+                          {formatDateTime(item.updatedAt ?? item.createdAt)}
+                        </Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        )}
       />
-    </View>
+    </Animated.View>
   );
 }

@@ -1,5 +1,6 @@
 import { View, Text, Pressable, RefreshControl, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { usePets } from '@/hooks/usePets';
 import { useAuth } from '@/hooks/useAuth';
@@ -10,6 +11,7 @@ import type { Pet } from '@/types';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { colors: c } = useTheme();
   const { user } = useAuth();
   const { list } = usePets();
@@ -17,7 +19,7 @@ export default function HomeScreen() {
 
   return (
     <ScrollView
-      contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.huge }}
+      contentContainerStyle={{ padding: spacing.lg, paddingBottom: insets.bottom + spacing.huge }}
       refreshControl={<RefreshControl refreshing={list.isFetching} onRefresh={list.refetch} tintColor={c.primary} />}
     >
       <View style={{ marginBottom: spacing.xxl }}>
@@ -74,6 +76,16 @@ export default function HomeScreen() {
           <SkeletonCard />
           <SkeletonCard />
         </View>
+      ) : list.isError ? (
+        <Card>
+          <EmptyState
+            icon="alert-circle-outline"
+            title="Error al cargar"
+            subtitle="No pudimos cargar tus mascotas. Revisá tu conexión."
+            ctaLabel="Reintentar"
+            onCta={() => list.refetch()}
+          />
+        </Card>
       ) : pets.length === 0 ? (
         <Card>
           <EmptyState icon="paw" title="Aún no tenés mascotas" subtitle="Cargá tu primera mascota para pedir consultas." ctaLabel="Agregar mascota" onCta={() => router.push('/(app)/pets/new')} />

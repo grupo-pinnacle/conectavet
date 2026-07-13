@@ -1,122 +1,196 @@
-import { useState } from "react";
-import { Star } from "lucide-react";
+import { useState, useEffect } from "react";
+import { createConsultation, getMyPets, getMyConsultations } from "../../services/endpoints";
+import type { Pet } from "../../types";
+import { Calendar, PawPrint, Clock, CheckCircle } from "lucide-react";
+import Button from "../Button";
 
-const allVets = [
-  { name: "Dr. Luis López", specialty: "Cardiólogo Veterinario", rating: 4.7, reviews: 120, price: "$1,500", available: true, avatar: "L" },
-  { name: "Dra. Sofía Ramirez", specialty: "Dermatóloga Veterinaria", rating: 4.8, reviews: 85, price: "$1,800", available: true, avatar: "S" },
-  { name: "Dr. Pablo García", specialty: "Cirujano Veterinario", rating: 4.9, reviews: 200, price: "$2,500", available: false, avatar: "P" },
-  { name: "Dra. Ana Torres", specialty: "Oftalmóloga Veterinaria", rating: 4.6, reviews: 65, price: "$1,600", available: true, avatar: "A" },
-];
-
-const species = ["Perros", "Gatos", "Aves", "Exóticos"];
-const availabilities = ["Hoy", "Esta semana", "Cualquier"];
+interface ConsultationStatus {
+  id: string;
+  petId: string;
+  status: string;
+  petName: string;
+  createdAt: string;
+}
 
 export default function ConsultationsSection() {
-  const [selectedSpecies, setSelectedSpecies] = useState("Perros");
-  const [selectedAvail, setSelectedAvail] = useState("Cualquier");
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [activeConsultations, setActiveConsultations] = useState<ConsultationStatus[]>([]);
+  const [selectedPetId, setSelectedPetId] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const [petsData, consData] = await Promise.all([
+          getMyPets(),
+          getMyConsultations(),
+        ]);
+        setPets(petsData);
+        setActiveConsultations(
+          consData
+            .filter((c) => c.status !== "COMPLETED")
+            .map((c) => ({
+              id: c.id,
+              petId: c.petId,
+              status: c.status,
+              petName: c.pet?.name || "Mascota",
+              createdAt: c.createdAt,
+            }))
+        );
+      } catch {
+        setError("Error al cargar datos");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetch();
+  }, []);
+
+  const handleCreate = async () => {
+    if (!selectedPetId) return;
+    setCreating(true);
+    setError("");
+    setSuccess("");
+    try {
+      const cons = await createConsultation({ petId: selectedPetId });
+      setActiveConsultations((prev) => [
+        {
+          id: cons.id,
+          petId: cons.petId,
+          status: cons.status,
+          petName: cons.pet?.name || "Mascota",
+          createdAt: cons.createdAt,
+        },
+        ...prev,
+      ]);
+      setSuccess("Consulta solicitada. Un veterinario la tomará en breve.");
+      setSelectedPetId("");
+    } catch {
+      setError("Error al crear la consulta");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-teal-700 border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-ink">Buscar Veterinario</h1>
-        <p className="text-slate-500">Encuentra al especialista ideal para tu mascota</p>
+        <h1 className="text-2xl font-bold text-ink">Consultas</h1>
+        <p className="text-slate-500">
+          Solicitá una consulta para tu mascota
+        </p>
       </div>
 
-      {/* Filters */}
-      <div className="mb-6 rounded-xl border border-border bg-white p-5 shadow-sm">
-        <div className="flex flex-wrap items-center gap-4">
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Especie</p>
-            <div className="flex flex-wrap gap-2">
-              {species.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setSelectedSpecies(s)}
-                  className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
-                    selectedSpecies === s
-                      ? "bg-teal-700 text-white"
-                      : "border border-border bg-white text-slate-500 hover:bg-slate-100"
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="hidden h-8 w-px bg-border sm:block" />
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Disponibilidad</p>
-            <div className="flex flex-wrap gap-2">
-              {availabilities.map((a) => (
-                <button
-                  key={a}
-                  onClick={() => setSelectedAvail(a)}
-                  className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
-                    selectedAvail === a
-                      ? "bg-teal-700 text-white"
-                      : "border border-border bg-white text-slate-500 hover:bg-slate-100"
-                  }`}
-                >
-                  {a}
-                </button>
-              ))}
-            </div>
-          </div>
-          <button className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 sm:ml-auto">
-            Filtros
-          </button>
+      {error && (
+        <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm font-semibold text-red-600">
+          {error}
         </div>
+      )}
+      {success && (
+        <div className="mb-4 rounded-lg bg-green-50 p-4 text-sm font-semibold text-green-700">
+          {success}
+        </div>
+      )}
+
+      {/* Nueva consulta */}
+      <div className="mb-8 rounded-xl border border-border bg-white p-6 shadow-sm">
+        <h3 className="mb-4 text-lg font-bold text-ink">
+          <Calendar className="mr-2 inline h-5 w-5 text-teal-700" />
+          Solicitar nueva consulta
+        </h3>
+        {pets.length === 0 ? (
+          <p className="text-sm text-slate-500">
+            Primero registrá una mascota en la sección "Mascotas".
+          </p>
+        ) : (
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="flex-1 min-w-[200px]">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Mascota
+              </label>
+              <select
+                value={selectedPetId}
+                onChange={(e) => setSelectedPetId(e.target.value)}
+                className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink focus:border-teal-600 focus:outline-none"
+              >
+                <option value="">Seleccionar mascota</option>
+                {pets.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.species})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Button
+              disabled={!selectedPetId}
+              loading={creating}
+              onClick={handleCreate}
+              fullWidth={false}
+            >
+              Solicitar consulta
+            </Button>
+          </div>
+        )}
       </div>
 
-      {/* Vet cards */}
-      <div className="grid gap-5 sm:grid-cols-2">
-        {allVets.map((vet) => (
-          <div
-            key={vet.name}
-            className="rounded-xl border border-border bg-white p-4 shadow-sm md:p-5"
-          >
-            <div className="mb-4 flex items-start justify-between gap-2">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-bold text-teal-700 md:h-14 md:w-14 md:text-lg">
-                  {vet.avatar}
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate font-bold text-ink">{vet.name}</p>
-                  <p className="truncate text-sm text-slate-500">{vet.specialty}</p>
-                  <div className="mt-1 flex items-center gap-1 text-sm">
-                    <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
-                    <span className="font-semibold text-ink">{vet.rating}</span>
-                    <span className="hidden text-slate-400 md:inline">({vet.reviews} reseñas)</span>
-                  </div>
-                </div>
-              </div>
-              <span
-                className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
-                    vet.available
-                      ? "bg-success-bg text-success"
-                      : "bg-red-50 text-red-500"
-                }`}
-              >
-                {vet.available ? "Disponible" : "No Disponible"}
-              </span>
-            </div>
-            <div className="mb-4 flex items-center justify-between border-t border-[#F1F5F9] pt-4">
-              <p className="text-xs text-slate-500 md:text-sm">Costo aprox.</p>
-              <p className="text-lg font-bold text-teal-700">{vet.price}</p>
-            </div>
-            <button
-              disabled={!vet.available}
-              className={`w-full rounded-lg py-2.5 text-sm font-bold transition-opacity ${
-                vet.available
-                  ? "bg-teal-700 text-white hover:opacity-90"
-                  : "cursor-not-allowed bg-gray-100 text-slate-400"
-              }`}
+      {/* Consultas activas */}
+      <h3 className="mb-4 text-lg font-bold text-ink">Tus consultas</h3>
+      {activeConsultations.length === 0 ? (
+        <div className="rounded-xl border border-border bg-white p-10 text-center shadow-sm">
+          <PawPrint className="mx-auto h-10 w-10 text-teal-700" />
+          <p className="mt-4 text-lg font-bold text-ink">
+            No tenés consultas activas
+          </p>
+          <p className="text-sm text-slate-500">
+            Solicité una consulta para tu mascota y un veterinario la tomará.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {activeConsultations.map((c) => (
+            <div
+              key={c.id}
+              className="flex items-center gap-4 rounded-xl border border-border bg-white p-5 shadow-sm"
             >
-              Agendar consulta
-            </button>
-          </div>
-        ))}
-      </div>
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 text-xl">
+                <PawPrint className="h-6 w-6 text-teal-700" />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-ink">{c.petName}</p>
+                <p className="text-sm text-slate-500">
+                  {new Date(c.createdAt).toLocaleDateString("es-AR", {
+                    day: "numeric",
+                    month: "long",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </div>
+              {c.status === "WAITING" && (
+                <span className="flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-700">
+                  <Clock className="h-3.5 w-3.5" /> Esperando veterinario
+                </span>
+              )}
+              {c.status === "ACTIVE" && (
+                <span className="flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-700">
+                  <CheckCircle className="h-3.5 w-3.5" /> En consulta
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

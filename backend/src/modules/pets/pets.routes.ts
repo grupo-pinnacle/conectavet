@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../../shared/middlewares/auth.middleware';
 import {
   getMyPetsController,
+  getManagedPetsController,
   getPetByIdController,
   getPetVetCardController,
   createPetController,
@@ -13,6 +14,7 @@ import {
 const router = Router();
 
 router.get('/', authenticate, getMyPetsController);
+router.get('/managed', authenticate, getManagedPetsController);
 router.get('/:id', authenticate, getPetByIdController);
 router.post('/', authenticate, createPetController);
 router.put('/:id', authenticate, updatePetController);

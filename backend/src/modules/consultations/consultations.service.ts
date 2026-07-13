@@ -12,12 +12,14 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
 export async function createConsultation(data: {
   clientId: string;
   petId: string;
+  notes?: string;
 }) {
   return prisma.consultation.create({
     data: {
       clientId: data.clientId,
       petId: data.petId,
       status: 'WAITING',
+      notes: data.notes,
     },
     include: { pet: true, client: true },
   });

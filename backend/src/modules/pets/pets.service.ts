@@ -111,6 +111,16 @@ export async function restorePet(id: string, userId: string) {
   });
 }
 
+export async function getManagedPets(vetId: string) {
+  const consultations = await prisma.consultation.findMany({
+    where: { vetId, pet: { deletedAt: null } },
+    select: { pet: true },
+    distinct: ['petId'],
+    orderBy: { updatedAt: 'desc' },
+  });
+  return consultations.map((c) => c.pet);
+}
+
 export async function getPetVetCard(petId: string) {
   const pet = await prisma.pet.findUnique({
     where: { id: petId },
@@ -119,7 +129,7 @@ export async function getPetVetCard(petId: string) {
       consultations: {
         orderBy: { createdAt: 'desc' },
         take: 5,
-        select: { id: true, reason: true, status: true, completedAt: true, createdAt: true },
+        select: { id: true, notes: true, status: true, endedAt: true, createdAt: true },
       },
     },
   });
@@ -153,9 +163,9 @@ export async function getPetVetCard(petId: string) {
     },
     recentConsultations: (pet.consultations as any[]).map((c: any) => ({
       id: c.id,
-      reason: c.reason ?? 'Sin motivo',
+      reason: c.notes ?? 'Sin motivo',
       status: c.status,
-      completedAt: c.completedAt?.toISOString() ?? null,
+      completedAt: c.endedAt?.toISOString() ?? null,
     })),
     allergies: pet.allergies ?? [],
     chronicConditions: pet.chronicConditions ?? [],

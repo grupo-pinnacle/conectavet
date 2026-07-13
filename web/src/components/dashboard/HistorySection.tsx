@@ -1,66 +1,102 @@
-import { PawPrint } from "lucide-react";
-
-interface HistoryRecord {
-  date: string;
-  specialty: string;
-  vet: string;
-  diagnosis: string;
-  pet: string;
-}
-
-const records: HistoryRecord[] = [
-  { date: "12 May 2026", specialty: "Dermatología", vet: "Dra. Sofía Ramirez", diagnosis: "Alergia cutánea", pet: "Firulais" },
-  { date: "02 Abr 2026", specialty: "Consulta general", vet: "Dra. Ana Torres", diagnosis: "Revisión general", pet: "Mishi" },
-  { date: "15 Feb 2026", specialty: "Control anual", vet: "Dr. Pablo García", diagnosis: "Vacunas al día", pet: "Firulais" },
-  { date: "10 Nov 2025", specialty: "Vacunación", vet: "Dr. Martín López", diagnosis: "Antirrábica aplicada", pet: "Luna" },
-];
-
-const petIcons: Record<string, string> = {
-  Firulais: "🐶",
-  Mishi: "🐱",
-  Luna: "🐩",
-};
+import { useState, useEffect } from "react";
+import { getMyConsultations } from "../../services/endpoints";
+import type { Consultation } from "../../types";
+import { ClipboardList, PawPrint, Clock } from "lucide-react";
 
 export default function HistorySection() {
+  const [completed, setCompleted] = useState<Consultation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const data = await getMyConsultations();
+        setCompleted(
+          data.filter((c) => c.status === "COMPLETED")
+        );
+      } catch {
+        setError("No se pudo cargar el historial");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetch();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-teal-700 border-t-transparent" />
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-ink">Historial clínico</h1>
-          <p className="text-slate-500">Registro completo de las consultas de tus mascotas</p>
+          <p className="text-slate-500">
+            {completed.length} consulta{completed.length !== 1 ? "s" : ""} finalizada{completed.length !== 1 ? "s" : ""}
+          </p>
         </div>
-        <button className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100">
-          Filtrar
-        </button>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-border bg-white shadow-sm">
-        <table className="w-full min-w-[500px]">
-          <thead>
-            <tr className="border-b border-border bg-surface">
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Fecha</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Mascota</th>
-              <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 sm:table-cell">Especialidad</th>
-              <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 md:table-cell">Veterinario</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Diagnóstico</th>
-            </tr>
-          </thead>
-          <tbody>
-            {records.map((r) => (
-            <tr key={`${r.date}-${r.specialty}`} className="border-b border-[#F1F5F9] last:border-0 hover:bg-slate-100">
-                <td className="px-4 py-4 text-sm font-semibold text-ink whitespace-nowrap">{r.date}</td>
-                <td className="px-4 py-4 text-sm text-ink whitespace-nowrap">
-                  <span className="mr-1">{petIcons[r.pet] || <PawPrint className="inline h-4 w-4" />}</span>
-                  {r.pet}
-                </td>
-                <td className="hidden px-4 py-4 text-sm text-slate-500 sm:table-cell">{r.specialty}</td>
-                <td className="hidden px-4 py-4 text-sm text-slate-500 md:table-cell">{r.vet}</td>
-                <td className="px-4 py-4 text-sm font-medium text-ink">{r.diagnosis}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {error && (
+        <div className="mb-5 rounded-lg bg-red-50 p-4 text-sm font-semibold text-red-600">{error}</div>
+      )}
+
+      {completed.length === 0 ? (
+        <div className="rounded-xl border border-border bg-white p-10 text-center shadow-sm">
+          <ClipboardList className="mx-auto h-10 w-10 text-teal-700" />
+          <p className="mt-4 text-lg font-bold text-ink">Aún no hay historial</p>
+          <p className="text-sm text-slate-500">
+            Las consultas finalizadas aparecerán acá con las notas del veterinario.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {completed.map((c) => (
+            <div
+              key={c.id}
+              className="rounded-xl border border-border bg-white p-5 shadow-sm"
+            >
+              <div className="mb-3 flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-50 text-sm font-bold text-teal-700">
+                    {c.pet?.name?.charAt(0) || "?"}
+                  </div>
+                  <div>
+                    <p className="font-bold text-ink">{c.pet?.name || "Mascota"}</p>
+                    <p className="text-xs text-slate-500">
+                      {c.vet?.firstName || c.vet?.email || "Veterinario"}
+                    </p>
+                  </div>
+                </div>
+                <span className="flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">
+                  <Clock className="h-3 w-3" />
+                  {new Date(c.endedAt || c.createdAt).toLocaleDateString("es-AR", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </span>
+              </div>
+              {c.notes ? (
+                <div className="rounded-lg bg-[#F1F5F9] p-4">
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    Notas del veterinario
+                  </p>
+                  <p className="text-sm text-ink whitespace-pre-wrap">{c.notes}</p>
+                </div>
+              ) : (
+                <p className="text-sm italic text-slate-400">Sin notas registradas</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

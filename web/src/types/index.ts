@@ -1,53 +1,86 @@
 export interface User {
   id: string;
-  name: string;
   email: string;
-  role?: "owner" | "vet" | "admin";
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  role: "owner" | "vet" | "admin";
 }
 
 export interface Pet {
   id: string;
   name: string;
   species: string;
-  breed: string;
-  age: number;
-  weight: string;
+  breed?: string;
+  age?: number;
+  weight?: string;
+  weightKg?: number;
+  photoUrl?: string;
   ownerId: string;
   ownerName?: string;
-  avatar?: string;
+  sex?: string;
+  color?: string;
+  microchip?: string;
+  allergies?: string[];
+  chronicConditions?: string[];
+  birthDate?: string;
+  deletedAt?: string;
+  createdAt?: string;
   nextVet?: string;
   lastVisit?: string;
-  createdAt?: string;
 }
 
 export interface Consultation {
   id: string;
+  clientId: string;
+  vetId?: string;
   petId: string;
-  petName?: string;
-  ownerId?: string;
-  ownerName?: string;
-  vetId: string;
-  vetName?: string;
-  type: string;
-  status: "pending" | "confirmed" | "in_progress" | "completed" | "cancelled";
-  date: string;
-  time: string;
+  status: "WAITING" | "ACTIVE" | "COMPLETED" | "CANCELLED";
   notes?: string;
-  diagnosis?: string;
-  treatment?: string;
+  startedAt?: string;
+  endedAt?: string;
+  createdAt: string;
+  pet?: Pet;
+  client?: User;
+  vet?: User;
+  messages?: Message[];
 }
 
-export interface MedicalRecord {
+export interface Message {
   id: string;
-  petId: string;
-  petName?: string;
-  vetId: string;
-  vetName?: string;
-  date: string;
-  type: string;
-  diagnosis: string;
-  treatment: string;
-  notes: string;
+  consultationId: string;
+  senderId: string;
+  content: string;
+  createdAt: string;
+  sender?: { id: string; email: string; role: string };
 }
 
+export interface VetCardOwner {
+  id: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  phone?: string | null;
+}
 
+export interface VetCardConsultation {
+  id: string;
+  reason: string;
+  status: string;
+  completedAt: string | null;
+}
+
+export interface VetCardStats {
+  totalConsultations: number;
+  lastConsultationDate: string | null;
+  ageYears: number;
+  ageMonths: number;
+}
+
+export interface VetCard {
+  pet: Pet;
+  owner: VetCardOwner;
+  stats: VetCardStats;
+  recentConsultations: VetCardConsultation[];
+  allergies: string[];
+  chronicConditions: string[];
+}

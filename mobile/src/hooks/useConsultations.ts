@@ -1,6 +1,8 @@
+import { useEffect, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { consultationsService } from '@/services';
-import type { ChatMessage, Consultation, CreateConsultationPayload, RateConsultationPayload } from '@/types';
+import { connectSocket, joinConsultation, leaveConsultation } from '@/lib/socket';
+import type { ChatMessage, Consultation, CreateConsultationPayload } from '@/types';
 
 export function useConsultationHistory(params?: { page?: number; limit?: number }) {
   return useQuery({
@@ -28,45 +30,97 @@ export function useCreateConsultation() {
   });
 }
 
-export function useRateConsultation() {
-  return useMutation({
-    mutationFn: ({ entryId, payload }: { entryId: string; payload: RateConsultationPayload }) =>
-      consultationsService.rate(entryId, payload),
-  });
-}
-
-export function useConsultationMessages(consultationId: string | undefined) {
+export function useConsultationMessages(consultationId: string | undefined, userId?: string) {
   const qc = useQueryClient();
   const key = ['consultations', consultationId, 'messages'] as const;
+  const connectedRef = useRef(false);
 
   const list = useQuery({
     queryKey: key,
     queryFn: async () => (await consultationsService.getMessages(consultationId!)) as ChatMessage[],
     enabled: Boolean(consultationId),
     staleTime: 0,
-    refetchInterval: 3000,
+    refetchInterval: 5000,
   });
 
+  // Socket connection for real-time messages
+  useEffect(() => {
+    if (!consultationId) return;
+
+    let cancelled = false;
+    let socketInstance: Awaited<ReturnType<typeof connectSocket>> | null = null;
+
+    const initSocket = async () => {
+      try {
+        socketInstance = await connectSocket();
+        if (cancelled) return;
+        connectedRef.current = true;
+        joinConsultation(consultationId);
+
+        const onMessage = (message: ChatMessage) => {
+          if (message.consultationId !== consultationId) return;
+          qc.setQueryData<ChatMessage[]>(key, (old = []) => {
+            if (old.some((m) => m.id === message.id || m.id.startsWith('optimistic-'))) {
+              return old.map((m) =>
+                m.id.startsWith('optimistic-') && m.content === message.content && m.createdAt ?
+                  message : m
+              );
+            }
+            return [...old, message];
+          });
+        };
+
+        const onConsultationUpdated = (updated: Consultation) => {
+          if (updated.id !== consultationId) return;
+          qc.setQueryData(['consultations', consultationId], updated);
+        };
+
+        socketInstance.on('message:new', onMessage);
+        socketInstance.on('consultation:updated', onConsultationUpdated);
+      } catch {
+        // Socket connection failed — polling will handle it
+      }
+    };
+
+    initSocket();
+
+    return () => {
+      cancelled = true;
+      if (socketInstance) {
+        socketInstance.off('message:new');
+        socketInstance.off('consultation:updated');
+      }
+      if (connectedRef.current) {
+        leaveConsultation(consultationId);
+      }
+    };
+  }, [consultationId]);
+
   const send = useMutation({
-    mutationFn: (content: string) => consultationsService.sendMessage(consultationId!, content),
+    mutationFn: async (content: string) => {
+      const msg = await consultationsService.sendMessage(consultationId!, content);
+      return msg as ChatMessage;
+    },
     onMutate: async (content: string) => {
-      const optimistic: ChatMessage = {
-        id: `optimistic-${Date.now()}`,
-        consultationId: consultationId!,
-        userId: '',
-        role: 'USER',
-        content,
-        createdAt: new Date().toISOString(),
-      };
       await qc.cancelQueries({ queryKey: key });
       const previous = qc.getQueryData<ChatMessage[]>(key);
-      qc.setQueryData<ChatMessage[]>(key, (old = []) => [...old, optimistic]);
+      qc.setQueryData<ChatMessage[]>(key, (old = []) => [
+        ...old,
+        {
+          id: `optimistic-${Date.now()}`,
+          consultationId: consultationId!,
+          senderId: userId ?? '',
+          content,
+          createdAt: new Date().toISOString(),
+          sender: { id: userId ?? '', email: '', role: 'CLIENT' },
+        } as ChatMessage,
+      ]);
       return { previous };
     },
     onError: (_err, _content, ctx) => {
       if (ctx?.previous) qc.setQueryData(key, ctx.previous);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: key }),
+    onSettled: () => {},
   });
 
   return { list, send };

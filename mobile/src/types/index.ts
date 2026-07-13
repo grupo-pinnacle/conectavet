@@ -156,8 +156,7 @@ export type VetCard = z.infer<typeof vetCardSchema>;
 
 export const consultationStatusSchema = z.enum([
   'WAITING',
-  'ASSIGNED',
-  'IN_CONSULTATION',
+  'ACTIVE',
   'COMPLETED',
   'CANCELLED',
 ]);
@@ -165,52 +164,53 @@ export type ConsultationStatus = z.infer<typeof consultationStatusSchema>;
 
 export const consultationSchema = z.object({
   id: z.string(),
-  userId: z.string(),
-  petId: z.string(),
+  clientId: z.string(),
   vetId: z.string().nullable(),
+  petId: z.string(),
   status: consultationStatusSchema,
-  reason: z.string(),
-  diagnosis: z.string().nullable(),
-  treatment: z.string().nullable(),
-  consultationNotes: z.string().nullable(),
-  consultationSummary: z.string().nullable(),
-  followUpRecommended: z.boolean().nullable(),
-  followUpDate: z.string().datetime().nullable(),
-  durationSeconds: z.number().nullable(),
-  petName: z.string().optional(),
-  vetName: z.string().optional(),
-  joinedAt: z.string().datetime(),
-  assignedAt: z.string().datetime().nullable(),
-  consultationStartedAt: z.string().datetime().nullable(),
-  completedAt: z.string().datetime().nullable(),
-  cancelledAt: z.string().datetime().nullable(),
-  cancellationReason: z.string().nullable(),
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
+  notes: z.string().nullable(),
+  startedAt: z.string().nullable(),
+  endedAt: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  pet: z.object({
+    id: z.string(),
+    name: z.string(),
+    species: z.string(),
+    breed: z.string().nullable().optional(),
+    photoUrl: z.string().nullable().optional(),
+  }).nullable().optional(),
+  client: z.object({
+    id: z.string(),
+    email: z.string(),
+    firstName: z.string().nullable().optional(),
+    lastName: z.string().nullable().optional(),
+  }).nullable().optional(),
+  vet: z.object({
+    id: z.string(),
+    email: z.string(),
+    firstName: z.string().nullable().optional(),
+    lastName: z.string().nullable().optional(),
+  }).nullable().optional(),
 });
 export type Consultation = z.infer<typeof consultationSchema>;
 
-export const rateConsultationSchema = z.object({
-  rating: z.number().int().min(1).max(5),
-  comment: z.string().max(1000).optional(),
-});
-export type RateConsultationPayload = z.infer<typeof rateConsultationSchema>;
-
 export const createConsultationSchema = z.object({
   petId: z.string(),
-  reason: z.string().min(5).max(500),
+  notes: z.string().min(5, 'Describí el motivo de la consulta').max(1000),
 });
 export type CreateConsultationPayload = z.infer<typeof createConsultationSchema>;
-
-export const chatMessageRoleSchema = z.enum(['USER', 'VET']);
-export type ChatMessageRole = z.infer<typeof chatMessageRoleSchema>;
 
 export const chatMessageSchema = z.object({
   id: z.string(),
   consultationId: z.string(),
-  userId: z.string(),
-  role: chatMessageRoleSchema,
+  senderId: z.string(),
   content: z.string(),
-  createdAt: z.string().datetime(),
+  createdAt: z.string(),
+  sender: z.object({
+    id: z.string(),
+    email: z.string(),
+    role: z.string(),
+  }).optional(),
 });
 export type ChatMessage = z.infer<typeof chatMessageSchema>;

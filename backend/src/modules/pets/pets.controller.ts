@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { z } from 'zod';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
 import { AppError, NotFoundError, ForbiddenError } from '../../shared/errors';
-import { getPetsByOwner, getPetById, createPet, updatePet, deletePet, restorePet, getPetVetCard } from './pets.service';
+import { getPetsByOwner, getManagedPets, getPetById, createPet, updatePet, deletePet, restorePet, getPetVetCard } from './pets.service';
 
 const createPetSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
@@ -42,6 +42,19 @@ function handleError(error: unknown, res: Response) {
   }
   console.error('Error en pets controller:', error);
   return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+}
+
+export async function getManagedPetsController(req: RequestWithUser, res: Response) {
+  try {
+    if (!req.user) return res.status(401).json({ success: false, message: 'No autenticado' });
+    if (req.user.role !== 'VET' && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Solo veterinarios' });
+    }
+    const pets = await getManagedPets(req.user.userId);
+    return res.status(200).json({ success: true, data: pets });
+  } catch (error) {
+    return handleError(error, res);
+  }
 }
 
 export async function getMyPetsController(req: RequestWithUser, res: Response) {

@@ -9,6 +9,7 @@ import {
   getMyConsultationsController,
   getAvailableVetsController,
   getMessagesController,
+  sendMessageController,
 } from './consultations.controller';
 
 const router = Router();
@@ -21,5 +22,6 @@ router.get('/:id', authenticate, getByIdController);
 router.patch('/:id/assign', authenticate, authorize(Role.VET, Role.ADMIN), assignVetController);
 router.patch('/:id/complete', authenticate, authorize(Role.VET, Role.ADMIN), completeController);
 router.get('/:id/messages', authenticate, getMessagesController);
+router.post('/:id/messages', authenticate, sendMessageController);
 
 export default router;

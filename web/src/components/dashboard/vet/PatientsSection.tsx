@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { getAllPets } from "../../../services/endpoints";
+import { getManagedPets } from "../../../services/endpoints";
 import type { Pet } from "../../../types";
-import { Search } from "lucide-react";
+import { Search, PawPrint } from "lucide-react";
+import Button from "../../Button";
+import VetPatientProfile from "./VetPatientProfile";
 
 const avatarList = ["🐶", "🐱", "🐩", "🐕", "🐕‍🦺", "🐦", "🐰", "🐹"];
-
 const species = ["Todos", "Perro", "Gato", "Ave", "Exótico"];
 
 export default function PatientsSection() {
@@ -13,12 +14,14 @@ export default function PatientsSection() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [filterSpecies, setFilterSpecies] = useState("Todos");
+  const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
+  const [selectedPetName, setSelectedPetName] = useState("");
 
   useEffect(() => {
     const fetch = async () => {
       try {
         setLoading(true);
-        const data = await getAllPets();
+        const data = await getManagedPets();
         setPatients(data);
       } catch {
         setError("No se pudieron cargar los pacientes");
@@ -32,8 +35,7 @@ export default function PatientsSection() {
   const filtered = patients.filter(
     (p) =>
       (filterSpecies === "Todos" || p.species === filterSpecies) &&
-      (p.name.toLowerCase().includes(search.toLowerCase()) ||
-        (p.ownerName || "").toLowerCase().includes(search.toLowerCase()))
+      p.name.toLowerCase().includes(search.toLowerCase())
   );
 
   if (loading) {
@@ -49,7 +51,7 @@ export default function PatientsSection() {
       <div className="mb-6 flex items-start justify-between gap-4 md:items-center">
         <div>
           <h1 className="text-2xl font-bold text-ink">Pacientes</h1>
-          <p className="text-slate-500">{patients.length} pacientes registrados</p>
+          <p className="text-slate-500">{patients.length} pacientes</p>
         </div>
       </div>
 
@@ -64,7 +66,7 @@ export default function PatientsSection() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar paciente o dueño..."
+            placeholder="Buscar paciente..."
             className="w-full rounded-lg border border-border bg-white py-2.5 pl-10 pr-4 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20"
           />
         </div>
@@ -85,55 +87,62 @@ export default function PatientsSection() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {filtered.map((p, i) => (
-          <div key={p.id} className="rounded-xl border border-border bg-white p-5 shadow-sm transition-colors hover:bg-slate-100">
-            <div className="mb-4 flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-2xl">
-                {avatarList[i % avatarList.length]}
+      {patients.length === 0 ? (
+        <div className="rounded-xl border border-border bg-white p-10 text-center shadow-sm">
+          <PawPrint className="mx-auto h-10 w-10 text-teal-700" />
+          <p className="mt-4 text-lg font-bold text-ink">Aún no tenés pacientes</p>
+          <p className="text-sm text-slate-500">
+            Cuando tomes consultas, los pacientes aparecerán acá.
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((p, i) => (
+            <button
+              key={p.id}
+              onClick={() => { setSelectedPetId(p.id); setSelectedPetName(p.name); }}
+              className="rounded-xl border border-border bg-white p-5 shadow-sm transition-all text-left hover:shadow-md hover:border-teal-200 hover:-translate-y-0.5"
+            >
+              <div className="mb-4 flex items-center gap-4">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-2xl">
+                  {avatarList[i % avatarList.length]}
+                </div>
+                <div className="flex-1">
+                  <p className="text-lg font-bold text-ink">{p.name}</p>
+                  <p className="text-sm text-slate-500">{p.breed || p.species}</p>
+                </div>
+                {p.age && (
+                  <span className="rounded-full bg-[#F1F5F9] px-3 py-1 text-xs font-semibold text-slate-500">
+                    {p.age} años
+                  </span>
+                )}
               </div>
-              <div className="flex-1">
-                <p className="text-lg font-bold text-ink">{p.name}</p>
-                <p className="text-sm text-slate-500">{p.breed || p.species}</p>
+              <div className="grid grid-cols-2 gap-2 border-t border-[#F1F5F9] pt-4 text-sm">
+                <div>
+                  <p className="text-xs text-slate-400">Especie</p>
+                  <p className="font-semibold text-ink">{p.species}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400">Color</p>
+                  <p className="font-semibold text-ink">{p.color || "—"}</p>
+                </div>
               </div>
-              <span className="rounded-full bg-[#F1F5F9] px-3 py-1 text-xs font-semibold text-slate-500">
-                {p.age} años
-              </span>
+            </button>
+          ))}
+          {filtered.length === 0 && search && (
+            <div className="col-span-full py-10 text-center text-slate-400">
+              No se encontraron pacientes con ese nombre
             </div>
-            <div className="mb-4 grid grid-cols-2 gap-2 border-t border-[#F1F5F9] pt-4 text-sm">
-              <div>
-                <p className="text-xs text-slate-400">Dueño</p>
-                <p className="font-semibold text-ink">{p.ownerName || "—"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Peso</p>
-                <p className="font-semibold text-ink">{p.weight || "—"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Última visita</p>
-                <p className="font-semibold text-ink">{p.lastVisit || "—"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Próxima visita</p>
-                <p className="font-semibold text-teal-700">{p.nextVet || "—"}</p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button className="flex-1 rounded-lg border border-border py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100">
-                Historial
-              </button>
-              <button className="flex-1 rounded-lg bg-teal-700 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90">
-                Nueva consulta
-              </button>
-            </div>
-          </div>
-        ))}
-        {filtered.length === 0 && (
-          <div className="col-span-full py-10 text-center text-slate-400">
-            No se encontraron pacientes
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
+      {selectedPetId && (
+        <VetPatientProfile
+          petId={selectedPetId}
+          petName={selectedPetName}
+          onClose={() => setSelectedPetId(null)}
+        />
+      )}
     </div>
   );
 }

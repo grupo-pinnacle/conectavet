@@ -1,5 +1,6 @@
 import { View, FlatList, RefreshControl } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { usePets } from '@/hooks/usePets';
@@ -9,13 +10,14 @@ import { useTheme, spacing } from '@/theme';
 
 export default function PetsListScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { colors: c } = useTheme();
   const { list } = usePets();
   const pets = list.data ?? [];
 
   if (list.isLoading) {
     return (
-      <View style={{ padding: spacing.lg, gap: spacing.md }}>
+      <View style={{ flex: 1, paddingTop: insets.top, padding: spacing.lg, gap: spacing.md }}>
         <SkeletonCard />
         <SkeletonCard />
         <SkeletonCard />
@@ -23,10 +25,30 @@ export default function PetsListScreen() {
     );
   }
 
+  if (list.isError) {
+    return (
+      <View style={{ flex: 1, paddingTop: insets.top, justifyContent: 'center', padding: spacing.lg }}>
+        <EmptyState
+          icon="alert-circle-outline"
+          title="Error al cargar"
+          subtitle="No pudimos cargar tus mascotas. Revisá tu conexión e intentá de nuevo."
+          ctaLabel="Reintentar"
+          onCta={() => list.refetch()}
+        />
+      </View>
+    );
+  }
+
   if (pets.length === 0) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', padding: spacing.lg }}>
-        <EmptyState icon="paw" title="Aún no tenés mascotas" subtitle="Cargá tu primera mascota para empezar a usar VetConnect." ctaLabel="Agregar mascota" onCta={() => router.push('/(app)/pets/new')} />
+      <View style={{ flex: 1, paddingTop: insets.top, justifyContent: 'center', padding: spacing.lg }}>
+        <EmptyState
+          icon="paw"
+          title="Aún no tenés mascotas"
+          subtitle="Cargá tu primera mascota para empezar a usar VetConnect."
+          ctaLabel="Agregar mascota"
+          onCta={() => router.push('/(app)/pets/new')}
+        />
       </View>
     );
   }
@@ -36,14 +58,16 @@ export default function PetsListScreen() {
       <FlatList
         data={pets}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: spacing.lg, paddingBottom: 80 }}
-        ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
+        contentContainerStyle={{ paddingTop: spacing.lg, paddingHorizontal: spacing.lg, paddingBottom: insets.bottom + spacing.lg }}
+        ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
         refreshControl={<RefreshControl refreshing={list.isFetching} onRefresh={list.refetch} tintColor={c.primary} />}
         renderItem={({ item }) => <PetCard pet={item} onPress={() => router.push(`/(app)/pets/${item.id}`)} />}
         ListHeaderComponent={
-          <Button onPress={() => router.push('/(app)/pets/new')} size="md" fullWidth style={{ marginBottom: spacing.md }} icon={<MaterialCommunityIcons name="plus" size={18} color={c.white} />}>
-            Agregar mascota
-          </Button>
+          <View style={{ marginBottom: spacing.lg }}>
+            <Button onPress={() => router.push('/(app)/pets/new')} size="md" fullWidth icon={<MaterialCommunityIcons name="plus" size={18} color={c.white} />}>
+              Agregar mascota
+            </Button>
+          </View>
         }
       />
     </Animated.View>

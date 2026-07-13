@@ -31,9 +31,18 @@ if ($ADB) {
         Write-Host "ADB no encontrado. Instalalo con: winget install Google.PlatformTools" -ForegroundColor Red
         exit 1
     }
+    # Verificar que haya un dispositivo conectado
+    $devices = & $adbPath devices 2>&1 | Select-String -Pattern "^[a-fA-F0-9]+\s+device$"
+    if (-not $devices) {
+        Write-Host "No hay ningun dispositivo Android conectado por USB con depuracion activada." -ForegroundColor Red
+        Write-Host "1. Conecta el celular por USB" -ForegroundColor Yellow
+        Write-Host "2. Activa 'Depuracion USB' en Opciones de desarrollador" -ForegroundColor Yellow
+        Write-Host "3. Acepta el permiso en la pantalla del celular" -ForegroundColor Yellow
+        exit 1
+    }
     Write-Host "Configurando ADB reverse ports..." -ForegroundColor Yellow
-    & $adbPath reverse tcp:8081 tcp:8081 2>&1 | Out-Null
-    & $adbPath reverse tcp:3001 tcp:3001 2>&1 | Out-Null
+    & $adbPath reverse tcp:8081 tcp:8081
+    & $adbPath reverse tcp:3001 tcp:3001
     Write-Host "  Puertos 8081 y 3001 redirigidos por USB" -ForegroundColor Green
     Write-Host "  (No necesita WiFi - usa el cable USB)" -ForegroundColor Green
     Write-Host ""
@@ -65,8 +74,18 @@ Invoke-Item "$rootDir\expo-qr.png"
 Write-Host "  QR: $desktop\expo-qr.png" -ForegroundColor Green
 Write-Host ""
 
+# ── Set API URL for mobile (environment override for Metro bundler) ──
+if ($ADB) {
+    $env:EXPO_PUBLIC_API_URL = "http://localhost:3001"
+    $env:EXPO_PUBLIC_WS_URL = "ws://localhost:3001/ws/queue"
+} else {
+    $env:EXPO_PUBLIC_API_URL = "http://${ip}:3001"
+    $env:EXPO_PUBLIC_WS_URL = "ws://${ip}:3001/ws/queue"
+}
+
 # ── Start Expo ──
 Write-Host "Iniciando Expo..." -ForegroundColor Yellow
+Write-Host "  API:  $env:EXPO_PUBLIC_API_URL" -ForegroundColor Gray
 Write-Host "  'a'=Android | 'i'=iOS | 'w'=web | Ctrl+C=detener" -ForegroundColor Gray
 Write-Host ""
 

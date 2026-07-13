@@ -19,3 +19,9 @@ Thumbs.db
 .idea/
 
 coverage/
+
+# Environment files with secrets
+backend/.env
+
+# Temp files created by integration tests
+backend/.jest-schema

@@ -17,33 +17,30 @@ $usbIp = $allIps | Select-String '192\.168\.4[2-3]\.' | Select-Object -First 1
 $lanIp10 = $allIps | Select-String '10\.' | Select-Object -First 1
 $lanIp192 = $allIps | Select-String '192\.168\.' | Select-Object -First 1
 
-if ($ADB) { $ip = "127.0.0.1"; $mode = "ADB REVERSE (USB)" }
-elseif ($usbIp) { $ip = $usbIp; $mode = "USB TETHERING" }
-elseif ($lanIp10) { $ip = $lanIp10; $mode = "LAN" }
-elseif ($lanIp192) { $ip = $lanIp192; $mode = "LAN" }
-else { $ip = "127.0.0.1"; $mode = "LOCALHOST" }
-$ip = $ip.Trim()
-
-# ── ADB reverse ports ──
-if ($ADB) {
-    $adbPath = (Get-Command "adb" -ErrorAction SilentlyContinue).Source
-    if (-not $adbPath) {
-        Write-Host "ADB no encontrado. Instalalo con: winget install Google.PlatformTools" -ForegroundColor Red
-        exit 1
-    }
-    # Verificar que haya un dispositivo conectado
+# ── ADB reverse ports (auto-detects USB device; use -ADB to force) ──
+$adbPath = (Get-Command "adb" -ErrorAction SilentlyContinue).Source
+if (-not $adbPath -and (Test-Path "$env:LOCALAPPDATA\Android\platform-tools\adb.exe")) {
+    $adbPath = "$env:LOCALAPPDATA\Android\platform-tools\adb.exe"
+}
+$useADB = $false
+$serial = $null
+if ($adbPath) {
     $devices = & $adbPath devices 2>&1 | Select-String -Pattern "\s+device$" | Where-Object { $_ -notmatch "List of devices attached|^\s*$" }
-    if (-not $devices) {
-        Write-Host "No hay ningun dispositivo Android conectado por USB con depuracion activada." -ForegroundColor Red
-        Write-Host "1. Conecta el celular por USB" -ForegroundColor Yellow
-        Write-Host "2. Activa 'Depuracion USB' en Opciones de desarrollador" -ForegroundColor Yellow
-        Write-Host "3. Acepta el permiso en la pantalla del celular" -ForegroundColor Yellow
+    if ($devices) { $useADB = $true; $serial = ($devices[0] -replace '\s+device.*', '').Trim() }
+}
+if ($useADB -or $ADB) {
+    if (-not $useADB) {
+        if (-not $adbPath) {
+            Write-Host "ADB no encontrado. Instalalo con: winget install Google.PlatformTools" -ForegroundColor Red
+        } else {
+            Write-Host "No hay ningun dispositivo Android conectado por USB con depuracion activada." -ForegroundColor Red
+            Write-Host "1. Conecta el celular por USB" -ForegroundColor Yellow
+            Write-Host "2. Activa 'Depuracion USB' en Opciones de desarrollador" -ForegroundColor Yellow
+            Write-Host "3. Acepta el permiso en la pantalla del celular" -ForegroundColor Yellow
+        }
         exit 1
     }
-    # Obtener serial del primer dispositivo
-    $serial = ($devices[0] -replace '\s+device.*', '').Trim()
     Write-Host "Dispositivo: $serial" -ForegroundColor Cyan
-
     Write-Host "Configurando ADB reverse ports..." -ForegroundColor Yellow
     & $adbPath -s $serial reverse tcp:8081 tcp:8081
     if ($LASTEXITCODE -ne 0) { Write-Host "  Error en puerto 8081" -ForegroundColor Red; exit 1 }
@@ -52,7 +49,13 @@ if ($ADB) {
     Write-Host "  Puertos 8081 y 3001 redirigidos por USB" -ForegroundColor Green
     Write-Host "  (No necesita WiFi - usa el cable USB)" -ForegroundColor Green
     Write-Host ""
-}
+    $ip = "127.0.0.1"
+    $mode = "ADB REVERSE (USB)"
+} elseif ($usbIp) { $ip = $usbIp; $mode = "USB TETHERING" }
+elseif ($lanIp10) { $ip = $lanIp10; $mode = "LAN" }
+elseif ($lanIp192) { $ip = $lanIp192; $mode = "LAN" }
+else { $ip = "127.0.0.1"; $mode = "LOCALHOST" }
+$ip = $ip.Trim()
 
 # ── Info ──
 Write-Host ""
@@ -81,7 +84,7 @@ Write-Host "  QR: $desktop\expo-qr.png" -ForegroundColor Green
 Write-Host ""
 
 # ── Set API URL for mobile (environment override for Metro bundler) ──
-if ($ADB) {
+if ($useADB) {
     $env:EXPO_PUBLIC_API_URL = "http://localhost:3001"
     $env:EXPO_PUBLIC_WS_URL = "ws://localhost:3001/ws/queue"
 } else {
@@ -97,5 +100,5 @@ Write-Host ""
 
 $expoArgs = @("expo", "start", "--clear")
 if ($Tunnel) { $expoArgs += "--tunnel" }
-if ($ADB) { $expoArgs += "--localhost" }
+if ($useADB) { $expoArgs += "--localhost" }
 & "npx" $expoArgs

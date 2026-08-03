@@ -122,25 +122,41 @@ export async function getManagedPets(vetId: string) {
 }
 
 export async function getPetVetCard(petId: string) {
-  const pet = await prisma.pet.findUnique({
-    where: { id: petId },
-    include: {
-      owner: { select: { id: true, firstName: true, lastName: true, phone: true } },
-      consultations: {
-        orderBy: { createdAt: 'desc' },
-        take: 5,
-        select: { id: true, notes: true, status: true, endedAt: true, createdAt: true },
-      },
-    },
-  });
-  if (!pet) return null;
-
-  const totalConsultations = await prisma.consultation.count({ where: { petId } });
-  const lastConsultation: { endedAt: Date | null } | null = await prisma.consultation.findFirst({
-    where: { petId, status: 'COMPLETED' },
-    orderBy: { endedAt: 'desc' },
-    select: { endedAt: true },
-  });
+  const rows = await prisma.$queryRaw<
+    Array<{
+      pet: any;
+      owner: any;
+      totalConsultations: bigint | number;
+      lastConsultationDate: Date | null;
+      recent: any;
+    }>
+  >`
+    SELECT
+      to_jsonb(p) AS pet,
+      to_jsonb(u) AS owner,
+      (SELECT COUNT(*) FROM consultations WHERE "petId" = ${petId}) AS "totalConsultations",
+      (SELECT "endedAt" FROM consultations
+       WHERE "petId" = ${petId} AND status = 'COMPLETED'
+       ORDER BY "endedAt" DESC LIMIT 1) AS "lastConsultationDate",
+      COALESCE(
+        (SELECT jsonb_agg(sub ORDER BY sub."createdAt" DESC)
+         FROM (
+           SELECT "id", "notes", "status", "endedAt", "createdAt"
+           FROM consultations
+           WHERE "petId" = ${petId}
+           ORDER BY "createdAt" DESC
+           LIMIT 5
+         ) sub),
+        '[]'::jsonb
+      ) AS recent
+    FROM pets p
+    JOIN users u ON u.id = p."ownerId"
+    WHERE p.id = ${petId} AND p."deletedAt" IS NULL
+  `;
+  const row = rows[0];
+  if (!row || !row.pet) return null;
+  const pet = row.pet;
+  const recent = Array.isArray(row.recent) ? row.recent : [];
 
   let ageYears = 0;
   let ageMonths = 0;
@@ -154,18 +170,20 @@ export async function getPetVetCard(petId: string) {
 
   return {
     pet,
-    owner: pet.owner,
+    owner: row.owner,
     stats: {
-      totalConsultations,
-      lastConsultationDate: lastConsultation?.endedAt?.toISOString() ?? null,
+      totalConsultations: Number(row.totalConsultations),
+      lastConsultationDate: row.lastConsultationDate
+        ? new Date(row.lastConsultationDate).toISOString()
+        : null,
       ageYears,
       ageMonths,
     },
-    recentConsultations: (pet.consultations as any[]).map((c: any) => ({
+    recentConsultations: recent.map((c: any) => ({
       id: c.id,
       reason: c.notes ?? 'Sin motivo',
       status: c.status,
-      completedAt: c.endedAt?.toISOString() ?? null,
+      completedAt: c.endedAt ? new Date(c.endedAt).toISOString() : null,
     })),
     allergies: pet.allergies ?? [],
     chronicConditions: pet.chronicConditions ?? [],

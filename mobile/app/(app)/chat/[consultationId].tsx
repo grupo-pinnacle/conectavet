@@ -7,7 +7,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { ChatBubble } from '@/components/ChatBubble';
 import { Card, EmptyState } from '@/components/ui';
-import { useConsultationMessages, useConsultation } from '@/hooks/useConsultations';
+import { useConsultationMessages, useConsultation, useConsultationPrescriptions } from '@/hooks/useConsultations';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
 import { ApiError } from '@/types';
@@ -22,6 +22,7 @@ export default function ConsultationChatScreen() {
   const { user } = useAuth();
   const { list, send } = useConsultationMessages(consultationId, user?.id);
   const { data: consultation } = useConsultation(consultationId);
+  const { data: prescriptions } = useConsultationPrescriptions(consultationId);
   const [draft, setDraft] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const flatRef = useRef<FlatList>(null);
@@ -33,6 +34,7 @@ export default function ConsultationChatScreen() {
   }, []);
 
   const messages = list.data ?? [];
+  const rxList = prescriptions ?? [];
   const vetName = consultation?.vet?.firstName || consultation?.vet?.email || 'Veterinario';
   const petName = consultation?.pet?.name || 'Mascota';
   const isActive = consultation?.status === 'ACTIVE';
@@ -152,14 +154,46 @@ export default function ConsultationChatScreen() {
           keyboardShouldPersistTaps="handled"
           renderItem={renderMessage}
           ItemSeparatorComponent={() => <View style={{ height: 2 }} />}
-          ListHeaderComponent={consultation?.notes ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: c.primaryBg, borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginBottom: spacing.md }}>
-              <MaterialCommunityIcons name="information" size={14} color={c.primary} />
-              <Text style={{ fontSize: fontSizes.caption, color: c.primary, lineHeight: 16, flex: 1 }} numberOfLines={2}>
-                Motivo: {consultation.notes}
-              </Text>
+          ListHeaderComponent={
+            <View>
+              {rxList.length > 0 && (
+                <View style={{ marginBottom: spacing.md }}>
+                  {rxList.map((rx) => (
+                    <View
+                      key={rx.id}
+                      style={{
+                        backgroundColor: c.primaryBg,
+                        borderRadius: radius.lg,
+                        borderWidth: 1,
+                        borderColor: c.primary + '30',
+                        padding: spacing.md,
+                        marginBottom: spacing.sm,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm }}>
+                        <MaterialCommunityIcons name="pill" size={16} color={c.primary} />
+                        <Text style={{ fontSize: fontSizes.caption, fontWeight: fontWeights.bold, color: c.primary, textTransform: 'uppercase', flex: 1 }}>
+                          Receta de {rx.vet?.firstName || 'tu veterinario'}
+                        </Text>
+                        <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted }}>
+                          {new Date(rx.createdAt).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
+                        </Text>
+                      </View>
+                      <Text style={{ fontSize: fontSizes.body, color: c.ink, lineHeight: 20 }}>{rx.content}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+              {consultation?.notes ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: c.primaryBg, borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginBottom: spacing.md }}>
+                  <MaterialCommunityIcons name="information" size={14} color={c.primary} />
+                  <Text style={{ fontSize: fontSizes.caption, color: c.primary, lineHeight: 16, flex: 1 }} numberOfLines={2}>
+                    Motivo: {consultation.notes}
+                  </Text>
+                </View>
+              ) : null}
             </View>
-          ) : null}
+          }
         />
       )}
 

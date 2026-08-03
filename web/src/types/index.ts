@@ -4,6 +4,7 @@ export interface User {
   name?: string;
   firstName?: string;
   lastName?: string;
+  phone?: string;
   role: "owner" | "vet" | "admin";
 }
 
@@ -53,6 +54,15 @@ export interface Message {
   content: string;
   createdAt: string;
   sender?: { id: string; email: string; role: string };
+}
+
+export interface Prescription {
+  id: string;
+  consultationId: string;
+  vetId: string;
+  content: string;
+  createdAt: string;
+  vet?: { id: string; firstName?: string | null; lastName?: string | null };
 }
 
 export interface VetCardOwner {

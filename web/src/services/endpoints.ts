@@ -1,5 +1,5 @@
 import api from "./api";
-import type { Pet, Consultation, Message } from "../types";
+import type { Pet, Consultation, Message, Prescription } from "../types";
 
 export async function getMyPets(): Promise<Pet[]> {
   const res = await api.get("/api/pets");
@@ -63,6 +63,16 @@ export async function getMessages(id: string): Promise<Message[]> {
 
 export async function sendMessage(id: string, content: string): Promise<Message> {
   const res = await api.post(`/api/consultations/${id}/messages`, { content });
+  return res.data.data;
+}
+
+export async function getPrescriptions(id: string): Promise<Prescription[]> {
+  const res = await api.get(`/api/consultations/${id}/prescriptions`);
+  return res.data.data;
+}
+
+export async function createPrescription(id: string, content: string): Promise<Prescription> {
+  const res = await api.post(`/api/consultations/${id}/prescriptions`, { content });
   return res.data.data;
 }
 

@@ -13,6 +13,8 @@ import {
   getAvailableVets,
   getMessages,
   saveMessage,
+  savePrescription,
+  getPrescriptions,
 } from './consultations.service';
 
 const createSchema = z.object({
@@ -26,6 +28,10 @@ const completeSchema = z.object({
 
 const sendMessageSchema = z.object({
   content: z.string().min(1, 'El mensaje no puede estar vacío').max(2000, 'El mensaje no puede superar los 2000 caracteres'),
+});
+
+const prescriptionSchema = z.object({
+  content: z.string().trim().min(1, 'La receta no puede estar vacía').max(5000, 'La receta no puede superar los 5000 caracteres'),
 });
 
 async function assertParticipation(consultationId: string, userId: string) {
@@ -155,9 +161,10 @@ export async function getMyConsultationsController(req: RequestWithUser, res: Re
   }
 }
 
-export async function getAvailableVetsController(_req: RequestWithUser, res: Response) {
+export async function getAvailableVetsController(req: RequestWithUser, res: Response) {
   try {
-    const vets = await getAvailableVets();
+    const species = (req.query.species as string)?.trim() || undefined;
+    const vets = await getAvailableVets(species);
     return res.status(200).json({ success: true, data: vets });
   } catch (error) {
     console.error('Error en getAvailableVetsController:', error);
@@ -211,6 +218,59 @@ export async function sendMessageController(req: RequestWithUser, res: Response)
       return res.status(error.statusCode).json({ success: false, message: error.message });
     }
     console.error('Error en sendMessageController:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+}
+
+export async function getPrescriptionsController(req: RequestWithUser, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'No autenticado' });
+    }
+    await assertParticipation(req.params.id as string, req.user.userId);
+    const prescriptions = await getPrescriptions(req.params.id as string);
+    return res.status(200).json({ success: true, data: prescriptions });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
+    console.error('Error en getPrescriptionsController:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+}
+
+export async function createPrescriptionController(req: RequestWithUser, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'No autenticado' });
+    }
+    const parsed = prescriptionSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, message: parsed.error.issues[0].message });
+    }
+    const consultation = await assertParticipation(req.params.id as string, req.user.userId);
+    if (consultation.vetId !== req.user.userId) {
+      throw new ForbiddenError('Solo el veterinario asignado puede enviar recetas');
+    }
+    const prescription = await savePrescription({
+      consultationId: req.params.id as string,
+      vetId: req.user.userId,
+      content: parsed.data.content,
+    });
+    try {
+      const io = getIO();
+      if (io) {
+        io.to(`consultation:${req.params.id}`).emit('prescription:new', prescription);
+      }
+    } catch {
+      // Socket not available, prescriptions still reachable via polling
+    }
+    return res.status(201).json({ success: true, data: prescription });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
+    console.error('Error en createPrescriptionController:', error);
     return res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 }

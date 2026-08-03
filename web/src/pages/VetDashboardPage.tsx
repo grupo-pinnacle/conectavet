@@ -3,17 +3,19 @@ import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, PawPrint,
-  MessageCircle, LogOut,
+  MessageCircle, LogOut, User,
 } from "lucide-react";
 import Logo from "../components/Logo";
 import VetHomeSection from "../components/dashboard/vet/VetHomeSection";
 import PatientsSection from "../components/dashboard/vet/PatientsSection";
 import VetMessagesSection from "../components/dashboard/vet/VetMessagesSection";
+import ProfileSection from "../components/dashboard/ProfileSection";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, key: "home" },
   { label: "Pacientes", icon: PawPrint, key: "patients" },
   { label: "Mensajes", icon: MessageCircle, key: "messages" },
+  { label: "Perfil", icon: User, key: "profile" },
 ];
 
 export default function VetDashboardPage() {
@@ -31,6 +33,7 @@ export default function VetDashboardPage() {
       case "home": return <VetHomeSection />;
       case "patients": return <PatientsSection />;
       case "messages": return <VetMessagesSection />;
+      case "profile": return <ProfileSection />;
       default: return <VetHomeSection />;
     }
   };
@@ -76,8 +79,8 @@ export default function VetDashboardPage() {
               {user?.name?.charAt(0) || "D"}
             </div>
             <div className="flex-1 truncate">
-              <p className="text-sm font-semibold text-ink">Dr. {user?.name || "Martín López"}</p>
-              <p className="text-xs text-slate-500">{user?.email || "martin@vetconnect.com"}</p>
+              <p className="text-sm font-semibold text-ink">Dr. {user?.name || "Veterinario"}</p>
+              <p className="text-xs text-slate-500">{user?.email || ""}</p>
             </div>
             <button
               onClick={handleLogout}

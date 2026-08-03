@@ -27,20 +27,22 @@ enum ConsultationStatus {
 }
 
 model User {
-  id                    String         @id @default(cuid())
-  email                 String         @unique
-  password              String
-  firstName             String?
-  lastName              String?
-  phone                 String?
-  role                  Role
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  firstName String?
+  lastName  String?
+  phone     String?
+  role      Role
+  isOnline  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   pets                  Pet[]
   consultationsAsClient Consultation[] @relation("ClientConsultations")
   consultationsAsVet    Consultation[] @relation("VetConsultations")
   messages              Message[]
+  prescriptions         Prescription[]
 
   @@map("users")
 }
@@ -64,7 +66,7 @@ model Pet {
   allergies         String[]
   chronicConditions String[]
   birthDate         DateTime?
-  isDeceased        Boolean       @default(false)
+  isDeceased        Boolean        @default(false)
   deathDate         DateTime?
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
@@ -89,6 +91,7 @@ model Consultation {
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
   messages      Message[]
+  prescriptions Prescription[]
 
   @@index([clientId])
   @@index([vetId])
@@ -107,4 +110,18 @@ model Message {
 
   @@index([consultationId, createdAt])
   @@map("messages")
+}
+
+model Prescription {
+  id             String       @id @default(cuid())
+  consultationId String
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  vetId          String
+  vet            User         @relation(fields: [vetId], references: [id])
+  content        String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([consultationId])
+  @@map("prescriptions")
 }

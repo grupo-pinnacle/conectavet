@@ -1,4 +1,4 @@
 export const API_CONFIG = {
   BASE_URL: "",
-  TIMEOUT: 10000,
+  TIMEOUT: 20000,
 };

@@ -94,14 +94,13 @@ export async function getPetVetCardController(req: RequestWithUser, res: Respons
     if (!req.user) {
       return res.status(401).json({ success: false, message: 'No autenticado' });
     }
-    const pet = await getPetById(req.params.id as string);
-    if (!pet || pet.deletedAt) {
+    const vetCard = await getPetVetCard(req.params.id as string);
+    if (!vetCard) {
       throw new NotFoundError('Mascota no encontrada');
     }
-    if (pet.ownerId !== req.user.userId && req.user.role === 'CLIENT') {
+    if (vetCard.pet.ownerId !== req.user.userId && req.user.role === 'CLIENT') {
       throw new ForbiddenError('No tenés permiso para ver esta mascota');
     }
-    const vetCard = await getPetVetCard(req.params.id as string);
     return res.status(200).json({ success: true, data: vetCard });
   } catch (error) {
     return handleError(error, res);

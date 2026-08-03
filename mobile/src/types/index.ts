@@ -214,3 +214,17 @@ export const chatMessageSchema = z.object({
   }).optional(),
 });
 export type ChatMessage = z.infer<typeof chatMessageSchema>;
+
+export const prescriptionSchema = z.object({
+  id: z.string(),
+  consultationId: z.string(),
+  vetId: z.string(),
+  content: z.string(),
+  createdAt: z.string(),
+  vet: z.object({
+    id: z.string(),
+    firstName: z.string().nullable().optional(),
+    lastName: z.string().nullable().optional(),
+  }).optional(),
+});
+export type Prescription = z.infer<typeof prescriptionSchema>;

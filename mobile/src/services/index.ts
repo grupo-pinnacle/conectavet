@@ -7,6 +7,7 @@ import type {
   CreatePetPayload,
   LoginPayload,
   Pet,
+  Prescription,
   RegisterPayload,
   UpdatePetPayload,
   VetCard,
@@ -44,4 +45,6 @@ export const consultationsService = {
     api.get<ChatMessage[]>(`/consultations/${consultationId}/messages`),
   sendMessage: (consultationId: string, content: string) =>
     api.post<ChatMessage>(`/consultations/${consultationId}/messages`, { content }),
+  getPrescriptions: (consultationId: string) =>
+    api.get<Prescription[]>(`/consultations/${consultationId}/prescriptions`),
 };

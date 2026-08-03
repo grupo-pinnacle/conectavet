@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Send, MessageSquare, ArrowLeft } from "lucide-react";
+import { Send, MessageSquare, ArrowLeft, Pill } from "lucide-react";
 import {
   getMyConsultations,
   getMessages,
   sendMessage,
+  getPrescriptions,
 } from "../../services/endpoints";
 import { connectSocket, joinConsultation } from "../../services/socket";
 import { MessageBubble } from "./MessageBubble";
-import type { Consultation, Message } from "../../types";
+import type { Consultation, Message, Prescription } from "../../types";
 
 const INITIAL_LOAD = 50;
 const POLL_INTERVAL = 10000;
@@ -41,6 +42,7 @@ export default function MessagesSection() {
   const [loading, setLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [showList, setShowList] = useState(true);
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const failedMessagesRef = useRef<Set<string>>(new Set());
@@ -65,7 +67,10 @@ export default function MessagesSection() {
       const data = await getMessages(activeCons.id);
       setMessages((prev) => {
         if (prev.length === data.length && prev[0]?.id === data[0]?.id) return prev;
-        return data;
+        const pending = prev.filter(
+          (m) => m.id.startsWith("msg-") && !data.some((d) => d.id === m.id)
+        );
+        return pending.length ? [...data, ...pending] : data;
       });
     } catch { /* polling handled */ }
   }, [activeCons]);
@@ -82,6 +87,12 @@ export default function MessagesSection() {
         if (msg.consultationId !== activeCons.id) return;
         setMessages((prev) => {
           if (prev.some((m) => m.id === msg.id)) return prev;
+          const optimistic = prev.find(
+            (m) => m.id.startsWith("msg-") && m.content === msg.content
+          );
+          if (optimistic) {
+            return prev.map((m) => (m.id === optimistic.id ? msg : m));
+          }
           return [...prev, msg];
         });
       });
@@ -92,12 +103,19 @@ export default function MessagesSection() {
           prev.map((c) => (c.id === updated.id ? updated : c))
         );
       });
+      socket.on("prescription:new", (prescription: Prescription) => {
+        if (prescription.consultationId !== activeCons.id) return;
+        setPrescriptions((prev) =>
+          prev.some((p) => p.id === prescription.id) ? prev : [...prev, prescription]
+        );
+      });
     });
     return () => {
       cancelled = true;
       if (s) {
         s.off("message:new");
         s.off("consultation:updated");
+        s.off("prescription:new");
       }
     };
   }, [activeCons?.id]);
@@ -111,6 +129,9 @@ export default function MessagesSection() {
   useEffect(() => {
     if (!activeCons) return;
     fetchMsgs();
+    getPrescriptions(activeCons.id)
+      .then((data) => setPrescriptions(data))
+      .catch(() => { /* polling handled */ });
     const interval = setInterval(fetchMsgs, POLL_INTERVAL);
     return () => clearInterval(interval);
   }, [activeCons?.id, fetchMsgs]);
@@ -275,6 +296,28 @@ export default function MessagesSection() {
             {/* Messages */}
             <div ref={listRef} className="flex-1 overflow-y-auto px-5 py-4">
               <div className="space-y-0.5">
+                {prescriptions.map((rx) => (
+                  <div
+                    key={rx.id}
+                    className="mb-2 rounded-xl border border-teal-100 bg-teal-50/50 p-4"
+                  >
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Pill className="h-4 w-4 text-teal-700" />
+                      <span className="text-xs font-bold uppercase tracking-wide text-teal-800">
+                        Receta de {rx.vet?.firstName || "tu veterinario"}
+                      </span>
+                      <span className="ml-auto text-[11px] text-slate-400">
+                        {new Date(rx.createdAt).toLocaleString("es-AR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                    <p className="whitespace-pre-wrap text-sm text-ink">{rx.content}</p>
+                  </div>
+                ))}
                 {messageList.map((msg, idx) => {
                   const prev = idx > 0 ? messageList[idx - 1] : null;
                   const isOwn = msg.sender?.role === "CLIENT";

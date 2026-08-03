@@ -19,9 +19,6 @@ export default function ProfileSection() {
             </div>
             <p className="text-xl font-bold text-ink">{user?.name || "Usuario"}</p>
             <p className="text-sm text-slate-500">{user?.role === "vet" ? "Veterinario" : "Dueño de mascota"}</p>
-            <button className="mt-4 rounded-lg border border-border px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100">
-              Cambiar foto
-            </button>
           </div>
         </div>
 
@@ -30,17 +27,15 @@ export default function ProfileSection() {
           <h3 className="mb-4 text-lg font-bold text-ink">Información personal</h3>
           <div className="space-y-4">
             {[
-              { label: "Nombre completo", value: user?.name || "Juan Pérez" },
-              { label: "Correo electrónico", value: user?.email || "juan@email.com" },
-              { label: "Teléfono", value: "+52 55 1234 5678" },
-              { label: "Dirección", value: "Av. Principal 123, CDMX" },
+              { label: "Nombre completo", value: user?.name || "—" },
+              { label: "Correo electrónico", value: user?.email || "—" },
+              { label: "Teléfono", value: user?.phone || "—" },
             ].map((field) => (
               <div key={field.label} className="flex items-center justify-between border-b border-[#F1F5F9] pb-3">
                 <div>
                   <p className="text-xs text-slate-400">{field.label}</p>
                   <p className="font-semibold text-ink">{field.value}</p>
                 </div>
-                <button className="text-sm font-semibold text-teal-700 hover:underline">Editar</button>
               </div>
             ))}
           </div>

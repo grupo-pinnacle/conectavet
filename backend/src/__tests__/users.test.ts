@@ -86,3 +86,37 @@ describe('GET /api/users/vets', () => {
     expect(res.body.total).toBeGreaterThanOrEqual(1);
   });
 });
+
+describe('PATCH /api/users/me/availability', () => {
+  test('200 — VET cambia su disponibilidad', async () => {
+    const res = await request(app)
+      .patch('/api/users/me/availability')
+      .set('Authorization', `Bearer ${vetToken}`)
+      .send({ isOnline: true });
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.isOnline).toBe(true);
+
+    const off = await request(app)
+      .patch('/api/users/me/availability')
+      .set('Authorization', `Bearer ${vetToken}`)
+      .send({ isOnline: false });
+    expect(off.body.data.isOnline).toBe(false);
+  });
+
+  test('400 — isOnline no es booleano', async () => {
+    const res = await request(app)
+      .patch('/api/users/me/availability')
+      .set('Authorization', `Bearer ${vetToken}`)
+      .send({ isOnline: 'si' });
+    expect(res.status).toBe(400);
+  });
+
+  test('403 — CLIENT no puede cambiar disponibilidad', async () => {
+    const res = await request(app)
+      .patch('/api/users/me/availability')
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ isOnline: true });
+    expect(res.status).toBe(403);
+  });
+});

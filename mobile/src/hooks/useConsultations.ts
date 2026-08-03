@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { consultationsService } from '@/services';
 import { connectSocket, joinConsultation, leaveConsultation } from '@/lib/socket';
-import type { ChatMessage, Consultation, CreateConsultationPayload } from '@/types';
+import type { ChatMessage, Consultation, CreateConsultationPayload, Prescription } from '@/types';
 
 export function useConsultationHistory(params?: { page?: number; limit?: number }) {
   return useQuery({
@@ -18,6 +18,17 @@ export function useConsultation(id: string | undefined) {
     queryKey: ['consultations', id],
     queryFn: async () => (await consultationsService.getById(id!)) as Consultation,
     enabled: Boolean(id),
+  });
+}
+
+export function useConsultationPrescriptions(consultationId: string | undefined) {
+  return useQuery({
+    queryKey: ['consultations', consultationId, 'prescriptions'],
+    queryFn: async () =>
+      (await consultationsService.getPrescriptions(consultationId!)) as Prescription[],
+    enabled: Boolean(consultationId),
+    staleTime: 30_000,
+    refetchInterval: 15_000,
   });
 }
 
@@ -75,8 +86,16 @@ export function useConsultationMessages(consultationId: string | undefined, user
           qc.setQueryData(['consultations', consultationId], updated);
         };
 
+        const onPrescriptionNew = (prescription: Prescription) => {
+          if (prescription.consultationId !== consultationId) return;
+          qc.setQueryData<Prescription[]>(['consultations', consultationId, 'prescriptions'], (old = []) =>
+            old.some((p) => p.id === prescription.id) ? old : [...old, prescription]
+          );
+        };
+
         socketInstance.on('message:new', onMessage);
         socketInstance.on('consultation:updated', onConsultationUpdated);
+        socketInstance.on('prescription:new', onPrescriptionNew);
       } catch {
         // Socket connection failed — polling will handle it
       }
@@ -89,6 +108,7 @@ export function useConsultationMessages(consultationId: string | undefined, user
       if (socketInstance) {
         socketInstance.off('message:new');
         socketInstance.off('consultation:updated');
+        socketInstance.off('prescription:new');
       }
       if (connectedRef.current) {
         leaveConsultation(consultationId);

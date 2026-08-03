@@ -10,6 +10,8 @@ import {
   getAvailableVetsController,
   getMessagesController,
   sendMessageController,
+  getPrescriptionsController,
+  createPrescriptionController,
 } from './consultations.controller';
 
 const router = Router();
@@ -23,5 +25,7 @@ router.patch('/:id/assign', authenticate, authorize(Role.VET, Role.ADMIN), assig
 router.patch('/:id/complete', authenticate, authorize(Role.VET, Role.ADMIN), completeController);
 router.get('/:id/messages', authenticate, getMessagesController);
 router.post('/:id/messages', authenticate, sendMessageController);
+router.get('/:id/prescriptions', authenticate, getPrescriptionsController);
+router.post('/:id/prescriptions', authenticate, authorize(Role.VET, Role.ADMIN), createPrescriptionController);
 
 export default router;

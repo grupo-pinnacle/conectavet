@@ -9,19 +9,39 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   CANCELLED: [],
 };
 
+export async function findFirstAvailableVet(species?: string) {
+  const cacheKey = species ? `vets:available:${species.toLowerCase()}` : 'vets:available';
+  const cached = getCached<any>(cacheKey);
+  if (cached) return cached;
+  const vet = await prisma.user.findFirst({
+    where: { role: 'VET', isOnline: true },
+    orderBy: { createdAt: 'asc' },
+    select: { id: true, email: true, firstName: true, lastName: true, isOnline: true },
+  });
+  if (vet) setCache(cacheKey, vet, 30);
+  return vet;
+}
+
 export async function createConsultation(data: {
   clientId: string;
   petId: string;
   notes?: string;
 }) {
+  const pet = await prisma.pet.findUnique({ where: { id: data.petId } });
+  if (!pet) throw new NotFoundError('Mascota no encontrada');
+
+  const vet = await findFirstAvailableVet(pet.species);
+
   return prisma.consultation.create({
     data: {
       clientId: data.clientId,
       petId: data.petId,
-      status: 'WAITING',
+      status: vet ? 'ACTIVE' : 'WAITING',
+      vetId: vet?.id,
+      startedAt: vet ? new Date() : undefined,
       notes: data.notes,
     },
-    include: { pet: true, client: true },
+    include: { pet: true, client: true, vet: true },
   });
 }
 
@@ -94,14 +114,18 @@ export async function getConsultationsByUser(
   return { data, total, page, limit: cappedLimit, totalPages: Math.ceil(total / cappedLimit) };
 }
 
-export async function getAvailableVets() {
-  const cached = getCached<any[]>('vets:available');
+export async function getAvailableVets(species?: string) {
+  const cacheKey = species
+    ? `vets:list:available:${species.toLowerCase()}`
+    : 'vets:list:available';
+  const cached = getCached<any[]>(cacheKey);
   if (cached) return cached;
   const vets = await prisma.user.findMany({
-    where: { role: 'VET' },
-    select: { id: true, email: true },
+    where: { role: 'VET', isOnline: true },
+    select: { id: true, email: true, firstName: true, lastName: true, isOnline: true },
+    orderBy: { createdAt: 'asc' },
   });
-  setCache('vets:available', vets, 30);
+  setCache(cacheKey, vets, 30);
   return vets;
 }
 
@@ -130,6 +154,39 @@ export async function getMessages(consultationId: string) {
   return prisma.message.findMany({
     where: { consultationId },
     include: { sender: { select: { id: true, email: true, role: true } } },
+    orderBy: { createdAt: 'asc' },
+  });
+}
+
+export async function savePrescription(data: {
+  consultationId: string;
+  vetId: string;
+  content: string;
+}) {
+  if (!data.content || data.content.trim().length === 0) {
+    throw new ConflictError('La receta no puede estar vacía');
+  }
+  if (data.content.length > 5000) {
+    throw new ConflictError('La receta no puede superar los 5000 caracteres');
+  }
+  return prisma.prescription.create({
+    data: {
+      consultationId: data.consultationId,
+      vetId: data.vetId,
+      content: data.content,
+    },
+    include: {
+      vet: { select: { id: true, firstName: true, lastName: true } },
+    },
+  });
+}
+
+export async function getPrescriptions(consultationId: string) {
+  return prisma.prescription.findMany({
+    where: { consultationId },
+    include: {
+      vet: { select: { id: true, firstName: true, lastName: true } },
+    },
     orderBy: { createdAt: 'asc' },
   });
 }

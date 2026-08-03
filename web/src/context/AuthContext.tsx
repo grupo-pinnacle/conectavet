@@ -65,6 +65,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       id: u.id,
       name: u.name || [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email,
       email: u.email,
+      phone: u.phone || undefined,
       role: roleMap[u.role] || "owner",
     };
   }

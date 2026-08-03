@@ -1,6 +1,11 @@
 import { Response } from 'express';
+import { z } from 'zod';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
-import { getUserById, listVets } from './users.service';
+import { getUserById, listVets, updateAvailability } from './users.service';
+
+const availabilitySchema = z.object({
+  isOnline: z.boolean({ message: 'isOnline debe ser un booleano' }),
+});
 
 export async function getMeController(req: RequestWithUser, res: Response) {
   try {
@@ -41,6 +46,23 @@ export async function adminOnlyController(req: RequestWithUser, res: Response) {
       user: req.user
     }
   });
+}
+
+export async function setAvailabilityController(req: RequestWithUser, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'No autenticado' });
+    }
+    const parsed = availabilitySchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, message: parsed.error.issues[0].message });
+    }
+    const user = await updateAvailability(req.user.userId, parsed.data.isOnline);
+    return res.status(200).json({ success: true, data: user });
+  } catch (error) {
+    console.error('Error en setAvailabilityController:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
 }
 
 export async function listVetsController(req: RequestWithUser, res: Response) {

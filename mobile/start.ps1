@@ -12,10 +12,10 @@ $foundPid = netstat -ano | Select-String ":$port " | ForEach-Object { ($_ -repla
 if ($foundPid) { Stop-Process -Id $foundPid -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1 }
 
 # ── Detect IP ──
-$allIps = ipconfig | Select-String 'IPv4.*\d+\.\d+\.\d+\.\d+' | ForEach-Object { $_ -replace '.*:\s*', '' }
-$usbIp = $allIps | Select-String '192\.168\.4[2-3]\.' | Select-Object -First 1
-$lanIp10 = $allIps | Select-String '10\.' | Select-Object -First 1
-$lanIp192 = $allIps | Select-String '192\.168\.' | Select-Object -First 1
+$allIps = ipconfig | Select-String 'IPv4.*\d+\.\d+\.\d+\.\d+' | ForEach-Object { ($_.Line -replace '.*:\s*', '').Trim() }
+$usbIp = $allIps | Where-Object { $_ -match '192\.168\.4[2-3]\.' } | Select-Object -First 1
+$lanIp10 = $allIps | Where-Object { $_ -match '^10\.' } | Select-Object -First 1
+$lanIp192 = $allIps | Where-Object { $_ -match '^192\.168\.' } | Select-Object -First 1
 
 # ── ADB reverse ports (auto-detects USB device; use -ADB to force) ──
 $adbPath = (Get-Command "adb" -ErrorAction SilentlyContinue).Source

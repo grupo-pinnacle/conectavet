@@ -4,7 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
-import { Avatar } from '@/components/ui';
+import { Avatar, Button } from '@/components/ui';
 
 type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
 
@@ -28,17 +28,50 @@ function TabIcon({ icon, focused }: { icon: IconName; focused: boolean }) {
 
 function HeaderRight() {
   const { colors: c } = useTheme();
-  const { user, logout } = useAuth();
+  const { user, logout } = useAuth(); // 1. Definimos los estilos comunes para garantizar la homogeneidad
+const squareButtonStyle = {
+  width: 48, // Tamaño fijo (puedes ajustarlo, ej. 40 o 50)
+  aspectRatio: 1, // Esto fuerza a que el alto sea igual al ancho (cuadrado perfecto)
+  justifyContent: 'center', // Centra el ícono/avatar verticalmente
+  alignItems: 'center' // Centra el ícono/avatar horizontalmente
+};
   return (
-    <Pressable
-      onPress={() => logout()}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, marginRight: spacing.xs }}
-      accessibilityRole="button"
-      accessibilityLabel="Cerrar sesión"
-      accessibilityHint="Presioná para cerrar tu sesión actual"
-    >
-      <Avatar name={`${user?.firstName ?? ''} ${user?.lastName ?? ''}`} size={32} />
-    </Pressable>
+   
+
+// 2. Envolver todo en un contenedor con flexDirection 'row' para alinearlos
+<View style={{ flexDirection: 'row', alignItems: 'center' }}>
+  
+  {/* Botón 1: Cerrar Sesión */}
+  <Pressable
+    onPress={() => logout()}
+    style={squareButtonStyle}
+    accessibilityRole="button"
+    accessibilityLabel="Cerrar sesión"
+    accessibilityHint="Presioná para cerrar tu sesión actual"
+  >
+    <MaterialCommunityIcons
+      name="logout-variant"
+      size={32} // Reduje a 24 para que quepa bien en un cuadrado de 48
+      color="red" 
+    />
+  </Pressable>
+
+  {/* Botón 2: Perfil (Avatar) */}
+  {/* Cambié <Button> por <Pressable> para asegurar que el estilo cuadrado se respete */}
+  <Pressable
+    onPress={() => navigation.navigate('Profile')} // Ejemplo de acción
+    style={squareButtonStyle}
+    accessibilityRole="button"
+    accessibilityLabel="Ir a perfil"
+    accessibilityHint="Presioná para ver tu perfil"
+  >
+    <Avatar 
+      name={`${user?.firstName ?? ''} ${user?.lastName ?? ''}`} 
+      size={32} // El avatar es ligeramente más pequeño que el cuadrado para dejar margen interno
+    />
+  </Pressable>
+
+</View>
   );
 }
 

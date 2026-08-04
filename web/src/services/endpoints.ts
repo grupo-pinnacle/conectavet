@@ -1,5 +1,10 @@
 import api from "./api";
-import type { Pet, Consultation, Message, Prescription } from "../types";
+import type { User, Pet, Consultation, Message, Prescription, VetCard } from "../types";
+
+export async function getMe(): Promise<User> {
+  const res = await api.get("/api/users/me");
+  return res.data.data;
+}
 
 export async function getMyPets(): Promise<Pet[]> {
   const res = await api.get("/api/pets");
@@ -41,7 +46,7 @@ export async function getConsultationById(id: string): Promise<Consultation> {
   return res.data.data;
 }
 
-export async function createConsultation(data: { petId: string }): Promise<Consultation> {
+export async function createConsultation(data: { petId: string; notes?: string }): Promise<Consultation> {
   const res = await api.post("/api/consultations", data);
   return res.data.data;
 }

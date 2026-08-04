@@ -1,16 +1,33 @@
 import { useState, useEffect } from "react";
-import { getMyPets, createPet } from "../../services/endpoints";
+import { getMyPets, createPet, updatePet } from "../../services/endpoints";
 import type { Pet } from "../../types";
 import { PawPrint } from "lucide-react";
+import { formatSex } from "../../utils/sex";
 
 const avatarList = ["🐶", "🐱", "🐩", "🐕", "🐕‍🦺", "🐦", "🐰", "🐹"];
 
-export default function PetsSection() {
+const emptyForm = {
+  name: "",
+  species: "",
+  breed: "",
+  age: 1,
+  weight: "",
+  sex: "",
+  color: "",
+  microchip: "",
+  birthDate: "",
+  weightKg: "",
+  allergies: "",
+  chronicConditions: "",
+};
+
+export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId: string) => void }) {
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: "", species: "", breed: "", age: 1, weight: "" });
+  const [editingPet, setEditingPet] = useState<Pet | null>(null);
+  const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
 
   const fetchPets = async () => {
@@ -31,16 +48,61 @@ export default function PetsSection() {
     e.preventDefault();
     if (!form.name.trim()) return;
     setSaving(true);
+    const payload = {
+      name: form.name.trim(),
+      species: form.species,
+      breed: form.breed,
+      age: form.age,
+      weight: form.weight,
+      sex: form.sex || undefined,
+      color: form.color || undefined,
+      microchip: form.microchip || undefined,
+      weightKg: form.weightKg ? Number(form.weightKg) : undefined,
+      birthDate: form.birthDate ? new Date(form.birthDate).toISOString() : undefined,
+      allergies: form.allergies.split(",").map((s) => s.trim()).filter(Boolean),
+      chronicConditions: form.chronicConditions.split(",").map((s) => s.trim()).filter(Boolean),
+    };
     try {
-      const newPet = await createPet(form);
-      setPets((prev) => [...prev, newPet]);
+      if (editingPet) {
+        const updated = await updatePet(editingPet.id, payload);
+        setPets((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      } else {
+        const newPet = await createPet(payload);
+        setPets((prev) => [...prev, newPet]);
+      }
       setShowForm(false);
-      setForm({ name: "", species: "", breed: "", age: 1, weight: "" });
+      setEditingPet(null);
+      setForm(emptyForm);
     } catch {
-      setError("Error al crear mascota");
+      setError("Error al guardar la mascota");
     } finally {
       setSaving(false);
     }
+  };
+
+  const startEdit = (pet: Pet) => {
+    setEditingPet(pet);
+    setForm({
+      name: pet.name || "",
+      species: pet.species || "",
+      breed: pet.breed || "",
+      age: pet.age ?? 1,
+      weight: pet.weight || "",
+      sex: pet.sex || "",
+      color: pet.color || "",
+      microchip: pet.microchip || "",
+      birthDate: pet.birthDate ? pet.birthDate.slice(0, 10) : "",
+      weightKg: pet.weightKg ? String(pet.weightKg) : "",
+      allergies: (pet.allergies || []).join(", "),
+      chronicConditions: (pet.chronicConditions || []).join(", "),
+    });
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingPet(null);
+    setForm(emptyForm);
   };
 
   if (loading) {
@@ -72,7 +134,9 @@ export default function PetsSection() {
 
       {showForm && (
         <form onSubmit={handleCreate} className="mb-6 rounded-xl border border-teal-700/30 bg-teal-50 p-6">
-          <h3 className="mb-4 text-lg font-bold text-ink">Nueva mascota</h3>
+          <h3 className="mb-4 text-lg font-bold text-ink">
+            {editingPet ? `Editar ${editingPet.name}` : "Nueva mascota"}
+          </h3>
           <div className="mb-4 grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Nombre</label>
@@ -102,12 +166,44 @@ export default function PetsSection() {
                 <input type="text" value={form.weight} onChange={(e) => setForm((f) => ({ ...f, weight: e.target.value }))} placeholder="Ej: 10 kg" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
               </div>
             </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Sexo</label>
+              <select value={form.sex} onChange={(e) => setForm((f) => ({ ...f, sex: e.target.value }))} className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink focus:border-teal-600 focus:outline-none">
+                <option value="">Seleccionar</option>
+                <option value="MALE">Macho</option>
+                <option value="FEMALE">Hembra</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Fecha de nacimiento</label>
+              <input type="date" value={form.birthDate} onChange={(e) => setForm((f) => ({ ...f, birthDate: e.target.value }))} className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink focus:border-teal-600 focus:outline-none" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Peso (kg)</label>
+              <input type="number" step="0.1" min={0} value={form.weightKg} onChange={(e) => setForm((f) => ({ ...f, weightKg: e.target.value }))} placeholder="Ej: 8.5" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Color</label>
+              <input type="text" value={form.color} onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))} placeholder="Ej: Marrón" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Microchip</label>
+              <input type="text" value={form.microchip} onChange={(e) => setForm((f) => ({ ...f, microchip: e.target.value }))} placeholder="15 dígitos" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Alergias</label>
+              <input type="text" value={form.allergies} onChange={(e) => setForm((f) => ({ ...f, allergies: e.target.value }))} placeholder="Separadas por coma" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Condiciones crónicas</label>
+              <input type="text" value={form.chronicConditions} onChange={(e) => setForm((f) => ({ ...f, chronicConditions: e.target.value }))} placeholder="Separadas por coma" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
+            </div>
           </div>
           <div className="flex gap-3">
             <button type="submit" disabled={saving} className="rounded-lg bg-teal-700 px-6 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60">
-              {saving ? "Guardando..." : "Guardar"}
+              {saving ? "Guardando..." : editingPet ? "Guardar cambios" : "Guardar"}
             </button>
-            <button type="button" onClick={() => setShowForm(false)} className="rounded-lg border border-border px-6 py-2.5 text-sm font-semibold text-slate-500 hover:bg-slate-100">
+            <button type="button" onClick={closeForm} className="rounded-lg border border-border px-6 py-2.5 text-sm font-semibold text-slate-500 hover:bg-slate-100">
               Cancelar
             </button>
           </div>
@@ -151,15 +247,19 @@ export default function PetsSection() {
                 <p className="font-semibold text-ink">{pet.weight}</p>
               </div>
               <div>
+                <p className="text-xs text-slate-400">Sexo</p>
+                <p className="font-semibold text-ink">{formatSex(pet.sex)}</p>
+              </div>
+              <div>
                 <p className="text-xs text-slate-400">Próximo control</p>
                 <p className="font-semibold text-teal-700">{pet.nextVet || "No agendado"}</p>
               </div>
             </div>
             <div className="flex gap-2">
-              <button className="flex-1 rounded-lg border border-border py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100">
+              <button onClick={() => startEdit(pet)} className="flex-1 rounded-lg border border-border py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100">
                 Editar
               </button>
-              <button className="flex-1 rounded-lg bg-teal-700 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90">
+              <button onClick={() => onAgendarCita?.(pet.id)} className="flex-1 rounded-lg bg-teal-700 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90">
                 Agendar cita
               </button>
             </div>

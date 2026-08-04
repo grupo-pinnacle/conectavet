@@ -12,10 +12,11 @@ interface ConsultationStatus {
   createdAt: string;
 }
 
-export default function ConsultationsSection() {
+export default function ConsultationsSection({ initialPetId = "" }: { initialPetId?: string }) {
   const [pets, setPets] = useState<Pet[]>([]);
   const [activeConsultations, setActiveConsultations] = useState<ConsultationStatus[]>([]);
-  const [selectedPetId, setSelectedPetId] = useState("");
+  const [selectedPetId, setSelectedPetId] = useState(initialPetId);
+  const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
@@ -51,11 +52,12 @@ export default function ConsultationsSection() {
 
   const handleCreate = async () => {
     if (!selectedPetId) return;
+    if (!notes.trim()) { setError("Contanos el motivo de la consulta (mínimo 5 caracteres)"); return; }
     setCreating(true);
     setError("");
     setSuccess("");
     try {
-      const cons = await createConsultation({ petId: selectedPetId });
+      const cons = await createConsultation({ petId: selectedPetId, notes: notes.trim() });
       setActiveConsultations((prev) => [
         {
           id: cons.id,
@@ -68,6 +70,7 @@ export default function ConsultationsSection() {
       ]);
       setSuccess("Consulta solicitada. Un veterinario la tomará en breve.");
       setSelectedPetId("");
+      setNotes("");
     } catch {
       setError("Error al crear la consulta");
     } finally {
@@ -131,6 +134,18 @@ export default function ConsultationsSection() {
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="w-full">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Motivo de la consulta
+              </label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Ej: Mi perro no quiere comer desde ayer y tiene fiebre..."
+                rows={2}
+                className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none"
+              />
             </div>
             <Button
               disabled={!selectedPetId}

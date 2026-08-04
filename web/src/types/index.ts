@@ -41,6 +41,7 @@ export interface Consultation {
   startedAt?: string;
   endedAt?: string;
   createdAt: string;
+  updatedAt?: string;
   pet?: Pet;
   client?: User;
   vet?: User;

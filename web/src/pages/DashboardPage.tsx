@@ -23,6 +23,12 @@ export default function DashboardPage() {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("home");
+  const [pendingPetId, setPendingPetId] = useState("");
+
+  const handleAgendarCita = (petId: string) => {
+    setPendingPetId(petId);
+    setActiveTab("consultations");
+  };
 
   const handleLogout = () => {
     logout();
@@ -32,8 +38,8 @@ export default function DashboardPage() {
   const renderSection = () => {
     switch (activeTab) {
       case "home": return <HomeSection onNavigate={setActiveTab} />;
-      case "pets": return <PetsSection />;
-      case "consultations": return <ConsultationsSection />;
+      case "pets": return <PetsSection onAgendarCita={handleAgendarCita} />;
+      case "consultations": return <ConsultationsSection initialPetId={pendingPetId} />;
       case "history": return <HistorySection />;
       case "messages": return <MessagesSection />;
       case "profile": return <ProfileSection />;

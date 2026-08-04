@@ -13,17 +13,37 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [confirmError, setConfirmError] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const PASSWORD_REQUIREMENTS: { label: string; test: (p: string) => boolean }[] = [
+    { label: "Al menos 8 caracteres", test: (p) => p.length >= 8 },
+    { label: "Una letra mayúscula", test: (p) => /[A-Z]/.test(p) },
+    { label: "Una letra minúscula", test: (p) => /[a-z]/.test(p) },
+    { label: "Un número", test: (p) => /\d/.test(p) },
+    { label: "Un carácter especial", test: (p) => /[^A-Za-z0-9]/.test(p) },
+  ];
+
+  const validatePassword = (p: string) => {
+    const failed = PASSWORD_REQUIREMENTS.filter((req) => !req.test(p)).map((req) => req.label);
+    return failed.length ? `La contraseña debe tener: ${failed.join(", ")}` : "";
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setPasswordError("");
+    setConfirmError("");
 
     if (!role) { setError("Seleccioná si sos dueño de mascota o veterinario"); return; }
     if (!name.trim()) { setError("Ingresá tu nombre completo"); return; }
     if (!email.trim()) { setError("Ingresá tu correo electrónico"); return; }
-    if (password.length < 8) { setError("La contraseña debe tener al menos 8 caracteres"); return; }
+    const pwdError = validatePassword(password);
+    if (pwdError) { setPasswordError(pwdError); setError(pwdError); return; }
+    if (password !== confirmPassword) { setConfirmError("Las contraseñas no coinciden"); return; }
 
     setLoading(true);
     try {
@@ -137,8 +157,52 @@ export default function RegisterPage() {
                 label="Contraseña"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mínimo 8 caracteres"
+                error={passwordError || undefined}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setPasswordError("");
+                  if (confirmPassword) setConfirmError("");
+                }}
+                placeholder="Contraseña segura"
+              />
+              <div className="-mt-2 mb-1">
+                <ul className="space-y-1">
+                  {PASSWORD_REQUIREMENTS.map((req) => {
+                    const met = req.test(password);
+                    return (
+                      <li
+                        key={req.label}
+                        className={`flex items-center gap-2 text-xs ${
+                          met ? "text-success" : "text-slate-400"
+                        }`}
+                      >
+                        <span
+                          className={`flex h-4 w-4 items-center justify-center rounded-full border ${
+                            met ? "border-success bg-success-bg" : "border-slate-300"
+                          }`}
+                        >
+                          {met ? (
+                            <svg className="h-3 w-3 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : null}
+                        </span>
+                        {req.label}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+              <Input
+                label="Repetir contraseña"
+                type="password"
+                value={confirmPassword}
+                error={confirmError || undefined}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  setConfirmError("");
+                }}
+                placeholder="Repetí tu contraseña"
               />
               <Button type="submit" loading={loading} variant="primary" size="lg">
                 {loading ? "Creando cuenta..." : "Crear cuenta"}

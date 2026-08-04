@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Send, Clock, CheckCircle, MessageSquare, ArrowLeft, FileText, Pill } from "lucide-react";
+import { Send, Clock, CheckCircle, MessageSquare, ArrowLeft, FileText, Pill, Venus, Mars } from "lucide-react";
 import Button from "../../Button";
 import {
   getMyConsultations,
@@ -13,6 +13,7 @@ import {
 import { connectSocket, joinConsultation } from "../../../services/socket";
 import { MessageBubble } from "../MessageBubble";
 import VetPatientProfile from "./VetPatientProfile";
+import { formatSex } from "../../../utils/sex";
 import type { Consultation, Message, Prescription } from "../../../types";
 
 type Tab = "waiting" | "active";
@@ -108,7 +109,12 @@ export default function VetMessagesSection() {
         setMessages((prev) => {
           if (prev.some((m) => m.id === msg.id)) return prev;
           const optimistic = prev.find(
-            (m) => m.id.startsWith("msg-") && m.content === msg.content
+            (m) =>
+              m.id.startsWith("msg-") &&
+              m.content === msg.content &&
+              (typeof m.sender?.role === "string"
+                ? m.sender.role === msg.sender?.role
+                : true)
           );
           if (optimistic) {
             return prev.map((m) => (m.id === optimistic.id ? msg : m));
@@ -339,9 +345,16 @@ export default function VetMessagesSection() {
                       <p className="truncate font-semibold text-ink text-sm">
                         {c.pet?.name || "Mascota"}
                       </p>
-                      <span className="shrink-0 text-[10px] text-slate-400">
-                        {formatTimeAgo(c.createdAt)}
-                      </span>
+                      {c.pet?.sex ? (
+                        <span className="shrink-0 flex items-center gap-0.5 text-[11px] font-semibold text-slate-500">
+                          {String(c.pet.sex).toLowerCase() === "male" ? <Mars className="h-3 w-3 text-blue-600" /> : <Venus className="h-3 w-3 text-pink-600" />}
+                          {formatSex(c.pet.sex)}
+                        </span>
+                      ) : (
+                        <span className="shrink-0 text-[10px] text-slate-400">
+                          {formatTimeAgo(c.createdAt)}
+                        </span>
+                      )}
                     </div>
                     <p className="truncate text-xs text-slate-500 mt-0.5">
                       {c.client?.firstName || c.client?.email || "Cliente"}
@@ -406,9 +419,17 @@ export default function VetMessagesSection() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-ink truncate">{activeName}</p>
-                <p className="text-xs text-slate-500">
-                  {activeCons.status === "ACTIVE" ? "En consulta" : "Esperando asignación"}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-slate-500">
+                    {activeCons.status === "ACTIVE" ? "En consulta" : "Esperando asignación"}
+                  </p>
+                  {activeCons.pet?.sex && (
+                    <span className="flex items-center gap-1 text-xs font-semibold text-slate-600">
+                      {String(activeCons.pet.sex).toLowerCase() === "male" ? <Mars className="h-3 w-3 text-blue-600" /> : <Venus className="h-3 w-3 text-pink-600" />}
+                      {formatSex(activeCons.pet.sex)}
+                    </span>
+                  )}
+                </div>
                 {activeCons.notes && (
                   <p className="text-xs text-slate-600 italic mt-0.5 truncate">
                     "{activeCons.notes}"
@@ -526,7 +547,7 @@ export default function VetMessagesSection() {
                   className="min-w-0 flex-1 rounded-xl border border-border px-4 py-3 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20 transition-shadow"
                 />
                 <button
-                  onClick={handleSend}
+                  onClick={() => handleSend()}
                   disabled={!input.trim() || isSending}
                   className="flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-teal-700 px-4 py-3 text-sm font-bold text-white transition-all hover:bg-teal-800 active:scale-95 disabled:opacity-50 disabled:active:scale-100"
                 >

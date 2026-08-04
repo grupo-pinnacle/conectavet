@@ -88,7 +88,12 @@ export default function MessagesSection() {
         setMessages((prev) => {
           if (prev.some((m) => m.id === msg.id)) return prev;
           const optimistic = prev.find(
-            (m) => m.id.startsWith("msg-") && m.content === msg.content
+            (m) =>
+              m.id.startsWith("msg-") &&
+              m.content === msg.content &&
+              (typeof m.sender?.role === "string"
+                ? m.sender.role === msg.sender?.role
+                : true)
           );
           if (optimistic) {
             return prev.map((m) => (m.id === optimistic.id ? msg : m));
@@ -372,7 +377,7 @@ export default function MessagesSection() {
                     className="min-w-0 flex-1 rounded-xl border border-border px-4 py-3 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20 transition-shadow"
                   />
                   <button
-                    onClick={handleSend}
+                    onClick={() => handleSend()}
                     disabled={!input.trim() || isSending}
                     className="flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-teal-700 px-4 py-3 text-sm font-bold text-white transition-all hover:bg-teal-800 active:scale-95 disabled:opacity-50 disabled:active:scale-100"
                   >

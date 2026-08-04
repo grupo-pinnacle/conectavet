@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { getMyConsultations } from "../../services/endpoints";
-import type { Consultation } from "../../types";
-import { ClipboardList, PawPrint, Clock } from "lucide-react";
+import { getMyConsultations, getPrescriptions } from "../../services/endpoints";
+import type { Consultation, Prescription } from "../../types";
+import { ClipboardList, Clock, Pill } from "lucide-react";
 
 export default function HistorySection() {
   const [completed, setCompleted] = useState<Consultation[]>([]);
+  const [prescriptionsByCons, setPrescriptionsByCons] = useState<Record<string, Prescription[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -12,9 +13,16 @@ export default function HistorySection() {
     const fetch = async () => {
       try {
         const data = await getMyConsultations();
-        setCompleted(
-          data.filter((c) => c.status === "COMPLETED")
+        const done = data.filter((c) => c.status === "COMPLETED");
+        setCompleted(done);
+        const lists = await Promise.all(
+          done.map((c) =>
+            getPrescriptions(c.id).catch(() => [] as Prescription[])
+          )
         );
+        const byCons: Record<string, Prescription[]> = {};
+        done.forEach((c, i) => { byCons[c.id] = lists[i] || []; });
+        setPrescriptionsByCons(byCons);
       } catch {
         setError("No se pudo cargar el historial");
       } finally {
@@ -92,6 +100,18 @@ export default function HistorySection() {
                 </div>
               ) : (
                 <p className="text-sm italic text-slate-400">Sin notas registradas</p>
+              )}
+              {(prescriptionsByCons[c.id] || []).length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <p className="text-xs font-bold uppercase tracking-wider text-teal-700 flex items-center gap-1">
+                    <Pill className="h-3.5 w-3.5" /> Recetas / tratamiento
+                  </p>
+                  {(prescriptionsByCons[c.id] || []).map((rx) => (
+                    <div key={rx.id} className="rounded-lg border border-teal-100 bg-teal-50 p-3">
+                      <p className="text-sm text-ink whitespace-pre-wrap">{rx.content}</p>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           ))}

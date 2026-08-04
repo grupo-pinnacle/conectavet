@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { getManagedPets } from "../../../services/endpoints";
 import type { Pet } from "../../../types";
 import { Search, PawPrint } from "lucide-react";
-import Button from "../../Button";
 import VetPatientProfile from "./VetPatientProfile";
+import { formatSex } from "../../../utils/sex";
 
 const avatarList = ["🐶", "🐱", "🐩", "🐕", "🐕‍🦺", "🐦", "🐰", "🐹"];
 const species = ["Todos", "Perro", "Gato", "Ave", "Exótico"];
@@ -121,6 +121,10 @@ export default function PatientsSection() {
                 <div>
                   <p className="text-xs text-slate-400">Especie</p>
                   <p className="font-semibold text-ink">{p.species}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400">Sexo</p>
+                  <p className="font-semibold text-ink">{formatSex(p.sex)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-400">Color</p>

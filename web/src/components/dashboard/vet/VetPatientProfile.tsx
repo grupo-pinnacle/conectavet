@@ -3,6 +3,7 @@ import { X, Phone, AlertTriangle, Pill, Stethoscope, Clock, CheckCircle, FileTex
 import { getPetVetCard } from "../../../services/endpoints";
 import type { VetCard } from "../../../types";
 import Button from "../../Button";
+import { formatSex } from "../../../utils/sex";
 
 const speciesEmoji: Record<string, string> = {
   Perro: "🐶",
@@ -127,7 +128,7 @@ export default function VetPatientProfile({ petId, petName, onClose }: Props) {
                   <h3 className="mb-3 text-sm font-bold text-ink uppercase tracking-wider">Detalles</h3>
                   <div className="grid grid-cols-2 gap-3">
                     {[
-                      { label: "Sexo", value: data.pet.sex === "male" ? "Macho" : data.pet.sex === "female" ? "Hembra" : "—" },
+                      { label: "Sexo", value: formatSex(data.pet.sex) },
                       { label: "Color", value: data.pet.color || "—" },
                       { label: "Peso", value: data.pet.weightKg ? `${data.pet.weightKg} kg` : "—" },
                       { label: "Microchip", value: data.pet.microchip || "—" },

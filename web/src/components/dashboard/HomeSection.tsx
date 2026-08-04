@@ -36,7 +36,7 @@ export default function HomeSection({ onNavigate }: HomeSectionProps) {
     <div>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-ink">
-          Hola, {user?.name?.split(" ")[0] || "Juan"}!
+          Hola, {(user?.name?.split(" ")[0] || user?.firstName || user?.email?.split("@")[0] || "Usuario")}!
         </h1>
         <p className="text-slate-500">¿Cómo está hoy tu mascota?</p>
       </div>

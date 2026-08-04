@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 import { getManagedPets } from "../../../services/endpoints";
 import { getMyConsultations } from "../../../services/endpoints";
-import { PawPrint, MessageCircle, Clock, Users } from "lucide-react";
+import { MessageCircle, Clock, Users } from "lucide-react";
 
 export default function VetHomeSection() {
   const { user } = useAuth();

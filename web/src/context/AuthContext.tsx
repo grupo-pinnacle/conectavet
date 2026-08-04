@@ -2,6 +2,7 @@ import { createContext, useState, useCallback, useEffect } from "react";
 import type { ReactNode } from "react";
 import type { User } from "../types";
 import api from "../services/api";
+import { getMe } from "../services/endpoints";
 
 export interface AuthContextType {
   user: User | null;
@@ -24,9 +25,11 @@ function parseUserFromToken(token: string): User | null {
     const payload = JSON.parse(atob(token.split(".")[1]));
     const roleMap: Record<string, "owner" | "vet" | "admin"> = { CLIENT: "owner", VET: "vet", ADMIN: "admin" };
     return {
-      id: payload.sub || payload.id || "",
-      name: payload.name || "",
+      id: payload.sub || payload.id || payload.userId || "",
+      name: payload.name || payload.firstName || payload.email?.split("@")[0] || "",
       email: payload.email || "",
+      firstName: payload.firstName,
+      lastName: payload.lastName,
       role: roleMap[payload.role] || "owner",
     };
   } catch {
@@ -41,16 +44,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     const saved = localStorage.getItem("vetconnect_auth_token");
-    if (saved) {
-      const parsed = parseUserFromToken(saved);
-      if (parsed) {
-        setToken(saved);
-        setUser(parsed);
-      } else {
-        localStorage.removeItem("vetconnect_auth_token");
-      }
+    if (!saved) {
+      setIsLoading(false);
+      return;
     }
-    setIsLoading(false);
+    setToken(saved);
+    getMe()
+      .then((userData) => {
+        setUser(normalizeUser(userData));
+        setIsLoading(false);
+      })
+      .catch(() => {
+        const parsed = parseUserFromToken(saved);
+        if (parsed) {
+          setUser(parsed);
+        } else {
+          localStorage.removeItem("vetconnect_auth_token");
+        }
+        setIsLoading(false);
+      });
   }, []);
 
   const setAuth = useCallback((accessToken: string, userData: User) => {

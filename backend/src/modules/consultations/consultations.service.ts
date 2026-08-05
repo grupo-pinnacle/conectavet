@@ -63,6 +63,30 @@ export async function assignVet(consultationId: string, vetId: string) {
   });
 }
 
+/**
+ * Cola de espera: asigna al primer veterinario que se ponga online
+ * la consulta WAITING más antigua. El claim es atómico (WHERE status=WAITING)
+ * para que dos vets online simultáneos nunca tomen la misma consulta.
+ */
+export async function assignNextPendingVet(vetId: string) {
+  const pending = await prisma.consultation.findFirst({
+    where: { status: 'WAITING' },
+    orderBy: { createdAt: 'asc' },
+  });
+  if (!pending) return null;
+
+  const claimed = await prisma.consultation.updateMany({
+    where: { id: pending.id, status: 'WAITING' },
+    data: { vetId, status: 'ACTIVE', startedAt: new Date() },
+  });
+  if (claimed.count === 0) return null;
+
+  return prisma.consultation.findUnique({
+    where: { id: pending.id },
+    include: { pet: true, client: true, vet: true },
+  });
+}
+
 export async function completeConsultation(
   consultationId: string,
   notes?: string

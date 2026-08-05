@@ -2,6 +2,8 @@ import { Response } from 'express';
 import { z } from 'zod';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
 import { getUserById, listVets, updateAvailability } from './users.service';
+import { assignNextPendingVet } from '../consultations/consultations.service';
+import { getIO } from '../consultations/chat.gateway';
 
 const availabilitySchema = z.object({
   isOnline: z.boolean({ message: 'isOnline debe ser un booleano' }),
@@ -58,6 +60,23 @@ export async function setAvailabilityController(req: RequestWithUser, res: Respo
       return res.status(400).json({ success: false, message: parsed.error.issues[0].message });
     }
     const user = await updateAvailability(req.user.userId, parsed.data.isOnline);
+    // Cola de espera en tiempo real:
+    //  - se avisa a todos los clientes conectados del cambio de disponibilidad
+    //  - si el vet se puso online, se le asigna la consulta WAITING más antigua
+    try {
+      const io = getIO();
+      if (io) {
+        io.emit('vet:availability', { vetId: user.id, isOnline: user.isOnline });
+      }
+      if (user.isOnline) {
+        const assigned = await assignNextPendingVet(user.id);
+        if (assigned && io) {
+          io.to(`consultation:${assigned.id}`).emit('consultation:updated', assigned);
+        }
+      }
+    } catch (error) {
+      console.error('Error al emitir eventos de disponibilidad:', error);
+    }
     return res.status(200).json({ success: true, data: user });
   } catch (error) {
     console.error('Error en setAvailabilityController:', error);

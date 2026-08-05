@@ -194,13 +194,13 @@ Sin sprints. Sin código. Descanso obligatorio.
 
 **Duración:** lun 3 · mar 4 · mié 5
 
-| Quién | Tarea |
-|-------|-------|
-| **Tobias** | Online/offline médico + cola de espera. Endpoint primer vet disponible por especie. |
-| **Juan** | Pantalla selección tipo mascota + búsqueda vet. Feedback visual espera. |
-| **Damián** | Botón online/offline médico. Indicador visual. |
-| **Ezequiel** | Testing cola de espera. |
-| **Lara** | Review reactivación. |
+| Quién | Tarea | Estado |
+|-------|-------|--------|
+| **Tobias** | Online/offline médico + cola de espera. Endpoint primer vet disponible por especie. | ✅ |
+| **Juan** | Pantalla selección tipo mascota + búsqueda vet. Feedback visual espera. | ⏳ |
+| **Damián** | Botón online/offline médico. Indicador visual. | ⏳ |
+| **Ezequiel** | Testing cola de espera. | 🔴 |
+| **Lara** | Review reactivación. | 🔴 |
 
 ---
 
@@ -320,4 +320,5 @@ Los sprints terminan el 5 de septiembre. El tiempo restante hasta el 31 de octub
 | **S9** | **13-15 Jul** | **🟡** | **🟡** | **🟡** | **🔴** | **🔴** |
 | S10 | 16-18 Jul | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | MVP | 19-20 Jul | 🎯 | 🎯 | 🎯 | 🎯 | 🎯 |
-| S11-S20 | 3 Ago - 5 Sep | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
+| **S11** | **3-5 Ago** | **✅** | ⏳ | ⏳ | 🔴 | 🔴 |
+| S12-S20 | 6 Ago - 5 Sep | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |

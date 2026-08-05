@@ -204,6 +204,39 @@ describe('POST /api/consultations — autoasignación de vet online', () => {
   });
 });
 
+describe('POST /api/consultations — cola de espera: vet se pone online', () => {
+  test('201 — asigna la consulta WAITING pendiente al vet recién online', async () => {
+    await request(app)
+      .patch('/api/users/me/availability')
+      .set('Authorization', `Bearer ${vetToken}`)
+      .send({ isOnline: false });
+
+    const created = await request(app)
+      .post('/api/consultations')
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ petId: pet.id, notes: 'En cola de espera' });
+    expect(created.status).toBe(201);
+    expect(created.body.data.status).toBe('WAITING');
+    expect(created.body.data.vetId).toBeNull();
+
+    await request(app)
+      .patch('/api/users/me/availability')
+      .set('Authorization', `Bearer ${vetToken}`)
+      .send({ isOnline: true });
+
+    const detail = await request(app)
+      .get(`/api/consultations/${created.body.data.id}`)
+      .set('Authorization', `Bearer ${clientToken}`);
+    expect(detail.body.data.status).toBe('ACTIVE');
+    expect(detail.body.data.vetId).toBe(vetUser.id);
+
+    await request(app)
+      .patch('/api/users/me/availability')
+      .set('Authorization', `Bearer ${vetToken}`)
+      .send({ isOnline: false });
+  });
+});
+
 describe('GET /api/consultations/:id/messages', () => {
   let c: any;
 

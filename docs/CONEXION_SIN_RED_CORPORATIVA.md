@@ -24,7 +24,7 @@ No necesita WiFi, no usa la red corporativa.
 ### En la PC
 
 ```powershell
-cd C:\Users\Pinnacle\Documents\GitHub\conectavet\mobile
+cd <ruta-del-repo>\mobile
 .\start.ps1 -ADB
 ```
 
@@ -47,7 +47,10 @@ celular ──USB── PC
 
 ### Requisitos
 
-- ADB instalado (`winget install Google.PlatformTools`)
+- ADB instalado. Opciones:
+  - `winget install Google.PlatformTools` (si falla con error de hash, descargar manualmente de developer.android.com y descomprimir en `%LOCALAPPDATA%\Android\platform-tools`)
+  - `start.ps1` lo busca en el PATH **y** en `%LOCALAPPDATA%\Android\platform-tools\adb.exe` automáticamente
+- Si instaste adb, abrí un **terminal nuevo** para que el PATH actualizado surta efecto
 - Cable USB funcional
 - Android con depuracion USB activada
 
@@ -67,7 +70,7 @@ Ambos quedan en la misma red.
 ### En la PC
 
 ```powershell
-cd C:\Users\Pinnacle\Documents\GitHub\conectavet\mobile
+cd <ruta-del-repo>\mobile
 .\start.ps1
 ```
 
@@ -102,7 +105,7 @@ accesible desde cualquier red. No necesita cable.
 ### En la PC
 
 ```powershell
-cd C:\Users\Pinnacle\Documents\GitHub\conectavet\mobile
+cd <ruta-del-repo>\mobile
 .\start.ps1 -Tunnel
 ```
 
@@ -135,10 +138,14 @@ y actualizarla en `mobile/.env`:
 
 ```
 EXPO_PUBLIC_API_URL=https://def456.ngrok.io
-EXPO_PUBLIC_WS_URL=wss://def456.ngrok.io/ws/queue
+EXPO_PUBLIC_WS_URL=wss://def456.ngrok.io
 ```
 
+> 📌 `WS_URL` conecta a la raíz del servidor Socket.IO (`/socket.io`), **no** a `/ws/queue` (path fantasma).
+
 Despues reiniciar Expo.
+
+> **Flag util:** `start.ps1 -Fast` corre Metro con `--no-dev --minify` (bundle mucho mas rapido para demos).
 
 ### Requisitos
 

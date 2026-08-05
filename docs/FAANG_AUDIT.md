@@ -1,7 +1,8 @@
 # FAANG Audit — VetConnect
 
 > Evaluación del proyecto contra estándares de ingeniería de FAANG.
-> **Fecha:** 12 de julio, 2026 | **Versión:** v3 — Post-MVP compliance
+> **Fecha:** 5 de agosto, 2026 | **Versión:** v4 — Post Sprint 11 + Code Audit completo
+> Detalle de todos los hallazgos en [`CODE_AUDIT.md`](./CODE_AUDIT.md).
 
 ---
 
@@ -17,47 +18,47 @@
 
 ---
 
-## 1. Code Quality & Structure — 8/10
+## 1. Code Quality & Structure — 7/10 (v4: -1)
 
 ### ✅ Lo que está bien
 - TypeScript strict mode en backend, web y mobile
 - Monolito modular bien organizado
-- Naming consistente
 - Separación backend/web/mobile en monorepo
 - Prisma schema con enums, relaciones, índices
 - Singleton de PrismaClient
-- Barrel exports en todos los módulos
 - Shared middlewares y helpers
-- Design system unificado (web + mobile comparten paleta teal)
 
-### ❌ Lo que falta
-- Sin JSDoc/TSDoc en todas las funciones
-- Sin feature flags
+### ❌ Lo que falta (v4)
+- Código muerto en las 3 capas (barrel exports sin uso, `useChat`, `Modal`/`IconButton`, `getSocket`/`disconnectSocket`, `format*`, schemas sin uso)
+- Tipos duplicados e incompatibles: `mobile/src/types` vs `web/src/types` vs `packages/shared` (nadie importa el shared)
+- 18 errores eslint en web, 33 warnings en mobile
 
 ---
 
-## 2. Security — 9/10
+## 2. Security — 4/10 ⬇️ (corregido en v4)
 
 ### ✅ Lo que está bien
-- JWT con bcrypt
+- JWT con bcrypt (10 rounds)
 - Refresh tokens con rotación
 - authenticate + authorize middlewares
-- Pets CRUD con ownership verification
 - CORS configurado, helmet activado
 - Rate limiting global + específico login
-- Validación Zod en requests
-- isOnline eliminado (ya no expone estado médico)
+- Validación Zod en la mayoría de los bodies
+- Error de login indistinguible (no enumera usuarios)
 
-### ❌ Lo que falta
-- Sin HTTPS forzado (maneja Railway)
-- Sin Content Security Policy personalizada
+### ❌ Hallazgos v4 (CODE_AUDIT.md B1–B7)
+- **CRITICO:** `.env` con credenciales reales de Supabase commiteados en git (backend, web y mobile)
+- **CRITICO:** `/register` acepta `role` del cliente → escalada a ADMIN/VET
+- **CRITICO:** `include: { client, vet }` devuelve el hash de `password` en consultas y vet card
+- **ALTO:** IDOR en `createConsultation` (mascota a ajena)
+- **ALTO:** JWT en `localStorage` (web) y en handshake de socket por `ws://` (mobile)
 
 ---
 
-## 3. Testing — 8/10
+## 3. Testing — 9/10 ↑ (+1)
 
 ### ✅ Lo que está bien
-- Suite de 89 tests en 7 archivos
+- Suite de **94 tests** en 7 archivos (se agregó el test de la cola de espera)
 - Tests unitarios + integración HTTP
 - globalSetup/globalTeardown con schema test_ dinámico
 - Coverage configurado con thresholds
@@ -65,47 +66,50 @@
 ### ❌ Lo que falta
 - Tests escriben a Supabase real (no BD local aislada)
 - Sin factories/fixtures
+- Mobile sin tests unitarios (33 warnings de lint)
 
 ---
 
-## 4. Documentation — 9/10
+## 4. Documentation — 8/10 (v4: -1)
 
 ### ✅ Lo que está bien
 - README.md raíz completo
 - backend/readme.md con API Reference
 - 9 ADR en DECISIONS.md
-- TECH_REFERENCE.md archivo por archivo
+- CODE_AUDIT.md nuevo (auditoría 5-Ago)
 - MVP_SCOPE.md con alcance definido
-- SPRINT_PLAN.md actualizado
 - CHANNEL_DECISION.md, STANDUP_GUIDE.md, HOTFIX_PROTOCOL.md
-- web + mobile READMEs actualizados
 
-### ❌ Lo que falta
+### ❌ Lo que falta (v4)
+- `INTEGRATION.md` documenta endpoints inexistentes (`/api/queue/*`, IA, LiveKit, cookies httpOnly)
+- No existen `.env.example` (los `.env` reales están commiteados)
 - Sin documentación OpenAPI/Swagger
 
 ---
 
-## 5. Architecture & Scalability — 8/10
+## 5. Architecture & Scalability — 7/10 (v4: -1)
 
 ### ✅ Lo que está bien
 - Monolito modular
-- Prisma ORM con migrations versionadas
 - Separación controller/service/routes
 - Singleton de Prisma
 - Paginación en endpoints de lista
-- Índices en BD
+- Índices en BD (schema)
 - Soft delete con restore
 - Health check real con SELECT 1
 - Logging estructurado
+- Cola de espera real-time (S11): `assignNextPendingVet` + eventos de socket
 
-### ❌ Lo que falta
+### ❌ Lo que falta (v4)
+- Migraciones no alineadas con el schema (`migrate deploy` rompe prod vs `db push`)
+- `/my-history` duplica `/mine` y expone la cola WAITING global a VET
+- N+1 de prescripciones en el historial web
+- Mensajes sin paginar
 - Sin Redis (node-cache suficiente para MVP)
-- Sin cola de mensajes
-- Sin métricas
 
 ---
 
-## 6. DevOps & Deploy — 7/10
+## 6. DevOps & Deploy — 6/10 (v4: -1)
 
 ### ✅ Lo que está bien
 - Build script funcionando
@@ -115,13 +119,15 @@
 - CI/CD con GitHub Actions
 - Separación entornos test_
 
-### ❌ Lo que falta
+### ❌ Lo que falta (v4)
+- `.env` con credenciales commiteados (bloqueante)
+- `eas.json` preview/production apuntando a `http://localhost:3001` + Android 9+ bloquea cleartext
+- `app.json`: `eas.projectId` vacío → builds EAS fallan
 - Deploy activo no verificado
-- Sin rollback automático
 
 ---
 
-## 7. Frontend Quality (Web) — 8/10 ↑ (+1)
+## 7. Frontend Quality (Web) — 6/10 (v4: -2)
 
 ### ✅ Lo que está bien
 - React 19 + Vite 8 + TypeScript
@@ -132,29 +138,34 @@
 - Dashboard por rol (CLIENT vs VET)
 - Chat con Socket.io
 - Cerrar consulta con modal de notas
-- LandingPage profesional con servicios
 
-### ❌ Lo que falta
-- Sin pruebas unitarias de componentes
-- Sin react-hook-form
+### ❌ Lo que falta (v4)
+- **No existe el toggle online/offline del médico (Sprint 11)**: la cola real-time es inalcanzable desde la web
+- Socket conecta a `window.location.origin` (en dev golpea a Vite, no al backend)
+- `AuthContext` autentica con JWT sin verificar si `getMe()` falla; token en `localStorage`
+- 18 errores de eslint; polling duplicado; N+1 en historial
 
 ---
 
-## 8. Mobile Quality — 7/10 ↑ (+6)
+## 8. Mobile Quality — 6/10 (v4: -1)
 
 ### ✅ Lo que está bien
 - Proyecto Expo completo con Expo Router
 - Auth con login/register + secure storage
 - CRUD mascotas con foto
-- Chat con veterinario (reemplazó IA)
+- Chat con veterinario (polling + socket)
 - Historial de consultas con rating
 - Solicitar consulta simple
 - Design system alineado con web (misma paleta teal)
 - TypeScript en toda la app
 
-### ❌ Lo que falta
+### ❌ Lo que falta (v4)
+- Consulta `WAITING` muestra "Finalizada"/"Chat finalizado" sin feedback de espera (Sprint 11)
+- Las consultas WAITING se filtran del tab Chat
+- `logout()` no desconecta el socket (fuga de eventos entre cuentas)
+- `eas.json` producción/preview apuntan a localhost; `eas.projectId` vacío
+- Tipos duplicados e incompatibles con web/shared
 - Sin pruebas unitarias
-- Sin testing en 2GB RAM
 
 ---
 
@@ -177,40 +188,52 @@
 
 ## 📊 Resumen de calificaciones
 
-| Categoría | v1 (30 Jun) | v2 (1 Jul) | v3 (12 Jul) | Mejora |
-|-----------|-------------|------------|-------------|--------|
-| Code Quality & Structure | 5/10 | 8/10 | **8/10** | 🟢 +3 |
-| Security | 3/10 | 9/10 | **9/10** | 🟢 +6 |
-| Testing | 3/10 | 8/10 | **8/10** | 🟢 +5 |
-| Documentation | 8/10 | 9/10 | **9/10** | 🟢 +1 |
-| Architecture & Scalability | 4/10 | 8/10 | **8/10** | 🟢 +4 |
-| DevOps & Deploy | 3/10 | 7/10 | **7/10** | 🟢 +4 |
-| Frontend Web | 3/10 | 7/10 | **8/10** | 🟢 +5 |
-| Mobile | 1/10 | 1/10 | **7/10** | 🟢 +6 |
-| Project Management | 6/10 | 6/10 | **7/10** | 🟢 +1 |
-| | | | | |
-| **PROMEDIO PONDERADO** | **4.0/10** | **7.0/10** | **7.9/10** | **🟢 +3.9** |
+| Categoría | v1 (30 Jun) | v2 (1 Jul) | v3 (12 Jul) | v4 (5 Ago) | Tendencia |
+|-----------|-------------|------------|-------------|------------|-----------|
+| Code Quality & Structure | 5/10 | 8/10 | 8/10 | **7/10** | 🔻 -1 |
+| Security | 3/10 | 9/10 | 9/10 | **4/10** | 🔻🔻 -5 |
+| Testing | 3/10 | 8/10 | 8/10 | **9/10** | 🟢 +1 |
+| Documentation | 8/10 | 9/10 | 9/10 | **8/10** | 🔻 -1 |
+| Architecture & Scalability | 4/10 | 8/10 | 8/10 | **7/10** | 🔻 -1 |
+| DevOps & Deploy | 3/10 | 7/10 | 7/10 | **6/10** | 🔻 -1 |
+| Frontend Web | 3/10 | 7/10 | 8/10 | **6/10** | 🔴 -2 |
+| Mobile | 1/10 | 1/10 | 7/10 | **6/10** | 🔴 -1 |
+| Project Management | 6/10 | 6/10 | 7/10 | **7/10** | — |
+| | | | | | |
+| **PROMEDIO PONDERADO** | **4.0/10** | **7.0/10** | **7.9/10** | **6.7/10** | 🔴 -1.2 |
+
+> El descenso de v3 → v4 **no es una regresión del código**: es el resultado de la *auditoría real y completa* del 5-Ago (ver `CODE_AUDIT.md`). La puntuación previa de Security (9/10) y Frontend/Mobile sobreestimaban el estado; ahora los findings están verificados y planificados para corregir en S12–S13.
 
 ---
 
-## 🎯 Pendiente para llegar a 10
+## 🎯 Pendiente para llegar a 10 (post auditoría 5-Ago)
+
+> Lista completa con archivo:línea en [`CODE_AUDIT.md`](./CODE_AUDIT.md).
 
 ### Backend (Tobias)
-1. Tests con BD aislada local (Docker Compose)
-2. Documentación OpenAPI/Swagger
+1. 🔴 CRITICO — Rotar credenciales y sacar `.env` de git (`git filter-repo`); crear `.env.example`
+2. 🔴 CRITICO — Fijar rol en `/register` (no aceptar `role` del cliente)
+3. 🔴 CRITICO — No exponer `password` en los `include`/raw SQL de consultas y vet card
+4. 🔴 CRITICO — Alinear migraciones con el schema (re-agregar `isOnline`, `vetId` nullable, `messages`, `prescriptions`, `CANCELLED`)
+5. 🟠 ALTO — Ownership de mascota en `createConsultation` (IDOR)
+6. 🟠 ALTO — Separar `/my-history` de `/mine` (no exponer colas WAITING ajenas)
+7. 🟠 MEDIO — Mapear `species` de verdad en vets disponibles; invalidar caché al asignar
 
 ### Web (Damián)
-3. Pruebas unitarias de componentes
-4. react-hook-form para formularios
+8. 🟠 ALTO — Toggle online/offline del médico (Sprint 11) + acompañamiento real-time
+9. 🟠 ALTO — No usar `localStorage` para el JWT; interceptor de 401 fuera del flujo de login
+10. 🟠 ALTO — Socket: origen correcto en dev (proxy `/socket.io`) y eventos de cola legibles
 
 ### Mobile (Juan)
-5. Testing en dispositivo 2GB RAM
-6. Build APK firmado
+11. 🟠 ALTO — Feedback de espera en consulta `WAITING` (chat "Finalizada" ⚠️)
+12. 🟠 ALTO — No filtrar las `WAITING` del tab Chat
+13. 🟠 ALTO — `disconnectSocket()` en logout; leer `petId` en queue
+14. 🟠 ALTO — Arreglar `eas.json` producción/preview + limpiar el path `/ws/queue` fantasma
 
 ### QA (Ezequiel)
-7. Testing completo del flujo MVP
-8. Documentación de bugs
+15. Testing del flujo de cola (3 vet offline → crear consulta → vet online → activa)
+16. Documentar bugs con re-test
 
 ### PM (Lara)
-9. Daily standups efectivos
-10. Métricas de velocity
+17. Actualizar `INTEGRATION.md` (documenta endpoints inexistentes)
+18. Coordinar el bloque de bugs S12–S13

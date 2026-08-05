@@ -1,7 +1,7 @@
 # VetConnect — Referencia Técnica Completa
 
 > Documento definitivo del proyecto. Explica cada archivo, cada carpeta, y cómo funciona todo.
-> **Última actualización:** 12 de julio, 2026
+> **Última actualización:** 5 de agosto, 2026 (v4 — Sprint 11 + auditoría completa)
 
 ---
 
@@ -79,24 +79,24 @@
 ```
 backend/
 ├── prisma/
-│   ├── schema.prisma          # Modelos: User, Pet, Consultation, Message
+│   ├── schema.prisma          # Modelos: User, Pet, Consultation, Message, Prescription
 │   └── migrations/
-│       ├── 20260622165754_init/  # Migración inicial
-│       └── 2_cleanup_mvp/       # Elimina isOnline, liveKitRoom, medical_records
+│       ├── 20260622165754_init/  # Migración inicial (NO alineada con el schema — ver CODE_AUDIT)
+│       └── 2_cleanup_mvp/       # ⚠️ DROP isOnline → desalineada con schema.prisma
 ├── src/
 │   ├── server.ts              # Entry point
 │   ├── modules/
-│   │   ├── auth/              # Registro, login, JWT, refresh
-│   │   ├── users/             # Perfil, listar vets
-│   │   ├── pets/              # CRUD mascotas con soft delete
-│   │   └── consultations/     # Consultas + Chat (Socket.io)
+│   │   ├── auth/              # Registro, login, JWT, refresh (⚠️ /register acepta `role`)
+│   │   ├── users/             # Perfil, disponibilidad online/offline, listar vets
+│   │   ├── pets/              # CRUD mascotas con soft delete + vet card
+│   │   └── consultations/     # Consultas + cola de espera + Chat (Socket.io)
 │   ├── shared/
 │   │   ├── prisma.ts          # Singleton PrismaClient
 │   │   ├── middlewares/
 │   │   │   └── auth.middleware.ts  # authenticate() + authorize(roles)
 │   │   └── types/index.ts     # JwtPayload, ApiResponse
-│   └── __tests__/             # 89 tests (auth, pets, consultations, users)
-├── .env.example
+│   └── __tests__/             # 94 tests (auth, pets, consultations, users)
+├── .env                       # ⚠️ CREDENCIALES REALES COMMITEADAS — rotar
 └── package.json
 ```
 
@@ -104,12 +104,15 @@ backend/
 
 | Modelo | Campos clave |
 |--------|-------------|
-| `User` | id, email, password (hash), name, role (CLIENT/VET/ADMIN) |
-| `Pet` | id, name, species, breed, age, weight, ownerId, photoUrl, deletedAt |
-| `Consultation` | id, clientId, vetId, petId, status (WAITING/ACTIVE/COMPLETED), reason, notes, diagnosis, treatment |
+| `User` | id, email, password (hash), firstName, lastName, phone, role (CLIENT/VET/ADMIN), isOnline |
+| `Pet` | id, name, species, breed, age, weight, weightKg, sex, birthDate, allergies, ownerId, photoUrl, deletedAt, isDeceased |
+| `Consultation` | id, clientId, vetId (nullable), petId, status (WAITING/ACTIVE/COMPLETED/CANCELLED), notes, startedAt, endedAt |
 | `Message` | id, consultationId, senderId, content, createdAt |
+| `Prescription` | id, consultationId, vetId, content, createdAt |
 
-### Endpoints
+> ⚠️ **Migraciones desalineadas** (B5 en `CODE_AUDIT.md`): `2_cleanup_mvp` dropeó `isOnline`, la init no crea `messages`/`prescriptions` ni `CANCELLED`. Dev funciona por `prisma db push`; `migrate deploy` en prod fallaría. Alinear antes de deployar.
+
+### Endpoints (reales al 5-Ago)
 
 | Recurso | Métodos | Auth |
 |---------|---------|------|
@@ -117,16 +120,27 @@ backend/
 | `/api/auth/login` | POST | No |
 | `/api/auth/refresh` | POST | No |
 | `/api/auth/logout` | POST | Sí |
-| `/api/users/me` | GET | Sí |
+| `/api/auth/me` | GET | Sí |
+| `/api/users/me` | GET, PATCH | Sí |
 | `/api/users/vets` | GET | Sí |
 | `/api/pets` | GET, POST | Sí |
-| `/api/pets/:id` | GET, PUT, DELETE | Sí (ownership) |
-| `/api/consultations` | GET, POST | Sí |
+| `/api/pets/managed` | GET | Sí |
+| `/api/pets/:id` | GET, PUT, PATCH, DELETE | Sí (ownership) |
+| `/api/pets/:id/vetcard` | GET | Sí (VET) |
+| `/api/pets/:id/restore` | POST | Sí |
+| `/api/consultations` | POST | CLIENT |
+| `/api/consultations/mine` `, /my-history` | GET | Sí |
+| `/api/consultations/vets?species=` | GET | Sí |
+| `/api/consultations/:id` | GET | Sí (participante) |
 | `/api/consultations/:id/assign` | PATCH | VET/ADMIN |
 | `/api/consultations/:id/complete` | PATCH | VET/ADMIN |
+| `/api/consultations/:id/messages` | GET, POST | Sí (participante) |
+| `/api/consultations/:id/prescriptions` | GET (part.), POST (VET) | Sí |
+
+> ⚠️ `/me` existe en `auth.routes` y en `users.routes`; `PATCH /api/users/me` es el toggle online/offline (`{ isOnline }`) que dispara la auto-asignación de la cola.
 
 ### Tests
-89 tests en 7 archivos con Jest + supertest. Usan schema `test_` dinámico en Supabase.
+**94 tests** en 7 archivos con Jest + supertest. Usan schema `test_` dinámico en Supabase.
 
 ---
 
@@ -193,12 +207,15 @@ mobile/app/
 ```
 
 ### Estado
-Funcional para MVP:
+Funcional para MVP + Sprint 11:
 - Auth con secure storage (expo-secure-store)
 - CRUD mascotas con foto (Cloudinary)
-- Chat con veterinario (polling cada 3s)
-- Solicitar consulta simple
+- Chat con veterinario (polling 5s si el socket cae, Socket.io en vivo)
+- Cola de espera: la consulta WAITING se asigna sola cuando un vet se pone online
 - Historial con rating post-consulta
+- Inicio de la app: `npm start` (o `npm run start:metro` para Expo puro); `start.ps1` con flags `-ADB`, `-Tunnel`, `-Fast`
+
+> ⚠️ Conocidos v4: estado de espera mal etiquetado en `chat/[consultationId]` ("Finalizada"), `logout()` no desconecta el socket, `petId` enviado a queue pero no leído, `eas.json` producción apunta a localhost. Ver `CODE_AUDIT.md` (M2–M7).
 
 ### Design System
 Misma paleta teal que la web. Componentes UI compartidos en `src/components/ui/`.
@@ -213,12 +230,14 @@ Misma paleta teal que la web. Componentes UI compartidos en `src/components/ui/`
 | `MVP_SCOPE.md` | Definición de alcance MVP |
 | `TECH_REFERENCE.md` | **Este archivo** — referencia técnica completa |
 | `DECISIONS.md` | 9 ADR (decisiones de arquitectura) |
-| `FAANG_AUDIT.md` | Auditoría técnica (score actual: 7.9/10) |
+| `FAANG_AUDIT.md` | Auditoría técnica (score actual: 6.7/10 v4) |
+| `CODE_AUDIT.md` | **Auditoría completa 5-Ago** de las 3 capas (severidad por archivo:línea) |
 | `RUN_GUIDE.md` | Guía para correr el proyecto local |
-| `DEPLOY.md` | Instrucciones de deploy a Railway |
+| `DEPLOY.md` | Instrucciones de deploy a Koyeb/Vercel/EAS |
 | `CHANNEL_DECISION.md` | Estrategia web + mobile por rol |
 | `STANDUP_GUIDE.md` | Reglas de daily standup |
 | `HOTFIX_PROTOCOL.md` | Protocolo de bugs post-MVP |
+| `CONEXION_SIN_RED_CORPORATIVA.md` | Conexión mobile por ADB/USB/tunnel sin WiFi corporativa |
 
 ---
 

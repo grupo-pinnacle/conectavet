@@ -53,48 +53,26 @@ Registrate como CLIENT o VET y probá login + dashboard por rol.
 ### 3.1 Preparar el celu
 
 1. Instalá **Expo Go** de Play Store en tu celular
-2. Conectá el celu a la **misma red WiFi** que la compu
+2. Dos opciones de red:
+   - **Misma red WiFi** que la compu (modo LAN)
+   - **USB + depuración USB** (recomendado en oficina, ver `CONEXION_SIN_RED_CORPORATIVA.md`): act tip "Depuración USB" en Opciones de desarrollador y conectá el cable
 
-### 3.2 Configurar la IP
+### 3.2 Iniciar
 
-El celu necesita llegar al backend de la compu.
-
-**Sacá tu IP local:**
-```bash
-ipconfig | findstr IPv4
-# Ej: 192.168.1.100
-```
-
-**Actualizá `mobile/.env` con tu IP:**
-```
-EXPO_PUBLIC_API_URL=http://192.168.1.100:3001
-```
-
-### 3.3 Iniciar Expo
+El comando principal es `npm start` (corre `start.ps1`, que detecta USB/IP, configura el backend y genera el QR en el Escritorio):
 
 ```bash
 cd mobile
 npm install
-npx expo start
+npm start
 ```
 
-Si pregunta `Use port 8082 instead?` → tipeá **Y + Enter**
+Flags útiles de `start.ps1`: `-ADB` (fuerza modo USB/`--localhost`), `-Tunnel` (ngrok), `-Fast` (agrega `--no-dev --minify`, bundle más rápido para demo).
+Para Expo puro sin script: `npm run start:metro`.
 
-Después de ~20-30 segundos aparece un **código QR**. Escanealo con **Expo Go** en tu celu.
+Escaneá el QR que quedó en el **Escritorio** (o en la terminal) con **Expo Go**.
 
-### 3.4 Si el QR no aparece o no conecta
-
-**Opción Tunnel** (usa internet, no necesita WiFi local):
-```bash
-npx expo start --tunnel
-```
-
-**Limpiar caché de Metro:**
-```bash
-npx expo start --clear
-```
-
-### 3.5 Verificar conexión
+### 3.3 Verificar conexión
 
 Cuando la app cargue en el celu:
 1. **Registrate** (completá nombre, email, contraseña, seleccioná rol)
@@ -112,8 +90,8 @@ Cuando la app cargue en el celu:
 └────────────────────────────────────────────┘
 
 ┌─ Terminal 2 ──────────────────────────────┐
-│ cd mobile && npx expo start               │
-│ → Escaneá el QR desde Expo Go en tu celu  │
+│ cd mobile && npm start                     │
+│ → QR en el Escritorio, escanealo con Expo  │
 └────────────────────────────────────────────┘
 
 ┌─ Terminal 3 (opcional) ───────────────────┐
@@ -128,12 +106,12 @@ Cuando la app cargue en el celu:
 
 | Síntoma | Causa | Solución |
 |---------|-------|----------|
-| Pantalla blanca en mobile | Expo Go no puede cargar el bundle | `npx expo start --clear` |
-| "Network request failed" | Mobile no llega al backend | Verificar IP en `.env` y que backend esté corriendo |
+| Pantalla blanca en mobile | Expo Go no puede cargar el bundle | `npm run start:metro -- --clear` |
+| "Network request failed" | Mobile no llega al backend | Verificar que backend esté corriendo y usar `-ADB` si el celu no ve la LAN |
 | "Port 3001 already in use" | Otro proceso ocupando el puerto | `netstat -ano \| findstr 3001` y matar el PID |
-| Expo no muestra QR | Metro/Expo atascado | `npx expo start --clear --tunnel` |
+| Expo no muestra QR | Metro/Expo atascado | `start.ps1 -Tunnel` o `-ADB` |
 | CORS error en web | Backend no acepta el origen | Verificar `CORS_ORIGIN` en `backend/.env` |
-| El QR no se ve en la terminal | Puerto 8081 ocupado | Aceptar usar puerto 8082 |
+| El QR no se ve en la terminal | Puerto 8081 ocupado | El QR del script se guarda en el Escritorio; o liberar 8081 |
 
 ---
 

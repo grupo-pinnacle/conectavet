@@ -25,6 +25,7 @@
         "backgroundColor": "#0F766E"
       },
       "package": "com.pinnacle.vetconnect",
+      "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
@@ -41,11 +42,13 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "tsconfigPaths": true
     },
+    "newArchEnabled": true,
     "extra": {
       "eas": {
         "projectId": ""

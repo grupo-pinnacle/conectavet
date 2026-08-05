@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { consultationsService } from '@/services';
 import { connectSocket, joinConsultation, leaveConsultation } from '@/lib/socket';
@@ -45,13 +46,16 @@ export function useConsultationMessages(consultationId: string | undefined, user
   const qc = useQueryClient();
   const key = ['consultations', consultationId, 'messages'] as const;
   const connectedRef = useRef(false);
+  const [socketConnected, setSocketConnected] = useState(false);
 
   const list = useQuery({
     queryKey: key,
     queryFn: async () => (await consultationsService.getMessages(consultationId!)) as ChatMessage[],
     enabled: Boolean(consultationId),
     staleTime: 0,
-    refetchInterval: 5000,
+    // Only poll while the realtime socket is NOT connected — avoids
+    // duplicate traffic and re-renders during active chats.
+    refetchInterval: socketConnected ? false : 5000,
   });
 
   // Socket connection for real-time messages
@@ -66,6 +70,7 @@ export function useConsultationMessages(consultationId: string | undefined, user
         socketInstance = await connectSocket();
         if (cancelled) return;
         connectedRef.current = true;
+        setSocketConnected(true);
         joinConsultation(consultationId);
 
         const onMessage = (message: ChatMessage) => {
@@ -105,6 +110,7 @@ export function useConsultationMessages(consultationId: string | undefined, user
 
     return () => {
       cancelled = true;
+      setSocketConnected(false);
       if (socketInstance) {
         socketInstance.off('message:new');
         socketInstance.off('consultation:updated');

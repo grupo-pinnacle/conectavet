@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Card, Badge } from './ui';
@@ -10,7 +11,7 @@ interface PetCardProps {
   onPress?: (pet: Pet) => void;
 }
 
-export function PetCard({ pet, onPress }: PetCardProps) {
+export const PetCard = memo(function PetCard({ pet, onPress }: PetCardProps) {
   const { colors: c } = useTheme();
   const iconName = (speciesIcon[pet.species] ?? 'paw') as keyof typeof MaterialCommunityIcons.glyphMap;
 
@@ -69,4 +70,4 @@ export function PetCard({ pet, onPress }: PetCardProps) {
       </Card>
     </Pressable>
   );
-}
+});

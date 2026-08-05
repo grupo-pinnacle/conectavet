@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
@@ -18,13 +19,16 @@ export default function HistoryScreen() {
   const { data, isFetching, refetch, isLoading, isError, error } = useConsultationHistory({ limit: 50 });
   const consultations = data ?? [];
 
-  const grouped: Grouped[] = Object.values(
-    consultations.reduce<Record<string, Grouped>>((acc, item) => {
-      const petId = item.pet?.id || 'unknown';
-      if (!acc[petId]) acc[petId] = { pet: item.pet, consultations: [] };
-      acc[petId].consultations.push(item);
-      return acc;
-    }, {})
+  const grouped: Grouped[] = useMemo(
+    () => Object.values(
+      consultations.reduce<Record<string, Grouped>>((acc, item) => {
+        const petId = item.pet?.id || 'unknown';
+        if (!acc[petId]) acc[petId] = { pet: item.pet, consultations: [] };
+        acc[petId].consultations.push(item);
+        return acc;
+      }, {})
+    ),
+    [consultations]
   );
 
   if (isLoading) {

@@ -1,6 +1,7 @@
 param(
     [switch]$Tunnel,
-    [switch]$ADB
+    [switch]$ADB,
+    [switch]$Fast
 )
 
 $port = 8081
@@ -142,10 +143,14 @@ if ($useADB) {
 # ── Start Expo ──
 Write-Host "Iniciando Expo..." -ForegroundColor Yellow
 Write-Host "  API:  $env:EXPO_PUBLIC_API_URL" -ForegroundColor Gray
+if ($Fast) {
+    Write-Host "  MODO RAPIDO: bundle minificado (para demos - sin Fast Refresh)" -ForegroundColor Magenta
+}
 Write-Host "  'a'=Android | 'i'=iOS | 'w'=web | Ctrl+C=detener" -ForegroundColor Gray
 Write-Host ""
 
 $expoArgs = @("expo", "start", "--clear")
+if ($Fast) { $expoArgs += "--no-dev"; $expoArgs += "--minify" }
 if ($Tunnel) { $expoArgs += "--tunnel" }
 if ($useADB) { $expoArgs += "--localhost" }
 & "npx" $expoArgs

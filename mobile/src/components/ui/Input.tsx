@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Platform, Text, TextInput, View, type TextInputProps, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, Pressable, Text, TextInput, View, type TextInputProps, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme, spacing, radius, fontSizes, fontWeights, motion } from '@/theme';
@@ -21,7 +21,11 @@ export function Input({
 }: InputProps) {
   const { colors: c } = useTheme();
   const [focused, setFocused] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const focusProgress = useSharedValue(0);
+
+  const isSecure = rest.secureTextEntry === true;
+  const secureTextEntry = isSecure && !showPassword;
 
   const handleFocus = useCallback(() => {
     setFocused(true);
@@ -103,7 +107,23 @@ export function Input({
             minHeight: 24,
           }}
           {...rest}
+          secureTextEntry={secureTextEntry}
         />
+        {isSecure && (
+          <Pressable
+            onPress={() => setShowPassword((v) => !v)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+            style={{ marginLeft: spacing.xs }}
+          >
+            <MaterialCommunityIcons
+              name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+              size={20}
+              color={focused ? c.primary : c.inkMuted}
+            />
+          </Pressable>
+        )}
         {error && (
           <MaterialCommunityIcons name="alert-circle" size={18} color={c.danger} style={{ marginLeft: spacing.xs }} />
         )}

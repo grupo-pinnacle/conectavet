@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { View, Text, Pressable, RefreshControl, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,6 +17,10 @@ export default function HomeScreen() {
   const { user } = useAuth();
   const { list } = usePets();
   const pets = list.data ?? [];
+
+  const onPetPress = useCallback((pet: Pet) => {
+    router.push(`/(app)/pets/${pet.id}`);
+  }, [router]);
 
   return (
     <ScrollView
@@ -92,7 +97,7 @@ export default function HomeScreen() {
         </Card>
       ) : (
         pets.map((pet: Pet) => (
-          <PetCard key={pet.id} pet={pet} onPress={() => router.push(`/(app)/pets/${pet.id}`)} />
+          <PetCard key={pet.id} pet={pet} onPress={onPetPress} />
         ))
       )}
     </ScrollView>

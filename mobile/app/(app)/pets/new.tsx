@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { View, Text, ScrollView, Pressable, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,6 +22,13 @@ export default function NewPetScreen() {
   const { create } = usePets();
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const formatBirthDate = (iso: string) => {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
 
   const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<CreatePetPayload>({
     resolver: zodResolver(createPetSchema),
@@ -51,7 +59,7 @@ export default function NewPetScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + spacing.lg, paddingHorizontal: spacing.lg, paddingBottom: insets.bottom + spacing.huge }} keyboardShouldPersistTaps="handled">
         <Card>
           <Pressable onPress={onPickPhoto} style={{ alignItems: 'center', marginBottom: spacing.lg }} accessibilityRole="button" accessibilityLabel={photoUri ? 'Cambiar foto' : 'Agregar foto'}>
@@ -92,7 +100,62 @@ export default function NewPetScreen() {
           )} />
 
           <Controller control={control} name="birthDate" render={({ field: { onChange, value } }) => (
-            <Input label="Fecha de nacimiento" placeholder="2020-05-12" value={value.slice(0, 10)} onChangeText={(t) => onChange(new Date(t).toISOString())} error={errors.birthDate?.message} leftIcon="calendar-outline" />
+            <>
+              <Text style={{ fontSize: fontSizes.body, color: c.ink, fontWeight: fontWeights.medium, marginBottom: spacing.xs, letterSpacing: 0.2 }}>
+                Fecha de nacimiento
+              </Text>
+              <Pressable
+                onPress={() => setShowDatePicker(true)}
+                style={{
+                  flexDirection: 'row', alignItems: 'center',
+                  backgroundColor: c.surface, borderRadius: radius.lg,
+                  borderWidth: 1.5, borderColor: errors.birthDate?.message ? c.danger : c.border,
+                  paddingHorizontal: spacing.lg, minHeight: 48,
+                  marginBottom: spacing.xs,
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Elegir fecha de nacimiento"
+                accessibilityHint="Abrir calendario para elegir la fecha"
+              >
+                <MaterialCommunityIcons name="calendar-outline" size={20} color={c.inkMuted} style={{ marginRight: spacing.sm }} />
+                <Text style={{ flex: 1, fontSize: fontSizes.input, color: value ? c.ink : c.inkMuted }}>
+                  {value ? formatBirthDate(value) : 'Elegí la fecha…'}
+                </Text>
+                <MaterialCommunityIcons name="chevron-down" size={20} color={c.inkMuted} />
+              </Pressable>
+              {errors.birthDate?.message ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm }}>
+                  <MaterialCommunityIcons name="alert-circle" size={14} color={c.danger} />
+                  <Text style={{ fontSize: fontSizes.label, color: c.danger, flex: 1 }}>{errors.birthDate.message}</Text>
+                </View>
+              ) : null}
+              {showDatePicker && Platform.OS === 'android' && (
+                <DateTimePicker
+                  value={value ? new Date(value) : new Date()}
+                  mode="date"
+                  maximumDate={new Date()}
+                  onChange={(event: DateTimePickerEvent, selected?: Date) => {
+                    setShowDatePicker(false);
+                    if (event.type === 'set' && selected) onChange(selected.toISOString());
+                  }}
+                />
+              )}
+              {showDatePicker && Platform.OS === 'ios' && (
+                <View style={{ backgroundColor: c.surface, borderRadius: radius.lg, padding: spacing.sm, marginBottom: spacing.sm }}>
+                  <DateTimePicker
+                    value={value ? new Date(value) : new Date()}
+                    mode="date"
+                    display="spinner"
+                    maximumDate={new Date()}
+                    onChange={(event: DateTimePickerEvent, selected?: Date) => {
+                      if (selected) onChange(selected.toISOString());
+                      if (event.type === 'set' || event.type === 'dismissed') setShowDatePicker(false);
+                    }}
+                  />
+                  <Button variant="ghost" onPress={() => setShowDatePicker(false)} size="sm">Listo</Button>
+                </View>
+              )}
+            </>
           )} />
 
           <Controller control={control} name="weightKg" render={({ field: { onChange, value } }) => (

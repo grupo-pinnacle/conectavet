@@ -38,9 +38,9 @@ export default function RegisterScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: spacing.xxl, paddingTop: insets.top + spacing.xxl, paddingBottom: insets.bottom + spacing.xxl, justifyContent: 'center', backgroundColor: c.background }}
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: spacing.xxl, paddingTop: insets.top + spacing.massive, paddingBottom: insets.bottom + spacing.huge, backgroundColor: c.background }}
         keyboardShouldPersistTaps="handled"
       >
         <View style={{ alignItems: 'center', marginBottom: spacing.xxl }}>

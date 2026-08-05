@@ -67,8 +67,8 @@ export default function ConsultationChatScreen() {
 
   const keyboardProps = useMemo((): any => Platform.select({
     ios: { behavior: 'padding', keyboardVerticalOffset: 0 },
-    android: { enabled: false },
-    default: { enabled: false },
+    android: { behavior: 'height' },
+    default: { behavior: 'height' },
   }), []);
 
   return (

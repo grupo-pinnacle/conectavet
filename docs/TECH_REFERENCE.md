@@ -90,12 +90,14 @@ backend/
 │   │   ├── users/             # Perfil, disponibilidad online/offline, listar vets
 │   │   ├── pets/              # CRUD mascotas con soft delete + vet card
 │   │   └── consultations/     # Consultas + cola de espera + Chat (Socket.io)
+│   │   ├── media/             # Upload de imagen (multer) → carpeta uploads/
+│   │   └── notifications/     # Notificaciones push (Expo) + bandeja in-app
 │   ├── shared/
 │   │   ├── prisma.ts          # Singleton PrismaClient
 │   │   ├── middlewares/
 │   │   │   └── auth.middleware.ts  # authenticate() + authorize(roles)
 │   │   └── types/index.ts     # JwtPayload, ApiResponse
-│   └── __tests__/             # 94 tests (auth, pets, consultations, users)
+│   └── __tests__/             # 108 tests (auth, pets, consultations, users, media, notifications)
 ├── .env                       # ⚠️ CREDENCIALES REALES COMMITEADAS — rotar
 └── package.json
 ```
@@ -107,8 +109,11 @@ backend/
 | `User` | id, email, password (hash), firstName, lastName, phone, role (CLIENT/VET/ADMIN), isOnline |
 | `Pet` | id, name, species, breed, age, weight, weightKg, sex, birthDate, allergies, ownerId, photoUrl, deletedAt, isDeceased |
 | `Consultation` | id, clientId, vetId (nullable), petId, status (WAITING/ACTIVE/COMPLETED/CANCELLED), notes, startedAt, endedAt |
-| `Message` | id, consultationId, senderId, content, createdAt |
+| `Message` | id, consultationId, senderId, content, **attachmentUrl**, createdAt |
 | `Prescription` | id, consultationId, vetId, content, createdAt |
+| `Attachment` | id, uploaderId, url (/uploads/…), mimeType, size, createdAt |
+| `PushToken` | id, userId, token (único), platform, createdAt |
+| `Notification` | id, userId, type, title, body, data (Json), readAt, createdAt |
 
 > ⚠️ **Migraciones desalineadas** (B5 en `CODE_AUDIT.md`): `2_cleanup_mvp` dropeó `isOnline`, la init no crea `messages`/`prescriptions` ni `CANCELLED`. Dev funciona por `prisma db push`; `migrate deploy` en prod fallaría. Alinear antes de deployar.
 
@@ -136,11 +141,21 @@ backend/
 | `/api/consultations/:id/complete` | PATCH | VET/ADMIN |
 | `/api/consultations/:id/messages` | GET, POST | Sí (participante) |
 | `/api/consultations/:id/prescriptions` | GET (part.), POST (VET) | Sí |
+| `/api/media` | POST (multipart `file`) | Sí | Estático `GET /uploads/:file`
+| `/api/notifications` | GET | Sí | `{ items, unreadCount }`
+| `/api/notifications/token` | POST, DELETE | Sí | `{ token, platform }`
+| `/api/notifications/:id/read` | PATCH | Sí | Marca leída
 
 > ⚠️ `/me` existe en `auth.routes` y en `users.routes`; `PATCH /api/users/me` es el toggle online/offline (`{ isOnline }`) que dispara la auto-asignación de la cola.
 
+### Notificaciones push
+- `POST /api/media` solo imágenes (jpeg/png/webp/gif, máx 5 MB); responde 201 `{ id, url: /uploads/…, mimeType, size }`. Los archivos se sirven desde `GET /uploads/*` (estático, gitignoreado).
+- `Message.attachmentUrl` DEBE empezar con `/uploads/`; el mensaje puede tener `content` vacío si trae imagen.
+- Tipos de evento (push + bandeja): `consultation_new`, `consultation_assigned`, `consultation_completed`, `message`, `prescription_new`.
+- Push por API de Expo (best-effort); `EXPO_PUSH_DISABLED=true` desactiva el envío real (usado en tests).
+
 ### Tests
-**94 tests** en 7 archivos con Jest + supertest. Usan schema `test_` dinámico en Supabase.
+**108 tests** en 9 archivos con Jest + supertest. Usan schema `test_` dinámico en Supabase.
 
 ---
 
@@ -207,15 +222,16 @@ mobile/app/
 ```
 
 ### Estado
-Funcional para MVP + Sprint 11:
+Funcional para MVP + Sprint 11 + Sprint 12:
 - Auth con secure storage (expo-secure-store)
 - CRUD mascotas con foto (Cloudinary)
 - Chat con veterinario (polling 5s si el socket cae, Socket.io en vivo)
 - Cola de espera: la consulta WAITING se asigna sola cuando un vet se pone online
+- Sprint 12: enviar **imágenes** desde la galería (expo-image-picker → `POST /api/media` → mensaje con `attachmentUrl`), mostrar imágenes en burbujas, feedback de estado correcto en espera ("En cola de espera") y registro de **push token** (expo-notifications → `POST /api/notifications/token`)
 - Historial con rating post-consulta
 - Inicio de la app: `npm start` (o `npm run start:metro` para Expo puro); `start.ps1` con flags `-ADB`, `-Tunnel`, `-Fast`
 
-> ⚠️ Conocidos v4: estado de espera mal etiquetado en `chat/[consultationId]` ("Finalizada"), `logout()` no desconecta el socket, `petId` enviado a queue pero no leído, `eas.json` producción apunta a localhost. Ver `CODE_AUDIT.md` (M2–M7).
+> ⚠️ Conocidos v3: `logout()` no desconecta el socket (M4), `petId` enviado a queue pero no leído (M5), `eas.json` producción apunta a localhost (M7). Ver `CODE_AUDIT.md`.
 
 ### Design System
 Misma paleta teal que la web. Componentes UI compartidos en `src/components/ui/`.

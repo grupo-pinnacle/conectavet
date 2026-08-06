@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import {
@@ -10,6 +10,7 @@ import VetHomeSection from "../components/dashboard/vet/VetHomeSection";
 import PatientsSection from "../components/dashboard/vet/PatientsSection";
 import VetMessagesSection from "../components/dashboard/vet/VetMessagesSection";
 import ProfileSection from "../components/dashboard/ProfileSection";
+import { getMyConsultations } from "../services/endpoints";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, key: "home" },
@@ -22,6 +23,21 @@ export default function VetDashboardPage() {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("home");
+  const [waitingCount, setWaitingCount] = useState(0);
+
+  useEffect(() => {
+    const fetchWaiting = async () => {
+      try {
+        const cons = await getMyConsultations();
+        setWaitingCount(cons.filter((c) => c.status === "WAITING").length);
+      } catch {
+        // ignore
+      }
+    };
+    fetchWaiting();
+    const interval = setInterval(fetchWaiting, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -38,8 +54,8 @@ export default function VetDashboardPage() {
     }
   };
 
-  const getUnreadBadge = (_key: string) => {
-    return null;
+  const getUnreadBadge = (key: string) => {
+    return key === "messages" && waitingCount > 0 ? waitingCount : null;
   };
 
   return (
@@ -97,7 +113,11 @@ export default function VetDashboardPage() {
         <div className="flex items-center gap-3">
           <button onClick={() => setActiveTab("messages")} className="relative">
             <MessageCircle className="w-5 h-5 text-slate-500" />
-            <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[10px] font-bold text-white">3</span>
+            {waitingCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[10px] font-bold text-white">
+                {waitingCount}
+              </span>
+            )}
           </button>
           <button
             onClick={handleLogout}

@@ -3,6 +3,7 @@ import { Pressable, View, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
+import { usePushToken } from '@/hooks/usePushToken';
 import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
 import { Avatar, Button } from '@/components/ui';
 
@@ -58,6 +59,8 @@ function HeaderRight() {
 export default function AppLayout() {
   const { colors: c } = useTheme();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  usePushToken(Boolean(user));
 
   return (
     <Tabs

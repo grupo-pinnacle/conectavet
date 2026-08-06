@@ -4,6 +4,7 @@ import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
 import { AppError, NotFoundError, ForbiddenError } from '../../shared/errors';
 import { parsePagination } from '../../shared/utils';
 import { getIO } from './chat.gateway';
+import { notifyUser, notifyVetsOnline, notifyConsultationMessage } from '../notifications';
 import {
   createConsultation,
   assignVet,
@@ -26,9 +27,14 @@ const completeSchema = z.object({
   notes: z.string().max(5000, 'Las notas no pueden superar los 5000 caracteres').optional(),
 });
 
-const sendMessageSchema = z.object({
-  content: z.string().min(1, 'El mensaje no puede estar vacío').max(2000, 'El mensaje no puede superar los 2000 caracteres'),
-});
+const sendMessageSchema = z
+  .object({
+    content: z.string().max(2000, 'El mensaje no puede superar los 2000 caracteres').optional(),
+    attachmentUrl: z.string().startsWith('/uploads/', 'Imagen adjunta inválida').optional(),
+  })
+  .refine((data) => data.content || data.attachmentUrl, {
+    message: 'El mensaje no puede estar vacío',
+  });
 
 const prescriptionSchema = z.object({
   content: z.string().trim().min(1, 'La receta no puede estar vacía').max(5000, 'La receta no puede superar los 5000 caracteres'),
@@ -63,6 +69,14 @@ export async function createController(req: RequestWithUser, res: Response) {
         io.emit('consultation:new', consultation);
       }
     } catch {}
+    if (consultation.status === 'WAITING') {
+      await notifyVetsOnline(
+        'consultation_new',
+        'Nueva consulta en espera',
+        'Un cliente está esperando atención',
+        { consultationId: consultation.id }
+      );
+    }
     return res.status(201).json({ success: true, data: consultation });
   } catch (error) {
     if (error instanceof AppError) {
@@ -88,6 +102,13 @@ export async function assignVetController(req: RequestWithUser, res: Response) {
         io.to(`consultation:${req.params.id}`).emit('consultation:updated', consultation);
       }
     } catch {}
+    await notifyUser(
+      consultation.clientId,
+      'consultation_assigned',
+      'Un veterinario tomó tu consulta',
+      'Un veterinario está listo para atenderte',
+      { consultationId: consultation.id }
+    );
     return res.status(200).json({ success: true, data: consultation });
   } catch (error) {
     if (error instanceof AppError) {
@@ -118,6 +139,13 @@ export async function completeController(req: RequestWithUser, res: Response) {
         io.to(`consultation:${req.params.id}`).emit('consultation:updated', updated);
       }
     } catch {}
+    await notifyUser(
+      updated.clientId,
+      'consultation_completed',
+      'Consulta finalizada',
+      'Tu veterinario cerró la consulta. Podés verla en el historial.',
+      { consultationId: updated.id }
+    );
     return res.status(200).json({ success: true, data: updated });
   } catch (error) {
     if (error instanceof AppError) {
@@ -203,6 +231,7 @@ export async function sendMessageController(req: RequestWithUser, res: Response)
       consultationId: req.params.id as string,
       senderId: req.user.userId,
       content: parsed.data.content,
+      attachmentUrl: parsed.data.attachmentUrl,
     });
     try {
       const io = getIO();
@@ -212,6 +241,7 @@ export async function sendMessageController(req: RequestWithUser, res: Response)
     } catch {
       // Socket not available, messages still reachable via polling
     }
+    await notifyConsultationMessage(req.params.id as string, req.user.userId);
     return res.status(201).json({ success: true, data: message });
   } catch (error) {
     if (error instanceof AppError) {
@@ -265,6 +295,13 @@ export async function createPrescriptionController(req: RequestWithUser, res: Re
     } catch {
       // Socket not available, prescriptions still reachable via polling
     }
+    await notifyUser(
+      consultation.clientId,
+      'prescription_new',
+      'Nueva receta médica',
+      'Tu veterinario agregó una receta a la consulta',
+      { consultationId: consultation.id }
+    );
     return res.status(201).json({ success: true, data: prescription });
   } catch (error) {
     if (error instanceof AppError) {

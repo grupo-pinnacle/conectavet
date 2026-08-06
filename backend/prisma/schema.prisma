@@ -43,6 +43,9 @@ model User {
   consultationsAsVet    Consultation[] @relation("VetConsultations")
   messages              Message[]
   prescriptions         Prescription[]
+  pushTokens            PushToken[]
+  notifications         Notification[]
+  attachments           Attachment[]
 
   @@map("users")
 }
@@ -106,6 +109,7 @@ model Message {
   senderId       String
   sender         User         @relation(fields: [senderId], references: [id])
   content        String
+  attachmentUrl  String?
   createdAt      DateTime     @default(now())
 
   @@index([consultationId, createdAt])
@@ -124,4 +128,44 @@ model Prescription {
 
   @@index([consultationId])
   @@map("prescriptions")
+}
+
+model Attachment {
+  id         String   @id @default(cuid())
+  uploaderId String
+  uploader   User     @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  url        String
+  mimeType   String
+  size       Int
+  createdAt  DateTime @default(now())
+
+  @@index([uploaderId])
+  @@map("attachments")
+}
+
+model PushToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  platform  String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("push_tokens")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String
+  data      Json?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("notifications")
 }

@@ -20,6 +20,9 @@ Thumbs.db
 
 coverage/
 
+# Subidas de imágenes (Sprint 12)
+backend/uploads/
+
 # Environment files with secrets
 backend/.env
 

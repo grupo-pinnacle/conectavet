@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '../../shared/prisma';
 import { JwtPayload } from '../../shared/types';
 import { saveMessage } from './consultations.service';
+import { notifyConsultationMessage } from '../notifications';
 
 const RATE_LIMIT_WINDOW = 1000;
 const RATE_LIMIT_MAX = 10;
@@ -63,36 +64,46 @@ export function setupChatSocket(httpServer: HttpServer) {
       socket.leave(`consultation:${consultationId}`);
     });
 
-    socket.on('message:send', async (data: { consultationId: string; content: string }) => {
-      try {
-        if (!checkRateLimit(socket.id)) {
-          return socket.emit('error', { message: 'Demasiados mensajes. Esperá un momento.' });
+    socket.on(
+      'message:send',
+      async (data: { consultationId: string; content?: string; attachmentUrl?: string }) => {
+        try {
+          if (!checkRateLimit(socket.id)) {
+            return socket.emit('error', { message: 'Demasiados mensajes. Esperá un momento.' });
+          }
+          const hasContent = !!data.content && data.content.trim().length > 0;
+          const hasAttachment = !!data.attachmentUrl;
+          if (!hasContent && !hasAttachment) {
+            return socket.emit('error', { message: 'El mensaje no puede estar vacío' });
+          }
+          if (data.content && data.content.length > 2000) {
+            return socket.emit('error', { message: 'El mensaje no puede superar los 2000 caracteres' });
+          }
+          if (hasAttachment && !data.attachmentUrl!.startsWith('/uploads/')) {
+            return socket.emit('error', { message: 'La imagen adjunta es inválida' });
+          }
+          const consultation = await prisma.consultation.findFirst({
+            where: {
+              id: data.consultationId,
+              OR: [{ clientId: user.userId }, { vetId: user.userId }],
+            },
+          });
+          if (!consultation) {
+            return socket.emit('error', { message: 'No pertenecés a esta consulta' });
+          }
+          const message = await saveMessage({
+            consultationId: data.consultationId,
+            senderId: user.userId,
+            content: data.content,
+            attachmentUrl: data.attachmentUrl,
+          });
+          io.to(`consultation:${data.consultationId}`).emit('message:new', message);
+          await notifyConsultationMessage(data.consultationId, user.userId);
+        } catch (error) {
+          socket.emit('error', { message: 'Error al guardar el mensaje' });
         }
-        if (!data.content || data.content.trim().length === 0) {
-          return socket.emit('error', { message: 'El mensaje no puede estar vacío' });
-        }
-        if (data.content.length > 2000) {
-          return socket.emit('error', { message: 'El mensaje no puede superar los 2000 caracteres' });
-        }
-        const consultation = await prisma.consultation.findFirst({
-          where: {
-            id: data.consultationId,
-            OR: [{ clientId: user.userId }, { vetId: user.userId }],
-          },
-        });
-        if (!consultation) {
-          return socket.emit('error', { message: 'No pertenecés a esta consulta' });
-        }
-        const message = await saveMessage({
-          consultationId: data.consultationId,
-          senderId: user.userId,
-          content: data.content,
-        });
-        io.to(`consultation:${data.consultationId}`).emit('message:new', message);
-      } catch (error) {
-        socket.emit('error', { message: 'Error al guardar el mensaje' });
       }
-    });
+    );
 
     socket.on('disconnect', () => {
       rateLimitMap.delete(socket.id);

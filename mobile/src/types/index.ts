@@ -206,6 +206,7 @@ export const chatMessageSchema = z.object({
   consultationId: z.string(),
   senderId: z.string(),
   content: z.string(),
+  attachmentUrl: z.string().nullable().optional(),
   createdAt: z.string(),
   sender: z.object({
     id: z.string(),
@@ -214,6 +215,27 @@ export const chatMessageSchema = z.object({
   }).optional(),
 });
 export type ChatMessage = z.infer<typeof chatMessageSchema>;
+
+export const attachmentSchema = z.object({
+  id: z.string(),
+  uploaderId: z.string(),
+  url: z.string(),
+  mimeType: z.string(),
+  size: z.number(),
+  createdAt: z.string(),
+});
+export type Attachment = z.infer<typeof attachmentSchema>;
+
+export const notificationSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  title: z.string(),
+  body: z.string(),
+  readAt: z.string().nullable(),
+  createdAt: z.string(),
+  data: z.unknown().optional(),
+});
+export type AppNotification = z.infer<typeof notificationSchema>;
 
 export const prescriptionSchema = z.object({
   id: z.string(),

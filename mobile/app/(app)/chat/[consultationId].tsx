@@ -4,11 +4,13 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { ChatBubble } from '@/components/ChatBubble';
 import { Card, EmptyState } from '@/components/ui';
 import { useConsultationMessages, useConsultation, useConsultationPrescriptions } from '@/hooks/useConsultations';
 import { useAuth } from '@/hooks/useAuth';
+import { mediaService } from '@/services';
 import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
 import { ApiError } from '@/types';
 
@@ -25,6 +27,7 @@ export default function ConsultationChatScreen() {
   const { data: prescriptions } = useConsultationPrescriptions(consultationId);
   const [draft, setDraft] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const flatRef = useRef<FlatList>(null);
 
   useEffect(() => {
@@ -38,6 +41,9 @@ export default function ConsultationChatScreen() {
   const vetName = consultation?.vet?.firstName || consultation?.vet?.email || 'Veterinario';
   const petName = consultation?.pet?.name || 'Mascota';
   const isActive = consultation?.status === 'ACTIVE';
+  const isWaiting = consultation?.status === 'WAITING';
+  const statusLabel = isActive ? 'En línea' : isWaiting ? 'En cola de espera' : 'Finalizada';
+  const statusColor = isActive ? c.success : isWaiting ? c.accent : c.inkMuted;
 
   const scrollToEnd = useCallback((animated = true) => {
     setTimeout(() => flatRef.current?.scrollToEnd({ animated }), 100);
@@ -45,15 +51,44 @@ export default function ConsultationChatScreen() {
 
   const onSend = async () => {
     const content = draft.trim();
-    if (!content || !isActive || send.isPending) return;
+    if (!content || !isActive || send.isPending || isUploading) return;
     setDraft('');
     try {
-      await send.mutateAsync(content);
+      await send.mutateAsync({ content });
       scrollToEnd();
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'No pudimos enviar el mensaje.';
       Toast.show({ type: 'error', text1: 'Error al enviar', text2: msg });
       setDraft(content);
+    }
+  };
+
+  const pickAndSendImage = async () => {
+    if (!isActive || send.isPending || isUploading) return;
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: false,
+        quality: 0.6,
+      });
+      if (result.canceled || !result.assets?.length) return;
+      const asset = result.assets[0];
+      if (!asset.uri) return;
+
+      setIsUploading(true);
+      const uploaded = await mediaService.upload({
+        uri: asset.uri,
+        name: asset.fileName ?? `foto-${Date.now()}.jpg`,
+        type: asset.mimeType ?? 'image/jpeg',
+      });
+      await send.mutateAsync({ content: draft.trim(), attachmentUrl: uploaded.url });
+      setDraft('');
+      scrollToEnd();
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : 'No pudimos adjuntar la imagen.';
+      Toast.show({ type: 'error', text1: 'Error al enviar imagen', text2: msg });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -90,9 +125,9 @@ export default function ConsultationChatScreen() {
               {vetName}
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: isActive ? c.success : c.inkMuted }} />
+              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: statusColor }} />
               <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted }}>
-                {isActive ? 'En línea' : 'Finalizada'}
+                {statusLabel}
               </Text>
             </View>
           </View>
@@ -140,7 +175,11 @@ export default function ConsultationChatScreen() {
               </View>
             ) : null}
             <Text style={{ fontSize: fontSizes.body, color: c.inkSoft, textAlign: 'center', lineHeight: 20 }}>
-              {isActive ? 'Escribí tu mensaje. El veterinario te responderá a la brevedad.' : 'Esta consulta ya fue finalizada.'}
+              {isActive
+                ? 'Escribí tu mensaje. El veterinario te responderá a la brevedad.'
+                : isWaiting
+                  ? 'Estás en la cola de espera. En cuanto un veterinario tome tu consulta, vas a poder escribir.'
+                  : 'Esta consulta ya fue finalizada.'}
             </Text>
           </Card>
         </Animated.View>
@@ -200,6 +239,24 @@ export default function ConsultationChatScreen() {
       {/* Input bar */}
       <View style={{ paddingBottom: keyboardVisible ? 0 : insets.bottom, backgroundColor: c.surface, borderTopColor: c.borderLight, borderTopWidth: 1 }}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, gap: spacing.sm }}>
+          <Pressable
+            onPress={pickAndSendImage}
+            disabled={!isActive || send.isPending || isUploading}
+            style={{
+              width: SEND_BTN_SIZE, height: SEND_BTN_SIZE, borderRadius: SEND_BTN_SIZE / 2,
+              backgroundColor: isActive ? c.primaryBg : c.borderLight,
+              justifyContent: 'center', alignItems: 'center',
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Adjuntar imagen"
+            accessibilityHint="Elegí una imagen de tu galería para enviarla en el chat"
+          >
+            {isUploading ? (
+              <ActivityIndicator color={c.primary} size="small" />
+            ) : (
+              <MaterialCommunityIcons name="image-plus" size={22} color={isActive ? c.primary : c.inkMuted} />
+            )}
+          </Pressable>
           <TextInput
             value={draft}
             onChangeText={setDraft}

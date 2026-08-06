@@ -53,6 +53,7 @@ export interface Message {
   consultationId: string;
   senderId: string;
   content: string;
+  attachmentUrl?: string | null;
   createdAt: string;
   sender?: { id: string; email: string; role: string };
 }

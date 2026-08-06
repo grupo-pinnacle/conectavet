@@ -208,13 +208,13 @@ Sin sprints. Sin código. Descanso obligatorio.
 
 **Duración:** jue 6 · vie 7 · sáb 8
 
-| Quién | Tarea |
-|-------|-------|
-| **Tobias** | Endpoint recibir/almacenar imágenes. Sistema notificaciones push. |
-| **Juan** | Botón enviar imagen desde galería. Mostrar imágenes en chat. |
-| **Damián** | Mostrar imágenes recibidas. Pulir dashboard médico. |
-| **Ezequiel** | UX review mobile. Documentar inconsistencias. |
-| **Lara** | Review. |
+| Quién | Tarea | Estado |
+|-------|-------|--------|
+| **Tobias** | Endpoint recibir/almacenar imágenes. Sistema notificaciones push. | ✅ |
+| **Juan** | Botón enviar imagen desde galería. Mostrar imágenes en chat. | ✅ |
+| **Damián** | Mostrar imágenes recibidas. Pulir dashboard médico. | ✅ |
+| **Ezequiel** | UX review mobile. Documentar inconsistencias. | ⏳ |
+| **Lara** | Review. | ⏳ |
 
 ---
 
@@ -321,4 +321,5 @@ Los sprints terminan el 5 de septiembre. El tiempo restante hasta el 31 de octub
 | S10 | 16-18 Jul | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
 | MVP | 19-20 Jul | 🎯 | 🎯 | 🎯 | 🎯 | 🎯 |
 | **S11** | **3-5 Ago** | **✅** | ⏳ | ⏳ | 🔴 | 🔴 |
-| S12-S20 | 6 Ago - 5 Sep | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
+| **S12** | **6-8 Ago** | **✅** | **✅** | **✅** | ⏳ | ⏳ |
+| S13-S20 | 10 Ago - 5 Sep | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |

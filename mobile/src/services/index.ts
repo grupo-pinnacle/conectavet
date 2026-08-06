@@ -1,5 +1,7 @@
 import api from '@/lib/api';
 import type {
+  AppNotification,
+  Attachment,
   AuthResponse,
   ChatMessage,
   Consultation,
@@ -12,6 +14,8 @@ import type {
   UpdatePetPayload,
   VetCard,
 } from '@/types';
+
+export type SendMessagePayload = { content?: string; attachmentUrl?: string };
 
 export const authService = {
   register: (payload: RegisterPayload) =>
@@ -43,8 +47,23 @@ export const consultationsService = {
     api.get<Consultation[]>('/consultations/my-history', { params }),
   getMessages: (consultationId: string) =>
     api.get<ChatMessage[]>(`/consultations/${consultationId}/messages`),
-  sendMessage: (consultationId: string, content: string) =>
-    api.post<ChatMessage>(`/consultations/${consultationId}/messages`, { content }),
+  sendMessage: (consultationId: string, payload: SendMessagePayload) =>
+    api.post<ChatMessage>(`/consultations/${consultationId}/messages`, payload),
   getPrescriptions: (consultationId: string) =>
     api.get<Prescription[]>(`/consultations/${consultationId}/prescriptions`),
+};
+
+export const mediaService = {
+  upload: (file: { uri: string; name: string; type: string }) => {
+    const form = new FormData();
+    form.append('file', { uri: file.uri, name: file.name, type: file.type } as unknown as Blob);
+    return api.post<Attachment>('/media', form);
+  },
+};
+
+export const notificationsService = {
+  registerToken: (token: string, platform: 'android' | 'ios' | 'web') =>
+    api.post('/notifications/token', { token, platform }),
+  list: () => api.get<{ items: AppNotification[]; unreadCount: number }>('/notifications'),
+  markRead: (id: string) => api.patch(`/notifications/${id}/read`),
 };

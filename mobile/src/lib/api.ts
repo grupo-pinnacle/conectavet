@@ -28,6 +28,10 @@ api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   if (token) {
     config.headers.set('Authorization', `Bearer ${token}`);
   }
+  // Deja que RN/fetch setee el Content-Type multipart con su boundary
+  if (config.data instanceof FormData) {
+    config.headers.delete('Content-Type');
+  }
   return config;
 });
 

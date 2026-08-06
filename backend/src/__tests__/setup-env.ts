@@ -1,6 +1,8 @@
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
+process.env.EXPO_PUSH_DISABLED = 'true';
+
 (() => {
   const tmpFile = join(__dirname, '..', '..', '.jest-schema');
   if (!existsSync(tmpFile)) return;

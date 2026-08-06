@@ -156,19 +156,26 @@ export async function getAvailableVets(species?: string) {
 export async function saveMessage(data: {
   consultationId: string;
   senderId: string;
-  content: string;
+  content?: string;
+  attachmentUrl?: string;
 }) {
-  if (!data.content || data.content.trim().length === 0) {
+  const hasContent = !!data.content && data.content.trim().length > 0;
+  const hasAttachment = !!data.attachmentUrl;
+  if (!hasContent && !hasAttachment) {
     throw new ConflictError('El mensaje no puede estar vacío');
   }
-  if (data.content.length > 2000) {
+  if (data.content && data.content.length > 2000) {
     throw new ConflictError('El mensaje no puede superar los 2000 caracteres');
+  }
+  if (hasAttachment && !data.attachmentUrl!.startsWith('/uploads/')) {
+    throw new ConflictError('La imagen adjunta es inválida');
   }
   return prisma.message.create({
     data: {
       consultationId: data.consultationId,
       senderId: data.senderId,
-      content: data.content,
+      content: hasContent ? data.content!.trim() : '',
+      attachmentUrl: hasAttachment ? data.attachmentUrl : null,
     },
     include: { sender: { select: { id: true, email: true, role: true } } },
   });

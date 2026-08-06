@@ -52,7 +52,17 @@ export const MessageBubble = memo(function MessageBubble({ message, isOwn, sende
               {senderLabel}
             </p>
           )}
-          <p className="leading-6 whitespace-pre-wrap break-words">{message.content}</p>
+          {message.attachmentUrl && (
+            <img
+              src={message.attachmentUrl}
+              alt="Imagen adjunta"
+              loading="lazy"
+              className="mb-1.5 block max-h-64 w-full max-w-[240px] rounded-lg object-cover"
+            />
+          )}
+          {message.content && (
+            <p className="leading-6 whitespace-pre-wrap break-words">{message.content}</p>
+          )}
           <div className={`mt-1.5 flex items-center justify-end gap-1.5 text-[10px] ${isOwn ? "text-teal-200" : "text-slate-400"}`}>
             <span>{formatTime(message.createdAt)}</span>
             {isOwn && isOptimistic && (

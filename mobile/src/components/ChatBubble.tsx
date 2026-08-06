@@ -1,7 +1,8 @@
-import { Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
+import { API_URL } from '@/lib/env';
 import type { ChatMessage } from '@/types';
 
 interface ChatBubbleProps {
@@ -79,32 +80,49 @@ export function ChatBubble({ message, isOwn = false, senderName = 'Veterinario' 
           </Text>
         )}
 
-        <View
-          style={{
-            backgroundColor: isOwn ? c.primary : c.surface,
-            paddingHorizontal: spacing.lg,
-            paddingVertical: spacing.md,
-            borderRadius: 20,
-            borderBottomRightRadius: isOwn ? 6 : 20,
-            borderBottomLeftRadius: isOwn ? 20 : 6,
-            borderWidth: isOwn ? 0 : 1,
-            borderColor: c.border,
-            shadowColor: isOwn ? c.primary : '#000',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: isOwn ? 0.08 : 0.04,
-            shadowRadius: 3,
-            elevation: isOwn ? 2 : 1,
-          }}
-        >
-          <Text
+<View
             style={{
-              color: isOwn ? c.white : c.ink,
-              fontSize: fontSizes.body,
-              lineHeight: 21,
+              backgroundColor: isOwn ? c.primary : c.surface,
+              paddingHorizontal: spacing.lg,
+              paddingVertical: spacing.md,
+              borderRadius: 20,
+              borderBottomRightRadius: isOwn ? 6 : 20,
+              borderBottomLeftRadius: isOwn ? 20 : 6,
+              borderWidth: isOwn ? 0 : 1,
+              borderColor: c.border,
+              shadowColor: isOwn ? c.primary : '#000',
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: isOwn ? 0.08 : 0.04,
+              shadowRadius: 3,
+              elevation: isOwn ? 2 : 1,
+              overflow: 'hidden',
             }}
           >
-            {message.content}
-          </Text>
+            {message.attachmentUrl ? (
+              <Image
+                source={{ uri: `${API_URL}${message.attachmentUrl}` }}
+                style={{
+                  width: 220,
+                  aspectRatio: 4 / 3,
+                  borderRadius: radius.lg,
+                  backgroundColor: isOwn ? 'rgba(255,255,255,0.15)' : c.borderLight,
+                  marginBottom: message.content ? spacing.sm : 0,
+                }}
+                resizeMode="cover"
+                accessibilityLabel="Imagen adjunta en el mensaje"
+              />
+            ) : null}
+            {message.content ? (
+              <Text
+                style={{
+                  color: isOwn ? c.white : c.ink,
+                  fontSize: fontSizes.body,
+                  lineHeight: 21,
+                }}
+              >
+                {message.content}
+              </Text>
+            ) : null}
 
           {/* Timestamp + state row */}
           <View

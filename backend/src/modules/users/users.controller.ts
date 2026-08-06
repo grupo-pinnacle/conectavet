@@ -4,6 +4,7 @@ import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
 import { getUserById, listVets, updateAvailability } from './users.service';
 import { assignNextPendingVet } from '../consultations/consultations.service';
 import { getIO } from '../consultations/chat.gateway';
+import { notifyUser } from '../notifications';
 
 const availabilitySchema = z.object({
   isOnline: z.boolean({ message: 'isOnline debe ser un booleano' }),
@@ -72,6 +73,15 @@ export async function setAvailabilityController(req: RequestWithUser, res: Respo
         const assigned = await assignNextPendingVet(user.id);
         if (assigned && io) {
           io.to(`consultation:${assigned.id}`).emit('consultation:updated', assigned);
+        }
+        if (assigned) {
+          await notifyUser(
+            assigned.clientId,
+            'consultation_assigned',
+            'Un veterinario tomó tu consulta',
+            'Un veterinario está listo para atenderte',
+            { consultationId: assigned.id }
+          );
         }
       }
     } catch (error) {

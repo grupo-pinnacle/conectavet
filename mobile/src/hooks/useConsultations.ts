@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { consultationsService } from '@/services';
+import { consultationsService, type SendMessagePayload } from '@/services';
 import { connectSocket, joinConsultation, leaveConsultation } from '@/lib/socket';
 import type { ChatMessage, Consultation, CreateConsultationPayload, Prescription } from '@/types';
 
@@ -123,11 +123,11 @@ export function useConsultationMessages(consultationId: string | undefined, user
   }, [consultationId]);
 
   const send = useMutation({
-    mutationFn: async (content: string) => {
-      const msg = await consultationsService.sendMessage(consultationId!, content);
+    mutationFn: async (payload: SendMessagePayload) => {
+      const msg = await consultationsService.sendMessage(consultationId!, payload);
       return msg as ChatMessage;
     },
-    onMutate: async (content: string) => {
+    onMutate: async (payload: SendMessagePayload) => {
       await qc.cancelQueries({ queryKey: key });
       const previous = qc.getQueryData<ChatMessage[]>(key);
       qc.setQueryData<ChatMessage[]>(key, (old = []) => [
@@ -136,14 +136,15 @@ export function useConsultationMessages(consultationId: string | undefined, user
           id: `optimistic-${Date.now()}`,
           consultationId: consultationId!,
           senderId: userId ?? '',
-          content,
+          content: payload.content ?? '',
+          attachmentUrl: payload.attachmentUrl,
           createdAt: new Date().toISOString(),
           sender: { id: userId ?? '', email: '', role: 'CLIENT' },
         } as ChatMessage,
       ]);
       return { previous };
     },
-    onError: (_err, _content, ctx) => {
+    onError: (_err, _payload, ctx) => {
       if (ctx?.previous) qc.setQueryData(key, ctx.previous);
     },
     onSettled: () => {},

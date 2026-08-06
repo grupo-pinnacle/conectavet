@@ -292,9 +292,17 @@ export default function MessagesSection() {
                 </p>
               </div>
               <span className={`flex h-6 items-center rounded-full px-3 text-xs font-semibold ${
-                activeCons.status === "ACTIVE" ? "bg-green-50 text-green-700" : "bg-slate-50 text-slate-500"
+                activeCons.status === "ACTIVE"
+                  ? "bg-green-50 text-green-700"
+                  : activeCons.status === "WAITING"
+                    ? "bg-amber-50 text-amber-700"
+                    : "bg-slate-50 text-slate-500"
               }`}>
-                {activeCons.status === "ACTIVE" ? "En consulta" : "Finalizada"}
+                {activeCons.status === "ACTIVE"
+                  ? "En consulta"
+                  : activeCons.status === "WAITING"
+                    ? "En cola de espera"
+                    : "Finalizada"}
               </span>
             </div>
 

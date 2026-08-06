@@ -20,7 +20,7 @@ const navItems = [
 ];
 
 export default function VetDashboardPage() {
-  const { logout, user } = useAuth();
+  const { logout, user, isOnline } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("home");
   const [waitingCount, setWaitingCount] = useState(0);
@@ -95,7 +95,15 @@ export default function VetDashboardPage() {
               {user?.name?.charAt(0) || "D"}
             </div>
             <div className="flex-1 truncate">
-              <p className="text-sm font-semibold text-ink">Dr. {user?.name || "Veterinario"}</p>
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-ink">
+                Dr. {user?.name || "Veterinario"}
+                <span
+                  title={isOnline ? "Online" : "Offline"}
+                  className={`inline-block h-2 w-2 shrink-0 rounded-full ${
+                    isOnline ? "bg-green-500" : "bg-slate-300"
+                  }`}
+                />
+              </p>
               <p className="text-xs text-slate-500">{user?.email || ""}</p>
             </div>
             <button

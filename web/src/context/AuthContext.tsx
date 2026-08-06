@@ -2,7 +2,7 @@ import { createContext, useState, useCallback, useEffect } from "react";
 import type { ReactNode } from "react";
 import type { User } from "../types";
 import api from "../services/api";
-import { getMe } from "../services/endpoints";
+import { getMe, updateAvailability } from "../services/endpoints";
 
 export interface AuthContextType {
   user: User | null;
@@ -10,6 +10,9 @@ export interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string, role: string) => Promise<void>;
   logout: () => void;
+  setOnline: (isOnline: boolean) => Promise<void>;
+  isOnline: boolean;
+  onlineLoading: boolean;
   isLoading: boolean;
   isAuthenticated: boolean;
 }
@@ -41,6 +44,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [onlineLoading, setOnlineLoading] = useState(false);
+
+  const isOnline = !!user?.isOnline;
 
   useEffect(() => {
     const saved = localStorage.getItem("vetconnect_auth_token");
@@ -78,6 +84,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       name: u.name || [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email,
       email: u.email,
       phone: u.phone || undefined,
+      isOnline: typeof u.isOnline === "boolean" ? u.isOnline : false,
       role: roleMap[u.role] || "owner",
     };
   }
@@ -102,6 +109,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(null);
   }, []);
 
+  const setOnline = useCallback(async (value: boolean) => {
+    setOnlineLoading(true);
+    try {
+      const updated = await updateAvailability(value);
+      setUser((prev) => (prev ? { ...prev, isOnline: updated.isOnline } : prev));
+    } finally {
+      setOnlineLoading(false);
+    }
+  }, []);
+
   const isAuthenticated = !!token && !!user;
 
   return (
@@ -112,6 +129,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         login,
         register,
         logout,
+        setOnline,
+        isOnline,
+        onlineLoading,
         isLoading,
         isAuthenticated,
       }}

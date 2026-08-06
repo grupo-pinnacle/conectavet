@@ -6,6 +6,11 @@ export async function getMe(): Promise<User> {
   return res.data.data;
 }
 
+export async function updateAvailability(isOnline: boolean): Promise<User> {
+  const res = await api.patch("/api/users/me/availability", { isOnline });
+  return res.data.data;
+}
+
 export async function getMyPets(): Promise<Pet[]> {
   const res = await api.get("/api/pets");
   return res.data.data;

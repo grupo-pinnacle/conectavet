@@ -13,6 +13,8 @@ export interface AuthContextType {
   setOnline: (isOnline: boolean) => Promise<void>;
   isOnline: boolean;
   onlineLoading: boolean;
+  onlineError: string | null;
+  syncOnline: (isOnline: boolean) => void;
   isLoading: boolean;
   isAuthenticated: boolean;
 }
@@ -45,6 +47,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [onlineLoading, setOnlineLoading] = useState(false);
+  const [onlineError, setOnlineError] = useState<string | null>(null);
 
   const isOnline = !!user?.isOnline;
 
@@ -110,13 +113,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const setOnline = useCallback(async (value: boolean) => {
+    setOnlineError(null);
     setOnlineLoading(true);
     try {
       const updated = await updateAvailability(value);
-      setUser((prev) => (prev ? { ...prev, isOnline: updated.isOnline } : prev));
+      setUser((prev) =>
+        prev
+          ? { ...prev, isOnline: typeof updated.isOnline === "boolean" ? updated.isOnline : prev.isOnline }
+          : prev
+      );
+    } catch {
+      setOnlineError("No pudimos cambiar tu disponibilidad. Revisá tu conexión.");
     } finally {
       setOnlineLoading(false);
     }
+  }, []);
+
+  const syncOnline = useCallback((isOnline: boolean) => {
+    setUser((prev) => (prev ? { ...prev, isOnline } : prev));
   }, []);
 
   const isAuthenticated = !!token && !!user;
@@ -132,6 +146,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setOnline,
         isOnline,
         onlineLoading,
+        onlineError,
+        syncOnline,
         isLoading,
         isAuthenticated,
       }}

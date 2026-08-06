@@ -5,7 +5,7 @@ import { getMyConsultations } from "../../../services/endpoints";
 import { MessageCircle, Clock, Users, Wifi, WifiOff } from "lucide-react";
 
 export default function VetHomeSection() {
-  const { user, isOnline, setOnline, onlineLoading } = useAuth();
+  const { user, isOnline, setOnline, onlineLoading, onlineError } = useAuth();
   const [totalPatients, setTotalPatients] = useState(0);
   const [activeCons, setActiveCons] = useState(0);
   const [waitingCons, setWaitingCons] = useState(0);
@@ -92,6 +92,12 @@ export default function VetHomeSection() {
               : "Ponerse online"}
         </button>
       </div>
+
+      {onlineError && (
+        <p className="mb-4 text-sm font-semibold text-danger">
+          {onlineError}
+        </p>
+      )}
 
       {loading ? (
         <div className="mb-8 grid grid-cols-3 gap-4">

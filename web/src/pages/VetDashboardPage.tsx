@@ -11,6 +11,7 @@ import PatientsSection from "../components/dashboard/vet/PatientsSection";
 import VetMessagesSection from "../components/dashboard/vet/VetMessagesSection";
 import ProfileSection from "../components/dashboard/ProfileSection";
 import { getMyConsultations } from "../services/endpoints";
+import { connectSocket } from "../services/socket";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, key: "home" },
@@ -20,7 +21,7 @@ const navItems = [
 ];
 
 export default function VetDashboardPage() {
-  const { logout, user, isOnline } = useAuth();
+  const { logout, user, isOnline, syncOnline } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("home");
   const [waitingCount, setWaitingCount] = useState(0);
@@ -38,6 +39,26 @@ export default function VetDashboardPage() {
     const interval = setInterval(fetchWaiting, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    connectSocket()
+      .then((s) => {
+        if (cancelled) return;
+        const onAvailability = (payload: { vetId: string; isOnline: boolean }) => {
+          if (cancelled) return;
+          if (payload.vetId === user.id) syncOnline(payload.isOnline);
+        };
+        s.on("vet:availability", onAvailability);
+      })
+      .catch(() => {
+        // Socket opcional en dev: el proxy /socket.io lo habilita; si falla, el estado local sigue valiendo.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, syncOnline]);
 
   const handleLogout = () => {
     logout();
@@ -99,6 +120,7 @@ export default function VetDashboardPage() {
                 Dr. {user?.name || "Veterinario"}
                 <span
                   title={isOnline ? "Online" : "Offline"}
+                  aria-label={isOnline ? "Estado: online" : "Estado: offline"}
                   className={`inline-block h-2 w-2 shrink-0 rounded-full ${
                     isOnline ? "bg-green-500" : "bg-slate-300"
                   }`}
@@ -119,6 +141,12 @@ export default function VetDashboardPage() {
       <header className="flex items-center justify-between border-b border-border bg-white px-5 py-4 md:hidden">
         <Logo size="sm" />
         <div className="flex items-center gap-3">
+          <span
+            title={isOnline ? "Online" : "Offline"}
+            className={`inline-block h-2.5 w-2.5 rounded-full ${
+              isOnline ? "bg-green-500" : "bg-slate-300"
+            }`}
+          />
           <button onClick={() => setActiveTab("messages")} className="relative">
             <MessageCircle className="w-5 h-5 text-slate-500" />
             {waitingCount > 0 && (

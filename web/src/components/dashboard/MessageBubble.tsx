@@ -1,5 +1,7 @@
-import { memo } from "react";
+import { memo, useState } from "react";
+import { ZoomIn, ImageOff } from "lucide-react";
 import type { Message } from "../../types";
+import ImageViewer from "../ImageViewer";
 
 function formatTime(iso: string) {
   const d = new Date(iso);
@@ -29,6 +31,9 @@ interface Props {
 
 export const MessageBubble = memo(function MessageBubble({ message, isOwn, senderLabel, showSender = true, showDateSeparator = false }: Props) {
   const isOptimistic = message.id.startsWith("msg-");
+  const [imageError, setImageError] = useState(false);
+  const [showViewer, setShowViewer] = useState(false);
+  const hasImage = !!message.attachmentUrl;
 
   return (
     <>
@@ -52,13 +57,31 @@ export const MessageBubble = memo(function MessageBubble({ message, isOwn, sende
               {senderLabel}
             </p>
           )}
-          {message.attachmentUrl && (
-            <img
-              src={message.attachmentUrl}
-              alt="Imagen adjunta"
-              loading="lazy"
-              className="mb-1.5 block max-h-64 w-full max-w-[240px] rounded-lg object-cover"
-            />
+          {hasImage && (
+            imageError ? (
+              <div className="mb-1.5 flex h-32 w-56 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50">
+                <ImageOff className="h-6 w-6 text-slate-400" />
+                <p className="text-xs text-slate-400">No se pudo cargar la imagen</p>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowViewer(true)}
+                className="group relative mb-1.5 block max-h-64 w-full max-w-[240px] cursor-zoom-in overflow-hidden rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/50"
+                aria-label="Ver imagen en tamaño completo"
+              >
+                <img
+                  src={message.attachmentUrl!}
+                  alt="Imagen adjunta"
+                  loading="lazy"
+                  onError={() => setImageError(true)}
+                  className="block max-h-64 w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                />
+                <span className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors duration-200 group-hover:bg-black/30">
+                  <ZoomIn className="h-6 w-6 text-white opacity-0 drop-shadow transition-opacity duration-200 group-hover:opacity-100" />
+                </span>
+              </button>
+            )
           )}
           {message.content && (
             <p className="leading-6 whitespace-pre-wrap break-words">{message.content}</p>
@@ -74,6 +97,13 @@ export const MessageBubble = memo(function MessageBubble({ message, isOwn, sende
           </div>
         </div>
       </div>
+      {showViewer && hasImage && !imageError && (
+        <ImageViewer
+          src={message.attachmentUrl!}
+          alt="Imagen adjunta"
+          onClose={() => setShowViewer(false)}
+        />
+      )}
     </>
   );
 });

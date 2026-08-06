@@ -6,7 +6,7 @@ import {
   sendMessage,
   getPrescriptions,
 } from "../../services/endpoints";
-import { connectSocket, joinConsultation } from "../../services/socket";
+import { connectSocket, joinConsultation, leaveConsultation } from "../../services/socket";
 import { MessageBubble } from "./MessageBubble";
 import type { Consultation, Message, Prescription } from "../../types";
 
@@ -118,6 +118,7 @@ export default function MessagesSection() {
     return () => {
       cancelled = true;
       if (s) {
+        leaveConsultation(activeCons.id);
         s.off("message:new");
         s.off("consultation:updated");
         s.off("prescription:new");

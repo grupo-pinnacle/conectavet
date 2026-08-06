@@ -48,12 +48,13 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
     e.preventDefault();
     if (!form.name.trim()) return;
     setSaving(true);
+    const weight = form.weight === "" ? undefined : Number(form.weight);
     const payload = {
       name: form.name.trim(),
       species: form.species,
       breed: form.breed,
       age: form.age,
-      weight: form.weight,
+      weight: Number.isNaN(weight) ? undefined : weight,
       sex: form.sex || undefined,
       color: form.color || undefined,
       microchip: form.microchip || undefined,
@@ -87,7 +88,7 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
       species: pet.species || "",
       breed: pet.breed || "",
       age: pet.age ?? 1,
-      weight: pet.weight || "",
+      weight: pet.weight ? String(pet.weight) : "",
       sex: pet.sex || "",
       color: pet.color || "",
       microchip: pet.microchip || "",
@@ -163,7 +164,7 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
               </div>
               <div className="flex-1">
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Peso</label>
-                <input type="text" value={form.weight} onChange={(e) => setForm((f) => ({ ...f, weight: e.target.value }))} placeholder="Ej: 10 kg" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
+                <input type="number" min={0} step="0.1" value={form.weight} onChange={(e) => setForm((f) => ({ ...f, weight: e.target.value }))} placeholder="Ej: 10" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
               </div>
             </div>
             <div>

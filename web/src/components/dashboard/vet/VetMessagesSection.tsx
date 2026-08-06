@@ -10,7 +10,7 @@ import {
   getPrescriptions,
   createPrescription,
 } from "../../../services/endpoints";
-import { connectSocket, joinConsultation } from "../../../services/socket";
+import { connectSocket, joinConsultation, leaveConsultation } from "../../../services/socket";
 import { MessageBubble } from "../MessageBubble";
 import VetPatientProfile from "./VetPatientProfile";
 import { formatSex } from "../../../utils/sex";
@@ -144,6 +144,7 @@ export default function VetMessagesSection() {
     return () => {
       cancelled = true;
       if (s) {
+        leaveConsultation(activeCons.id);
         s.off("message:new");
         s.off("consultation:updated");
         s.off("consultation:new");
@@ -531,35 +532,44 @@ export default function VetMessagesSection() {
             </div>
 
             {/* Input */}
-            <div className="border-t border-border bg-white px-5 py-4">
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                  placeholder="Escribe un mensaje..."
-                  className="min-w-0 flex-1 rounded-xl border border-border px-4 py-3 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20 transition-shadow"
-                />
-                <button
-                  onClick={() => handleSend()}
-                  disabled={!input.trim() || isSending}
-                  className="flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-teal-700 px-4 py-3 text-sm font-bold text-white transition-all hover:bg-teal-800 active:scale-95 disabled:opacity-50 disabled:active:scale-100"
-                >
-                  {isSending ? (
-                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                  <span className="hidden sm:inline ml-1">Enviar</span>
-                </button>
+            {activeCons.status === "ACTIVE" ? (
+              <div className="border-t border-border bg-white px-5 py-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSend();
+                      }
+                    }}
+                    placeholder="Escribe un mensaje..."
+                    className="min-w-0 flex-1 rounded-xl border border-border px-4 py-3 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20 transition-shadow"
+                  />
+                  <button
+                    onClick={() => handleSend()}
+                    disabled={!input.trim() || isSending}
+                    className="flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-teal-700 px-4 py-3 text-sm font-bold text-white transition-all hover:bg-teal-800 active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+                  >
+                    {isSending ? (
+                      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                    <span className="hidden sm:inline ml-1">Enviar</span>
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="border-t border-border bg-amber-50/60 px-5 py-3.5">
+                <p className="flex items-center gap-2 text-xs font-semibold text-amber-700">
+                  <Clock className="h-4 w-4" />
+                  Consulta en espera. Tocá "Tomar consulta" para comenzar el chat.
+                </p>
+              </div>
+            )}
           </>
         )}
       </div>

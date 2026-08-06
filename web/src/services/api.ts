@@ -20,8 +20,13 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem("vetconnect_auth_token");
-      window.location.href = "/login";
+      const url: string = error.config?.url ?? "";
+      const isLoginRequest = url.includes("/auth/login");
+      const alreadyOnLogin = window.location.pathname.startsWith("/login");
+      if (!isLoginRequest && !alreadyOnLogin) {
+        localStorage.removeItem("vetconnect_auth_token");
+        window.location.href = "/login";
+      }
     }
 
     return Promise.reject(error);

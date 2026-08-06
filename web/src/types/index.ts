@@ -15,7 +15,7 @@ export interface Pet {
   species: string;
   breed?: string;
   age?: number;
-  weight?: string;
+  weight?: number;
   weightKg?: number;
   photoUrl?: string;
   ownerId: string;

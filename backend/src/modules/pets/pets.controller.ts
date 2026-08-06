@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
 import { AppError, NotFoundError, ForbiddenError } from '../../shared/errors';
 import { getPetsByOwner, getManagedPets, getPetById, createPet, updatePet, deletePet, restorePet, getPetVetCard } from './pets.service';
+import { parsePagination } from '../../shared/utils';
 
 const createPetSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
@@ -62,8 +63,7 @@ export async function getMyPetsController(req: RequestWithUser, res: Response) {
     if (!req.user) {
       return res.status(401).json({ success: false, message: 'No autenticado' });
     }
-    const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const { page, limit } = parsePagination(req.query as Record<string, string>);
     const result = await getPetsByOwner(req.user.userId, page, limit);
     return res.status(200).json({ success: true, ...result });
   } catch (error) {

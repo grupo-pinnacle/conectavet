@@ -82,6 +82,86 @@ describe('POST /api/consultations', () => {
   });
 });
 
+describe('POST /api/consultations — ownership de mascota (IDOR)', () => {
+  test('403 — CLIENT no puede crear consulta con pet ajeno', async () => {
+    const stranger = await prisma.user.create({
+      data: { email: `${prefix}-stranger-owner-${uniqueId}@test.com`, password: 'hash', role: 'CLIENT' },
+    });
+    const strangerPet = await prisma.pet.create({
+      data: { name: 'PetAjeno', species: 'Gato', ownerId: stranger.id },
+    });
+    const res = await request(app)
+      .post('/api/consultations')
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ petId: strangerPet.id, notes: 'Intento de consulta sobre mascota ajena' });
+    expect(res.status).toBe(403);
+  });
+});
+
+describe('Seguridad — password no se expone en respuestas', () => {
+  let c: any;
+
+  beforeEach(async () => {
+    c = await createFreshConsultation();
+  });
+
+  test('create, detail y /mine no incluyen password', async () => {
+    for (const obj of [c.client, c.vet].filter(Boolean)) {
+      expect(obj).not.toHaveProperty('password');
+    }
+
+    const detail = await request(app)
+      .get(`/api/consultations/${c.id}`)
+      .set('Authorization', `Bearer ${clientToken}`);
+    expect(detail.status).toBe(200);
+    for (const obj of [detail.body.data.client, detail.body.data.vet].filter(Boolean)) {
+      expect(obj).not.toHaveProperty('password');
+    }
+    expect(detail.body.data.messages).toBeDefined();
+
+    const mine = await request(app)
+      .get('/api/consultations/mine')
+      .set('Authorization', `Bearer ${clientToken}`);
+    expect(mine.status).toBe(200);
+    for (const obj of [mine.body.data[0].client, mine.body.data[0].vet].filter(Boolean)) {
+      expect(obj).not.toHaveProperty('password');
+    }
+  });
+
+  test('messages no incluyen password del sender', async () => {
+    await request(app)
+      .post(`/api/consultations/${c.id}/messages`)
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ content: 'Hola doctor' });
+    const res = await request(app)
+      .get(`/api/consultations/${c.id}/messages`)
+      .set('Authorization', `Bearer ${clientToken}`);
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.data)).toBe(true);
+    for (const m of res.body.data) {
+      expect(m.sender).not.toHaveProperty('password');
+    }
+  });
+});
+
+describe('GET /api/consultations/my-history', () => {
+  test('VET solo ve sus consultas, no la cola ajena', async () => {
+    const waiting = await createFreshConsultation();
+    const mine = await createFreshConsultation();
+    await request(app)
+      .patch(`/api/consultations/${mine.id}/assign`)
+      .set('Authorization', `Bearer ${vetToken}`);
+
+    const res = await request(app)
+      .get('/api/consultations/my-history')
+      .set('Authorization', `Bearer ${vetToken}`);
+    expect(res.status).toBe(200);
+    const ids = res.body.data.map((c: any) => c.id);
+    expect(ids).toContain(mine.id);
+    expect(ids).not.toContain(waiting.id);
+  });
+});
+
 describe('PATCH /api/consultations/:id/assign', () => {
   let c: any;
 

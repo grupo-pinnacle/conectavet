@@ -222,13 +222,13 @@ Sin sprints. Sin código. Descanso obligatorio.
 
 > No se agregan features nuevas.
 
-| Quién | Tarea |
-|-------|-------|
-| **Tobias** | Deuda técnica. Optimizar queries Prisma. Revisar seguridad. |
-| **Juan** | Bugs UX. Rendimiento en 2GB RAM. |
-| **Damián** | Bugs web. Chrome, Firefox, Edge. |
-| **Ezequiel** | Re-testear. Reporte para profesores. |
-| **Lara** | Review formal. Feedback pre-QA. |
+| Quién | Tarea | Estado |
+|-------|-------|--------|
+| **Tobias** | Deuda técnica. Optimizar queries Prisma. Revisar seguridad. | ✅ |
+| **Juan** | Bugs UX. Rendimiento en 2GB RAM. | ⏳ |
+| **Damián** | Bugs web. Chrome, Firefox, Edge. | ⏳ |
+| **Ezequiel** | Re-testear. Reporte para profesores. | ⏳ |
+| **Lara** | Review formal. Feedback pre-QA. | ⏳ |
 
 ---
 
@@ -322,4 +322,4 @@ Los sprints terminan el 5 de septiembre. El tiempo restante hasta el 31 de octub
 | MVP | 19-20 Jul | 🎯 | 🎯 | 🎯 | 🎯 | 🎯 |
 | **S11** | **3-5 Ago** | **✅** | ⏳ | ⏳ | 🔴 | 🔴 |
 | **S12** | **6-8 Ago** | **✅** | **✅** | **✅** | ⏳ | ⏳ |
-| S13-S20 | 10 Ago - 5 Sep | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
+| S13-S20 | 10 Ago - 5 Sep | ✅ S13 | ⏳ | ⏳ | ⏳ | ⏳ |

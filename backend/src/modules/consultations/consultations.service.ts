@@ -1,6 +1,7 @@
 import { prisma } from '../../shared/prisma';
-import { NotFoundError, ConflictError } from '../../shared/errors';
+import { NotFoundError, ConflictError, ForbiddenError } from '../../shared/errors';
 import { getCached, setCache, clearCache } from '../../shared/cache';
+import { Prisma } from '@prisma/client';
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   WAITING: ['ACTIVE'],
@@ -8,6 +9,47 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   COMPLETED: [],
   CANCELLED: [],
 };
+
+/**
+ * Snapshot público de usuario: nunca expone el hash de password.
+ * Usado en todos los selects de consulta (client/vet/sender).
+ */
+const publicUser = {
+  id: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  phone: true,
+  role: true,
+  isOnline: true,
+} as const;
+
+/**
+ * Snapshot público de consulta (solo columnas necesarias, sin password).
+ */
+const consultationSnapshot = {
+  id: true,
+  clientId: true,
+  vetId: true,
+  petId: true,
+  status: true,
+  notes: true,
+  startedAt: true,
+  endedAt: true,
+  createdAt: true,
+  updatedAt: true,
+  pet: true,
+  client: { select: publicUser },
+  vet: { select: publicUser },
+} satisfies Prisma.ConsultationSelect;
+
+const consultationWithMessages = {
+  ...consultationSnapshot,
+  messages: {
+    orderBy: { createdAt: 'asc' },
+    include: { sender: { select: publicUser } },
+  },
+} satisfies Prisma.ConsultationSelect;
 
 export async function findFirstAvailableVet(species?: string) {
   const cacheKey = species ? `vets:available:${species.toLowerCase()}` : 'vets:available';
@@ -29,6 +71,9 @@ export async function createConsultation(data: {
 }) {
   const pet = await prisma.pet.findUnique({ where: { id: data.petId } });
   if (!pet) throw new NotFoundError('Mascota no encontrada');
+  if (pet.ownerId !== data.clientId) {
+    throw new ForbiddenError('La mascota no te pertenece');
+  }
 
   const vet = await findFirstAvailableVet(pet.species);
 
@@ -41,7 +86,7 @@ export async function createConsultation(data: {
       startedAt: vet ? new Date() : undefined,
       notes: data.notes,
     },
-    include: { pet: true, client: true, vet: true },
+    select: consultationSnapshot,
   });
 }
 
@@ -59,7 +104,7 @@ export async function assignVet(consultationId: string, vetId: string) {
   return prisma.consultation.update({
     where: { id: consultationId },
     data: { vetId, status: 'ACTIVE', startedAt: new Date() },
-    include: { pet: true, client: true, vet: true },
+    select: consultationSnapshot,
   });
 }
 
@@ -83,7 +128,7 @@ export async function assignNextPendingVet(vetId: string) {
 
   return prisma.consultation.findUnique({
     where: { id: pending.id },
-    include: { pet: true, client: true, vet: true },
+    select: consultationSnapshot,
   });
 }
 
@@ -107,7 +152,7 @@ export async function completeConsultation(
 export async function getConsultationById(id: string) {
   return prisma.consultation.findUnique({
     where: { id },
-    include: { pet: true, client: true, vet: true, messages: true },
+    select: consultationWithMessages,
   });
 }
 
@@ -128,7 +173,33 @@ export async function getConsultationsByUser(
   const [data, total] = await Promise.all([
     prisma.consultation.findMany({
       where,
-      include: { pet: true, client: true, vet: true },
+      select: consultationSnapshot,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: cappedLimit,
+    }),
+    prisma.consultation.count({ where }),
+  ]);
+  return { data, total, page, limit: cappedLimit, totalPages: Math.ceil(total / cappedLimit) };
+}
+
+/**
+ * Historial de consultas. Para VET solo las que le fueron asignadas
+ * (nunca la cola global WAITING de otros clientes, a diferencia de /mine).
+ */
+export async function getConsultationHistory(
+  userId: string,
+  role: string,
+  page = 1,
+  limit = 50
+) {
+  const cappedLimit = Math.min(limit, MAX_PAGE_SIZE);
+  const where = role === 'VET' ? { vetId: userId } : { clientId: userId };
+  const skip = (page - 1) * cappedLimit;
+  const [data, total] = await Promise.all([
+    prisma.consultation.findMany({
+      where,
+      select: consultationSnapshot,
       orderBy: { createdAt: 'desc' },
       skip,
       take: cappedLimit,
@@ -181,11 +252,17 @@ export async function saveMessage(data: {
   });
 }
 
-export async function getMessages(consultationId: string) {
+const MAX_MESSAGES = 500;
+
+export async function getMessages(consultationId: string, page = 1, limit = MAX_MESSAGES) {
+  const cappedLimit = Math.min(Math.max(1, limit), MAX_MESSAGES);
+  const skip = (page - 1) * cappedLimit;
   return prisma.message.findMany({
     where: { consultationId },
     include: { sender: { select: { id: true, email: true, role: true } } },
     orderBy: { createdAt: 'asc' },
+    skip,
+    take: cappedLimit,
   });
 }
 

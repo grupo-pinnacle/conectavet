@@ -1,4 +1,3 @@
-import { Role } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../../shared/prisma';
@@ -9,7 +8,6 @@ const SALT_ROUNDS = 10;
 interface RegisterInput {
   email: string;
   password: string;
-  role?: Role;
   firstName?: string;
   lastName?: string;
   phone?: string;
@@ -47,7 +45,7 @@ export async function register(input: RegisterInput) {
     data: {
       email: input.email,
       password: hashedPassword,
-      role: input.role ?? 'CLIENT',
+      role: 'CLIENT',
       firstName: input.firstName,
       lastName: input.lastName,
       phone: input.phone,

@@ -133,7 +133,14 @@ export async function getPetVetCard(petId: string) {
   >`
     SELECT
       to_jsonb(p) AS pet,
-      to_jsonb(u) AS owner,
+      to_jsonb(jsonb_build_object(
+        'id', u.id,
+        'email', u.email,
+        'firstName', u."firstName",
+        'lastName', u."lastName",
+        'phone', u.phone,
+        'role', u.role
+      )) AS owner,
       (SELECT COUNT(*) FROM consultations WHERE "petId" = ${petId}) AS "totalConsultations",
       (SELECT "endedAt" FROM consultations
        WHERE "petId" = ${petId} AND status = 'COMPLETED'

@@ -176,22 +176,39 @@
 - ✅ **M2 (mobile)**: el estado de espera ya no dice "Finalizada" — muestra "En cola de espera" con dot ámbar y el empty-state explica la cola.
 - ✅ **W13 (web)**: el badge rojo del header del médico ya no es 3 fijo.
 
+## Ya resuelto en Sprint 13 (10-Ago, para no re-aparecer)
+
+- ✅ **B2 (CRITICO) — rol fijo en `/register`**: el schema ya no acepta `role` y `auth.service` crea siempre `CLIENT`; intento de registro con `role: ADMIN` → usuario CLIENT (test de regresión agregado).
+- ✅ **B3/B4 (CRITICO) — `password` fuera de respuestas**: `consultations.service` usa `consultationSnapshot` (`select` tipado con `Prisma.ConsultationSelect`) en create/assign/nextPending/getById/mine; el `include: { messages: true }` también exponía el password del sender y se reemplazó por `select` público; la vet card (`pets.service getPetVetCard`) arma `owner` con `jsonb_build_object` sin password. Tests de regresión verifican que create/detail/mine/messages no incluyen `password`.
+- ✅ **B5(1) (CRITICO) — IDOR de mascota**: `createConsultation` valida `pet.ownerId === clientId` → 403 (test agregado).
+- ✅ **B5(2) (CRITICO) — migraciones alineadas**: nueva migración correctiva `20260810000000_sprint13_align` (re-agrega `isOnline`, columnas de users/pets, `vetId` nullable, enum `CANCELLED`, tablas `messages`/`prescriptions`/`attachments`/`push_tokens`/`notifications` + índices/FKs). `prisma migrate deploy` en prod ya replica el schema.
+- ✅ **B9 (ALTO) — `/my-history` separado**: nuevo `getConsultationHistory` (VET solo consultas asignadas; nunca la cola global `WAITING` a ajena). `/mine` conserva la cola para el dashboard del médico.
+- ✅ **B12 (MEDIO) — `getMessages` acotado**: paginación `?page&limit` con tope 500 por request.
+- ✅ **Optimización de queries**: replaces de `include` (traía todos los campos) por `select` con las columnas que los frontends usan; `parsePagination` reutilizado en users/pets controllers (elimina el parseo duplicado).
+- ✅ **`.env` fuera de git**: `backend/.env`, `web/.env`, `mobile/.env` des-trackeados (`git rm --cached`) + `.gitignore` ampliado + `.env.example` para las 3 capas.
+
+## ⚠️ Queda manual para el equipo (no automatizable desde código)
+
+- **Rotar credenciales Supabase** (password de la BD) y **`JWT_SECRET` real** (`openssl rand -hex 32`; hoy es placeholder `change-me-to-a-random-secret` → cualquier persona con acceso al repo puede forjar JWTs).
+- **Purgar historial git** de los `.env` (requiere `git filter-repo` y re-clonar todos los miembros).
+- El resto de deuda técnica (tipos en `packages/shared`, código muerto, deps LiveKit/AV) queda asignada al bloque del equipo.
+
 ---
 
 ## Top 10 priorizado global (por dueño)
 
 | # | Nivel | Hallazgo | Dueño |
 |---|-------|----------|-------|
-| 1 | CRITICO | Rotar credenciales, `.env` fuera de git, crear `.env.example` y purgar historial (`git filter-repo`) | Tobias |
-| 2 | CRITICO | Fijar rol en `/register` (no aceptar `role` del cliente) | Tobias |
-| 3 | CRITICO | Sacar `password` de todos los `include`/raw SQL de consultas y vet card | Tobias |
-| 4 | CRITICO | Alinear migraciones con `schema.prisma` (re-agregar `isOnline`, `messages`, `prescriptions`, `vetId` nullable) | Tobias |
-| 5 | ALTO | Ownership de mascota en `createConsultation` (IDOR) | Tobias |
-| 6 | ALTO | Toggle online/offline del médico en web (Sprint 11 Damián) | Damián |
-| 7 | ALTO | Feedback de espera + no filtrar WAITING en mobile (Sprint 11 Juan) | Juan |
-| 8 | ALTO | `disconnectSocket()` en logout; leer `petId` en queue | Juan |
-| 9 | ALTO | Definir `/my-history` separado que no exponga colas ajenas | Tobias |
-| 10 | ALTO | Unificar `WS_URL` real (quitar el `/ws/queue` fantasma) en mobile + `start.ps1`/`eas.json`/docs y corregir `eas.json` para producción | Damián/Juan |
+| 1 | CRITICO | Rotar credenciales, `.env` fuera de git, crear `.env.example` y purgar historial (`git filter-repo`) | Tobias — ✅ `.env` fuera de git + `.env.example` (S13). Rotación de credenciales + purge de historial: manual |
+| 2 | CRITICO | Fijar rol en `/register` (no aceptar `role` del cliente) | ✅ Tobias (S13) |
+| 3 | CRITICO | Sacar `password` de todos los `include`/raw SQL de consultas y vet card | ✅ Tobias (S13) |
+| 4 | CRITICO | Alinear migraciones con `schema.prisma` (re-agregar `isOnline`, `messages`, `prescriptions`, `vetId` nullable) | ✅ Tobias (S13) |
+| 5 | ALTO | Ownership de mascota en `createConsultation` (IDOR) | ✅ Tobias (S13) |
+| 6 | ALTO | Toggle online/offline del médico en web (Sprint 11 Damián) | ✅ Damián (6-Ago) + fixes Tobias (`b62909a`) |
+| 7 | ALTO | Feedback de espera + no filtrar WAITING en mobile (Sprint 11-12 Juan) | ✅ (S11/S12 Juan) |
+| 8 | ALTO | `disconnectSocket()` en logout; leer `petId` en queue | ⏳ Mobile (Juan) |
+| 9 | ALTO | Definir `/my-history` separado que no exponga colas ajenas | ✅ Tobias (S13) |
+| 10 | ALTO | Unificar `WS_URL` real (quitar el `/ws/queue` fantasma) en mobile + `start.ps1`/`eas.json`/docs y corregir `eas.json` para producción | ⏳ (Damián/Juan)
 
 ---
 

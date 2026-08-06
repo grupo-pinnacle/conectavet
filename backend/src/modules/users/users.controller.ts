@@ -5,6 +5,7 @@ import { getUserById, listVets, updateAvailability } from './users.service';
 import { assignNextPendingVet } from '../consultations/consultations.service';
 import { getIO } from '../consultations/chat.gateway';
 import { notifyUser } from '../notifications';
+import { parsePagination } from '../../shared/utils';
 
 const availabilitySchema = z.object({
   isOnline: z.boolean({ message: 'isOnline debe ser un booleano' }),
@@ -96,8 +97,7 @@ export async function setAvailabilityController(req: RequestWithUser, res: Respo
 
 export async function listVetsController(req: RequestWithUser, res: Response) {
   try {
-    const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const { page, limit } = parsePagination(req.query as Record<string, string>);
     const result = await listVets(page, limit);
     return res.status(200).json({ success: true, ...result });
   } catch (error) {

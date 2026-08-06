@@ -11,6 +11,7 @@ import {
   completeConsultation,
   getConsultationById,
   getConsultationsByUser,
+  getConsultationHistory,
   getAvailableVets,
   getMessages,
   saveMessage,
@@ -189,6 +190,23 @@ export async function getMyConsultationsController(req: RequestWithUser, res: Re
   }
 }
 
+export async function getMyHistoryController(req: RequestWithUser, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'No autenticado' });
+    }
+    const { page, limit } = parsePagination(req.query as Record<string, string>);
+    const result = await getConsultationHistory(req.user.userId, req.user.role, page, limit);
+    return res.status(200).json({ success: true, ...result });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
+    console.error('Error en getMyHistoryController:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+}
+
 export async function getAvailableVetsController(req: RequestWithUser, res: Response) {
   try {
     const species = (req.query.species as string)?.trim() || undefined;
@@ -206,7 +224,8 @@ export async function getMessagesController(req: RequestWithUser, res: Response)
       return res.status(401).json({ success: false, message: 'No autenticado' });
     }
     await assertParticipation(req.params.id as string, req.user.userId);
-    const messages = await getMessages(req.params.id as string);
+    const { page, limit } = parsePagination(req.query as Record<string, string>);
+    const messages = await getMessages(req.params.id as string, page, limit);
     return res.status(200).json({ success: true, data: messages });
   } catch (error) {
     if (error instanceof AppError) {

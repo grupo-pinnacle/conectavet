@@ -317,6 +317,78 @@ describe('POST /api/consultations — cola de espera: vet se pone online', () =>
   });
 });
 
+describe('POST /api/consultations — dos vets online reparten la cola', () => {
+  test('cada consulta WAITING se asigna a un vet distinto sin dejar cola huérfana', async () => {
+    const vet2 = await prisma.user.create({
+      data: { email: `${prefix}-vet2-${uniqueId}@test.com`, password: 'hash', role: 'VET' },
+    });
+    const vet2Token = jwt.sign({ userId: vet2.id, email: vet2.email, role: 'VET' as Role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
+
+    await request(app)
+      .patch('/api/users/me/availability')
+      .set('Authorization', `Bearer ${vetToken}`)
+      .send({ isOnline: false });
+
+    const c1 = await createFreshConsultation();
+    const c2 = await createFreshConsultation();
+    expect(c1.status).toBe('WAITING');
+    expect(c2.status).toBe('WAITING');
+
+    await request(app)
+      .patch('/api/users/me/availability')
+      .set('Authorization', `Bearer ${vetToken}`)
+      .send({ isOnline: true });
+    await request(app)
+      .patch('/api/users/me/availability')
+      .set('Authorization', `Bearer ${vet2Token}`)
+      .send({ isOnline: true });
+
+    const d1 = await request(app)
+      .get(`/api/consultations/${c1.id}`)
+      .set('Authorization', `Bearer ${clientToken}`);
+    const d2 = await request(app)
+      .get(`/api/consultations/${c2.id}`)
+      .set('Authorization', `Bearer ${clientToken}`);
+    expect(d1.body.data.status).toBe('ACTIVE');
+    expect(d2.body.data.status).toBe('ACTIVE');
+    expect(d1.body.data.vetId).not.toBe(d2.body.data.vetId);
+    expect([d1.body.data.vetId, d2.body.data.vetId].sort()).toEqual([vetUser.id, vet2.id].sort());
+
+    await request(app)
+      .patch('/api/users/me/availability')
+      .set('Authorization', `Bearer ${vetToken}`)
+      .send({ isOnline: false });
+    await request(app)
+      .patch('/api/users/me/availability')
+      .set('Authorization', `Bearer ${vet2Token}`)
+      .send({ isOnline: false });
+    await prisma.user.delete({ where: { id: vet2.id } });
+  });
+});
+
+describe('POST /api/consultations/:id/messages — solo en consulta ACTIVA', () => {
+  test('409 — no se puede enviar mensaje en consulta WAITING', async () => {
+    const c = await createFreshConsultation();
+    const res = await request(app)
+      .post(`/api/consultations/${c.id}/messages`)
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ content: 'Hola en cola' });
+    expect(res.status).toBe(409);
+  });
+
+  test('201 — sí se puede enviar cuando está ACTIVE', async () => {
+    const c = await createFreshConsultation();
+    await request(app)
+      .patch(`/api/consultations/${c.id}/assign`)
+      .set('Authorization', `Bearer ${vetToken}`);
+    const res = await request(app)
+      .post(`/api/consultations/${c.id}/messages`)
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ content: 'Hola cuando está activa' });
+    expect(res.status).toBe(201);
+  });
+});
+
 describe('GET /api/consultations/:id/messages', () => {
   let c: any;
 

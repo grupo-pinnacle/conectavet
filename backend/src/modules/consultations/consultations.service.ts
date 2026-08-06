@@ -114,22 +114,28 @@ export async function assignVet(consultationId: string, vetId: string) {
  * para que dos vets online simultáneos nunca tomen la misma consulta.
  */
 export async function assignNextPendingVet(vetId: string) {
-  const pending = await prisma.consultation.findFirst({
-    where: { status: 'WAITING' },
-    orderBy: { createdAt: 'asc' },
-  });
-  if (!pending) return null;
+  // Reintenta el claim atómico: si dos vets online compiten por la misma
+  // consulta, el perdedor salta a la siguiente WAITING en vez de quedarse sin
+  // asignar hasta su próximo toggle de disponibilidad.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const pending = await prisma.consultation.findFirst({
+      where: { status: 'WAITING' },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (!pending) return null;
 
-  const claimed = await prisma.consultation.updateMany({
-    where: { id: pending.id, status: 'WAITING' },
-    data: { vetId, status: 'ACTIVE', startedAt: new Date() },
-  });
-  if (claimed.count === 0) return null;
-
-  return prisma.consultation.findUnique({
-    where: { id: pending.id },
-    select: consultationSnapshot,
-  });
+    const claimed = await prisma.consultation.updateMany({
+      where: { id: pending.id, status: 'WAITING' },
+      data: { vetId, status: 'ACTIVE', startedAt: new Date() },
+    });
+    if (claimed.count === 1) {
+      return prisma.consultation.findUnique({
+        where: { id: pending.id },
+        select: consultationSnapshot,
+      });
+    }
+  }
+  return null;
 }
 
 export async function completeConsultation(

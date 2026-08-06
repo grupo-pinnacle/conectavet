@@ -91,6 +91,9 @@ export function setupChatSocket(httpServer: HttpServer) {
           if (!consultation) {
             return socket.emit('error', { message: 'No pertenecés a esta consulta' });
           }
+          if (consultation.status !== 'ACTIVE') {
+            return socket.emit('error', { message: 'La consulta no está activa. No podés enviar mensajes.' });
+          }
           const message = await saveMessage({
             consultationId: data.consultationId,
             senderId: user.userId,

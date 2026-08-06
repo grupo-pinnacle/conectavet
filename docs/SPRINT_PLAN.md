@@ -21,7 +21,7 @@
 
 | Dimensión | Sprint | Estado |
 |-----------|--------|--------|
-| **Equipo** | **S9** (13-15 jul) | 🟡 Activo — Últimos bugs + preparar presentación |
+| **Equipo** | **S13** (10-12 ago) | 🟢 Activo — Tobías ✅, resto del equipo ⏳ |
 | **MVP compliance** | Completado | ✅ Proyecto alineado al alcance MVP |
 
 ---
@@ -146,31 +146,34 @@ Ago 24 ─┤ S17├────┤ S18├────┤ S19├────┤ 
 
 ---
 
-## Sprint 9 — Últimos Bugs + Preparar Presentación (13-15 Jul) 🟡
+## Sprint 9 — Últimos Bugs + Preparar Presentación (13-15 Jul) ✅
 
 **Duración:** lun 13 · mar 14 · mié 15
 
 > **No se agregan features nuevas.** Solo bugs detectados en S8.
 
-| Quién | Tarea |
-|-------|-------|
-| **Tobias** | Bugs backend priorizados (máximo 3). Optimizar queries si es necesario. |
-| **Juan** | Bugs mobile: navegación, carga de datos, errores de conexión. Probar en Android físico. |
-| **Damián** | Bugs web: responsive, estados de carga/error, edge cases de navegación. |
-| **Ezequiel** | Re-testear bugs corregidos. Armar casos de prueba para la presentación. |
-| **Lara** | Coordinar demo. Definir quién muestra qué. Preparar slides. |
+> **Backend de Tobias completado en sesión 11-Ago** (la auditoría de 5-Ago detectó que quedó pendiente): B8 (race en `assignNextPendingVet` → reintento), B10 (`birthDate` validada → 400), B14 (mensajes solo en consultas `ACTIVE` → 409/socket error). Optimizar queries quedó cubierto en S13.
+
+| Quién | Tarea | Estado |
+|-------|-------|--------|
+| **Tobias** | Bugs backend priorizados (máximo 3). Optimizar queries si es necesario. | ✅ (11/08) |
+| **Juan** | Bugs mobile: navegación, carga de datos, errores de conexión. Probar en Android físico. | 🟡 |
+| **Damián** | Bugs web: responsive, estados de carga/error, edge cases de navegación. | 🟡 |
+| **Ezequiel** | Re-testear bugs corregidos. Armar casos de prueba para la presentación. | 🔴 |
+| **Lara** | Coordinar demo. Definir quién muestra qué. Preparar slides. | 🔴 |
 
 ---
 
-## Sprint 10 — Freeze (16-18 Jul)
+## Sprint 10 — Freeze (16-18 Jul) ✅
 
 **Duración:** jue 16 · vie 17 · sáb 18
 
 > **Código congelado.** No se agrega nada. Solo bugs críticos que rompan el flujo principal.
+> Sin commits de nadie del equipo (13-jul a 2-ago → coincide con el cierre del MVP y las vacaciones 20-31 jul). El MVP se entregó el 20-jul con **108/108 tests** del backend.
 
-| Quién | Tarea |
-|-------|-------|
-| **Todo el equipo** | Últimos retoques. Nadie empieza nada nuevo. Preparar la presentación del lunes 20. |
+| Quién | Tarea | Estado |
+|-------|-------|--------|
+| **Todo el equipo** | Últimos retoques. Nadie empieza nada nuevo. Preparar la presentación del lunes 20. | ✅ MVP entregado 20-jul |
 
 ---
 
@@ -317,8 +320,8 @@ Los sprints terminan el 5 de septiembre. El tiempo restante hasta el 31 de octub
 | S6 | 2-4 Jul | ✅ | ✅ | ✅ | 🔴 | 🔴 |
 | S7 | 6-8 Jul | ✅ | ✅ | ✅ | 🔴 | 🔴 |
 | S8 | 9-11 Jul | ✅ | ✅ | ✅ | 🔴 | 🔴 |
-| **S9** | **13-15 Jul** | **🟡** | **🟡** | **🟡** | **🔴** | **🔴** |
-| S10 | 16-18 Jul | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
+| **S9** | **13-15 Jul** | **✅ (11/08)** | **🟡** | **🟡** | **🔴** | **🔴** |
+| S10 | 16-18 Jul | ✅ | ✅ | ✅ | ✅ | ✅ |
 | MVP | 19-20 Jul | 🎯 | 🎯 | 🎯 | 🎯 | 🎯 |
 | **S11** | **3-5 Ago** | **✅** | ⏳ | ⏳ | 🔴 | 🔴 |
 | **S12** | **6-8 Ago** | **✅** | **✅** | **✅** | ⏳ | ⏳ |

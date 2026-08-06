@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { z } from 'zod';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
-import { AppError, NotFoundError, ForbiddenError } from '../../shared/errors';
+import { AppError, NotFoundError, ForbiddenError, ConflictError } from '../../shared/errors';
 import { parsePagination } from '../../shared/utils';
 import { getIO } from './chat.gateway';
 import { notifyUser, notifyVetsOnline, notifyConsultationMessage } from '../notifications';
@@ -245,7 +245,10 @@ export async function sendMessageController(req: RequestWithUser, res: Response)
     if (!parsed.success) {
       return res.status(400).json({ success: false, message: parsed.error.issues[0].message });
     }
-    await assertParticipation(req.params.id as string, req.user.userId);
+    const consultation = await assertParticipation(req.params.id as string, req.user.userId);
+    if (consultation.status !== 'ACTIVE') {
+      throw new ConflictError('La consulta no está activa. No podés enviar mensajes.');
+    }
     const message = await saveMessage({
       consultationId: req.params.id as string,
       senderId: req.user.userId,

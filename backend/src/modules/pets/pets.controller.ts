@@ -5,6 +5,10 @@ import { AppError, NotFoundError, ForbiddenError } from '../../shared/errors';
 import { getPetsByOwner, getManagedPets, getPetById, createPet, updatePet, deletePet, restorePet, getPetVetCard } from './pets.service';
 import { parsePagination } from '../../shared/utils';
 
+const dateStringSchema = z
+  .string()
+  .refine((v) => !Number.isNaN(Date.parse(v)), 'Fecha de nacimiento inválida');
+
 const createPetSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
   species: z.string().min(1, 'La especie es requerida'),
@@ -17,7 +21,7 @@ const createPetSchema = z.object({
   microchip: z.string().optional(),
   allergies: z.array(z.string()).optional(),
   chronicConditions: z.array(z.string()).optional(),
-  birthDate: z.string().optional(),
+  birthDate: dateStringSchema.optional(),
   photoUrl: z.string().optional(),
 });
 
@@ -33,7 +37,7 @@ const updatePetSchema = z.object({
   microchip: z.string().optional(),
   allergies: z.array(z.string()).optional(),
   chronicConditions: z.array(z.string()).optional(),
-  birthDate: z.string().optional(),
+  birthDate: dateStringSchema.optional(),
   photoUrl: z.string().optional(),
 });
 

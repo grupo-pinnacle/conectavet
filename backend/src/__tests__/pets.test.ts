@@ -66,12 +66,30 @@ describe('POST /api/pets', () => {
     expect(res.status).toBe(400);
   });
 
-  test('400 — sin especie', async () => {
+test('400 — sin especie', async () => {
     const res = await request(app)
       .post('/api/pets')
       .set('Authorization', `Bearer ${clientToken}`)
       .send({ name: 'Firulais' });
     expect(res.status).toBe(400);
+  });
+
+  test('400 — birthDate inválida da 400 (no 500)', async () => {
+    const res = await request(app)
+      .post('/api/pets')
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ name: 'FechaMala', species: 'Perro', birthDate: 'asdf' });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Fecha de nacimiento inválida');
+  });
+
+  test('201 — birthDate válida se acepta', async () => {
+    const res = await request(app)
+      .post('/api/pets')
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ name: 'ConFecha', species: 'Perro', birthDate: '2021-05-12' });
+    expect(res.status).toBe(201);
+    expect(res.body.data.birthDate).toBeTruthy();
   });
 
   test('401 — sin token', async () => {

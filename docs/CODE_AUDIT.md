@@ -190,6 +190,13 @@
 - ✅ **`prisma generate` automático (Reporte Damián)**: `postinstall` en `backend/package.json` regenera el Prisma Client al instalar dependencias → no reaparece el 500 por Client desactualizado.
 - ✅ **W6/W7/W9 + input vet (Damián, `a8be548`)**: peso de mascota como número + input `type=number`, 401 del login sin recarga, `leaveConsultation` al cambiar de sala, input del vet bloqueado en `WAITING`, y visor de imágenes. `tsc -b` limpio.
 
+## Ya resuelto en Sprint 9 (backlog Tobias, para no re-aparecer)
+
+- ✅ **B8 (ALTO) — race en `assignNextPendingVet`**: el claim atómico ahora reintenta (hasta 5 intentos) sobre las `WAITING` más antiguas: si un `updateMany` pierde la carrera (`count === 0`) prueba con la siguiente en la cola en vez de devolver `null` (test de dos vets online repartiéndose la cola).
+- ✅ **B10 (MEDIO) — `birthDate` validada**: en create/update de mascota pasa por `dateStringSchema` (refine con `Date.parse`) → `birthDate: "asdf"` devuelve 400 y no 500.
+- ✅ **B14 (MEDIO) — mensajes solo en `ACTIVE`**: `sendMessage` valida el estado de la consulta y devuelve 409 `ConflictError('La consulta no está activa. No podés enviar mensajes.')`; el socket (`chat.gateway`) también rechaza con evento `error`. Tests de regresión: 409 en `WAITING`, 201 al asignarse un vet.
+- **Suite**: **118/118 tests pasan**, `tsc --noEmit` limpio.
+
 ## ⚠️ Queda manual para el equipo (no automatizable desde código)
 
 - **Rotar credenciales Supabase** (password de la BD) y **`JWT_SECRET` real** (`openssl rand -hex 32`; hoy es placeholder `change-me-to-a-random-secret` → cualquier persona con acceso al repo puede forjar JWTs).

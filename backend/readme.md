@@ -6,7 +6,7 @@
 
 ![Status](https://img.shields.io/badge/status-active-brightgreen)
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![Tests](https://img.shields.io/badge/tests-89%2F89-passing)
+![Tests](https://img.shields.io/badge/tests-119%2F119-passing)
 ![Prisma](https://img.shields.io/badge/Prisma-6.x-2D3748)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -137,11 +137,13 @@ backend/
 │   │   └── errors/
 │   │       └── index.ts             # AppError, NotFoundError, ForbiddenError, ConflictError
 │   ├── __tests__/
-│   │   ├── auth.test.ts             # 21 tests (service + JWT + HTTP controllers + roles)
-│   │   ├── consultations.test.ts    # 15 tests (CRUD consultas + chat + permisos + logout)
-│   │   ├── pets.test.ts             # 18 tests (CRUD mascotas + soft delete + ownership + restore)
-│   │   ├── users.test.ts            #  7 tests (me, admin-only, vets pagination)
-│   │   ├── utils.test.ts            # 12 tests (pagination, excludePassword, asyncHandler, errors)
+│   │   ├── auth.test.ts             # 23 tests (service + JWT + HTTP controllers + refresh + logout revoca)
+│   │   ├── consultations.test.ts    # 30 tests (CRUD consultas + chat + cola + mensajes solo ACTIVE + permisos)
+│   │   ├── pets.test.ts             # 21 tests (CRUD mascotas + soft delete + ownership + birthDate + restore)
+│   │   ├── users.test.ts            #  9 tests (me, admin-only, vets, auto-asignación)
+│   │   ├── media.test.ts            #  4 tests (upload imagen, errores, 401)
+│   │   ├── notifications.test.ts    # 10 tests (token push, bandeja, triggers)
+│   │   ├── utils.test.ts            # 15 tests (pagination, excludePassword, asyncHandler, errors)
 │   │   ├── cache.test.ts            #  4 tests (set/get, clear, pattern clear)
 │   │   ├── app.test.ts              #  3 tests (health, 404, login validation)
 │   │   └── setup-env.ts             # Configura schema de testing de Supabase
@@ -171,35 +173,51 @@ enum Role { CLIENT, VET, ADMIN }
 enum ConsultationStatus { WAITING, ACTIVE, COMPLETED, CANCELLED }
 
 model User {
-  id                    String         @id @default(cuid())
-  email                 String         @unique
-  password              String
-  role                  Role
-  isOnline              Boolean        @default(false)
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
+  id              String          @id @default(cuid())
+  email           String          @unique
+  password        String          // hash, nunca se expone en respuestas
+  firstName       String?
+  lastName        String?
+  phone           String?
+  role            Role
+  isOnline        Boolean         @default(false)
+  tokenVersion    Int             @default(1)  // revocación de sesiones (logout)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
   pets                  Pet[]
   consultationsAsClient Consultation[] @relation("ClientConsultations")
   consultationsAsVet    Consultation[] @relation("VetConsultations")
   messages              Message[]
+  prescriptions         Prescription[]
+  pushTokens            PushToken[]
+  notifications         Notification[]
+  attachments           Attachment[]
   @@map("users")
 }
 
 model Pet {
-  id            String         @id @default(cuid())
-  name          String
-  species       String
-  breed         String?
-  age           Int?
-  weight        Float?
-  ownerId       String
-  owner         User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  deletedAt     DateTime?
-  consultations Consultation[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  @@index([ownerId])
-  @@index([species])
+  id                String         @id @default(cuid())
+  name              String
+  species           String
+  breed             String?
+  age               Int?
+  weight            Float?
+  weightKg          Float?
+  sex               Sex?
+  birthDate         DateTime?
+  color             String?
+  microchip         String?
+  allergies         String[]
+  chronicConditions String[]
+  photoUrl          String?
+  isDeceased        Boolean        @default(false)
+  deathDate         DateTime?
+  ownerId           String
+  owner             User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  deletedAt         DateTime?
+  consultations     Consultation[]
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
   @@map("pets")
 }
 
@@ -218,9 +236,7 @@ model Consultation {
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
   messages      Message[]
-  @@index([clientId])
-  @@index([vetId])
-  @@index([status])
+  prescriptions Prescription[]
   @@map("consultations")
 }
 
@@ -245,7 +261,6 @@ model Attachment {
   mimeType   String
   size       Int
   createdAt  DateTime @default(now())
-  @@index([uploaderId])
   @@map("attachments")
 }
 
@@ -272,7 +287,20 @@ model Notification {
   @@index([userId, createdAt])
   @@map("notifications")
 }
+
+model Prescription {
+  id             String       @id @default(cuid())
+  consultationId String
+  consultation   Consultation @relation(fields: [consultationId], references: [id])
+  vetId          String
+  vet            User         @relation(fields: [vetId], references: [id])
+  content        String
+  createdAt      DateTime     @default(now())
+  @@map("prescriptions")
+}
 ```
+
+> Ver `prisma/schema.prisma` para el detalle completo (índices, enum `Sex`, etc.).
 
 ### Comandos útiles
 
@@ -321,8 +349,7 @@ Crea un nuevo usuario.
 ```json
 {
   "email": "usuario@ejemplo.com",
-  "password": "123456",
-  "role": "CLIENT"
+  "password": "123456"
 }
 ```
 
@@ -330,19 +357,23 @@ Crea un nuevo usuario.
 |-------|------|-----------|---------|
 | `email` | string | Sí | Email válido |
 | `password` | string | Sí | Mínimo 6 caracteres |
-| `role` | string | Sí | `CLIENT`, `VET` o `ADMIN` |
+| `role` | string | No | ⚠️ Se ignora — el backend siempre crea usuarios `CLIENT` (seguridad S13) |
 
 **Response** `201`
 ```json
 {
   "success": true,
   "data": {
-    "id": "cmqzhma650000w3zk1jkoomim",
-    "email": "usuario@ejemplo.com",
-    "role": "CLIENT",
-    "isOnline": false,
-    "createdAt": "2026-06-29T17:24:20.093Z",
-    "updatedAt": "2026-06-29T17:24:20.093Z"
+    "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
+    "user": {
+      "id": "cmqzhma650000w3zk1jkoomim",
+      "email": "usuario@ejemplo.com",
+      "role": "CLIENT",
+      "isOnline": false,
+      "createdAt": "2026-06-29T17:24:20.093Z",
+      "updatedAt": "2026-06-29T17:24:20.093Z"
+    }
   }
 }
 ```
@@ -351,7 +382,7 @@ Crea un nuevo usuario.
 
 | Código | Motivo |
 |--------|--------|
-| `400` | Email, password o rol faltante / password < 6 caracteres / rol inválido |
+| `400` | Email o password faltante / password < 6 caracteres |
 | `409` | El email ya está registrado |
 
 ---
@@ -373,7 +404,7 @@ Inicia sesión y devuelve un JWT.
 {
   "success": true,
   "data": {
-    "token": "eyJhbGciOiJIUzI1NiIs...",
+    "accessToken": "eyJhbGciOiJIUzI1NiIs...",
     "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
     "user": {
       "id": "cmqzhma650000w3zk1jkoomim",
@@ -646,6 +677,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
   "userId": "cmqzhma650000w3zk1jkoomim",
   "email": "usuario@ejemplo.com",
   "role": "CLIENT",
+  "tokenVersion": 1,
   "iat": 1782753867,
   "exp": 1783358667
 }
@@ -655,6 +687,10 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 
 El access token dura **7 días**. Se incluye un `refreshToken` (válido por **30 días**) en la respuesta de login.
 Usar `POST /api/auth/refresh` con body `{ "refreshToken": "..." }` para obtener un nuevo par token + refresh sin que el usuario tenga que loguearse de nuevo.
+
+### Logout (revocación de sesiones)
+
+`POST /api/auth/logout` incrementa el `tokenVersion` del usuario en la BD: cualquier access/refresh JWT emitido antes queda **revocado** (401 en el middleware `authenticate` y en `/auth/refresh`). Un login nuevo emite JWTs con el version actualizado.
 
 ---
 
@@ -690,16 +726,16 @@ router.get('/admin-only', authenticate, authorize(Role.ADMIN), handler);
 npm test
 ```
 
-Actualmente **108 tests** en 9 archivos:
+Actualmente **119 tests** en 9 archivos:
 
 ```
-PASS src/__tests__/auth.test.ts          — 21 tests (service + JWT + HTTP controllers + refresh + roles)
-PASS src/__tests__/consultations.test.ts — 23 tests (CRUD consultas + chat + cola de espera + permisos + logout)
-PASS src/__tests__/pets.test.ts          — 18 tests (CRUD mascotas + soft delete + ownership + paginación + restore)
-PASS src/__tests__/users.test.ts         —  7 tests (me, admin-only, vets, auto-asignación al ponerse online)
+PASS src/__tests__/auth.test.ts          — 23 tests (service + JWT + HTTP controllers + refresh + logout revoca sesiones)
+PASS src/__tests__/consultations.test.ts — 30 tests (CRUD consultas + chat + cola de espera + mensajes solo ACTIVE + permisos)
+PASS src/__tests__/pets.test.ts          — 21 tests (CRUD mascotas + soft delete + ownership + birthDate validada + restore)
+PASS src/__tests__/users.test.ts         —  9 tests (me, admin-only, vets, auto-asignación al ponerse online)
 PASS src/__tests__/media.test.ts         —  4 tests (upload imagen, 400 sin archivo/tipo inválido, 401)
 PASS src/__tests__/notifications.test.ts — 10 tests (token push, bandeja, notificaciones al asignar/mensaje/leída)
-PASS src/__tests__/utils.test.ts         — 12 tests (parsePagination, excludePassword, asyncHandler, AppError)
+PASS src/__tests__/utils.test.ts         — 15 tests (parsePagination, excludePassword, asyncHandler, AppError)
 PASS src/__tests__/cache.test.ts         —  4 tests (set/get, clear, pattern clear)
 PASS src/__tests__/app.test.ts           —  3 tests (health, 404, login validation)
 ```
@@ -713,7 +749,7 @@ PASS src/__tests__/app.test.ts           —  3 tests (health, 404, login valida
 El deploy a Railway es automático mediante GitHub Actions al hacer push a `main`:
 
 ```
-push a main → tests (108 tests, unit + integration) → build → deploy a Railway
+push a main → tests (119 tests, unit + integration) + tsc → build → deploy a Railway → smoke test /health
 ```
 
 ### Docker (cualquier proveedor)

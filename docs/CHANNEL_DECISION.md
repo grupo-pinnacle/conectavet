@@ -41,7 +41,7 @@
 - Registro/login con almacenamiento seguro de tokens
 - CRUD de mascotas con foto (Cloudinary)
 - Chat con veterinario durante consulta activa
-- Solicitar consulta simple (sin cola automática)
+- Solicitar consulta (auto-asignación de la cola cuando un vet se pone online)
 - Historial con valoración post-consulta
 
 ---
@@ -51,9 +51,10 @@
 | Feature | Canal | Sprint | Estado |
 |---------|-------|--------|--------|
 | Cola de espera automática | Mobile + Web | S11 | ✅ |
-| Online/Offline del médico | Web | S11 | ⏳ pendiente web |
+| Online/Offline del médico | Web | S11 | ✅ (toggle web + sync por socket + feedback de error) |
 | Imágenes en el chat | Mobile + Web | S12 | ✅ |
 | Notificaciones push | Mobile | S12 | ✅ (backend + registro de token mobile) |
+| Seguridad/estabilización backend (S13) | — | S13 | ✅ Tobías: rol fijo, password oculta, migraciones, `.env` fuera de git, logout revoca |
 | Videollamada (LiveKit) | Mobile + Web | Post-MVP | — |
 | Asistente IA | Mobile | Post-MVP | — |
 | Sistema de honorarios | Web | Post-MVP | — |

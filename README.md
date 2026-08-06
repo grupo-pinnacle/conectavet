@@ -30,7 +30,7 @@
 | **Base de datos** | PostgreSQL via Supabase | - |
 | **Auth** | JWT + refresh tokens | - |
 | **Frontend web** | React + Vite + TailwindCSS | React 19, Vite 8 |
-| **Mobile** | React Native + Expo | SDK 51 |
+| **Mobile** | React Native + Expo | SDK 54 |
 | **Chat** | Socket.io | - |
 | **Deploy backend** | Railway | - |
 | **Deploy web** | Vercel | - |
@@ -87,10 +87,12 @@ conectavet/
 │   │   └── migrations/       # Migraciones SQL
 │   ├── src/
 │   │   ├── modules/
-│   │   │   ├── auth/         # Registro, login, JWT
-│   │   │   ├── users/        # Perfil, roles
-│   │   │   ├── pets/         # CRUD mascotas
-│   │   │   └── consultations/# Consultas + Chat (Socket.io)
+│   │   │   ├── auth/         # Registro, login, JWT, refresh, logout (revoca sesiones)
+│   │   │   ├── users/        # Perfil, disponibilidad online/offline
+│   │   │   ├── pets/         # CRUD mascotas + vet card
+│   │   │   ├── consultations/# Consultas + cola + Chat (Socket.io)
+│   │   │   ├── media/        # Upload de imágenes (multer)
+│   │   │   └── notifications/# Push (Expo) + bandeja in-app
 │   │   ├── shared/
 │   │   │   ├── middlewares/  # Auth, roles, errores
 │   │   │   └── types/        # Tipos compartidos
@@ -98,6 +100,7 @@ conectavet/
 │   └── package.json
 ├── mobile/                   # App Android (Expo) — para clientes
 ├── web/                      # Frontend web (React + Vite) — para médicos y clientes
+├── packages/shared/          # Tipos compartidos (JwtPayload, User, Pet, ...)
 ├── docs/                     # Documentación del proyecto
 │   ├── SPRINT_PLAN.md        # Planificación de sprints
 │   ├── MVP_SCOPE.md          # Definición del alcance MVP
@@ -186,12 +189,14 @@ curl http://localhost:3001/health
 | S6 | 2-4 Jul | Conexión mobile + chat inicio | ✅ |
 | S7 | 6-8 Jul | Chat de texto + historial básico | ✅ |
 | S8 | 9-11 Jul | Pulir flujo completo + testing | ✅ |
-| **→ S9** | **13-15 Jul** | **Bugs + Preparar presentación** | **🔄 Activo** |
-| S10 | 16-18 Jul | Freeze — solo bugs críticos | ⏳ |
+| **S9** | **13-15 Jul** | **Bugs + Preparar presentación** | ✅ (backend cerrado 11-Ago) |
+| **S10** | **16-18 Jul** | **Freeze — solo bugs críticos** | ✅ MVP entregado 20-jul |
 | **🎯 MVP** | **20 Jul** | **Entrega** | ✅ |
 | **S11** | **3-5 Ago** | **Cola de espera + online/offline** | ✅ |
 | **S12** | **6-8 Ago** | **Imágenes en chat + notificaciones push** | ✅ |
-| S13-S20 | 10 Ago - 5 Sep | Estabilización, testing 2GB, deploy | ⏳ |
+| **S13** | **10-12 Ago** | **Estabilización** | ✅ backend / ⏳ resto del equipo |
+| S14 | 13-15 Ago | Testing 2GB RAM | ⏳ |
+| S15-S20 | 17 Ago - 5 Sep | Prueba web, E2E, deploy, docs, presentación | ⏳ |
 
 ---
 

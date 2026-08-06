@@ -5,12 +5,14 @@
 
 ---
 
-## ✨ Características (MVP)
+## ✨ Características (MVP + S11/S12)
 
 - ✅ **Registro y login** con JWT rotativo y almacenamiento seguro
 - ✅ **CRUD de mascotas** + subida de fotos a Cloudinary
 - ✅ **Chat con veterinario** durante consulta activa
-- ✅ **Solicitar consulta** simple (sin cola automática)
+- ✅ **Cola de espera en tiempo real** — la consulta `WAITING` se auto-asigna cuando un vet se pone online; feedback visual "En cola de espera" (S11)
+- ✅ **Imágenes en el chat** — enviar desde la galería (`expo-image-picker` → `POST /api/media`) y verlas en burbujas (S12)
+- ✅ **Notificaciones push** — registro de token (`expo-notifications`) + bandeja in-app (S12)
 - ✅ **Historial de consultas** con diagnóstico, tratamiento y valoración
 - ✅ **VetCard** — perfil digital de la mascota
 - ✅ **Manejo de conectividad** — banner offline
@@ -21,7 +23,7 @@
 
 | Capa | Tecnología |
 |------|------------|
-| Framework | React Native + Expo SDK 51 |
+| Framework | React Native + Expo SDK 54 (RN 0.81) |
 | Navegación | Expo Router (file-based) |
 | Estilos | NativeWind v4 (Tailwind) |
 | Server state | TanStack React Query 5.x |

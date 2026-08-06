@@ -1,7 +1,7 @@
 # VetConnect — Referencia Técnica Completa
 
 > Documento definitivo del proyecto. Explica cada archivo, cada carpeta, y cómo funciona todo.
-> **Última actualización:** 5 de agosto, 2026 (v4 — Sprint 11 + auditoría completa)
+> **Última actualización:** 11 de agosto, 2026 (v5 — Sprint 13 backend cerrado + docs al día)
 
 ---
 
@@ -66,8 +66,8 @@
 | Testing | Jest + ts-jest + supertest | — |
 | Chat | Socket.io | 4.x |
 | Frontend web | React + Vite + TailwindCSS | React 19, Vite 8 |
-| Mobile | React Native + Expo | SDK 51 |
-| Deploy backend | Railway + Docker | — |
+| Mobile | React Native + Expo | SDK 54 (RN 0.81) |
+| Deploy backend | Railway (CI/CD GitHub Actions) | — |
 | Deploy web | Vercel | — |
 
 ---
@@ -79,34 +79,33 @@
 ```
 backend/
 ├── prisma/
-│   ├── schema.prisma          # Modelos: User, Pet, Consultation, Message, Prescription
-│   └── migrations/
-│       ├── 20260622165754_init/  # Migración inicial (NO alineada con el schema — ver CODE_AUDIT)
-│       └── 2_cleanup_mvp/       # ⚠️ DROP isOnline → desalineada con schema.prisma
+│   ├── schema.prisma          # Modelos: User, Pet, Consultation, Message, Prescription, Attachment, PushToken, Notification
+│   └── migrations/            # Alineadas al schema desde S13 (sprint13_align + session_revocation)
 ├── src/
 │   ├── server.ts              # Entry point
 │   ├── modules/
-│   │   ├── auth/              # Registro, login, JWT, refresh (⚠️ /register acepta `role`)
+│   │   ├── auth/              # Registro (rol siempre CLIENT), login, JWT, refresh, logout (revoca sesiones)
 │   │   ├── users/             # Perfil, disponibilidad online/offline, listar vets
 │   │   ├── pets/              # CRUD mascotas con soft delete + vet card
-│   │   └── consultations/     # Consultas + cola de espera + Chat (Socket.io)
+│   │   ├── consultations/     # Consultas + cola de espera + Chat (Socket.io)
 │   │   ├── media/             # Upload de imagen (multer) → carpeta uploads/
 │   │   └── notifications/     # Notificaciones push (Expo) + bandeja in-app
 │   ├── shared/
 │   │   ├── prisma.ts          # Singleton PrismaClient
+│   │   ├── cache.ts           # node-cache (vets disponibles, paginación)
 │   │   ├── middlewares/
-│   │   │   └── auth.middleware.ts  # authenticate() + authorize(roles)
-│   │   └── types/index.ts     # JwtPayload, ApiResponse
-│   └── __tests__/             # 108 tests (auth, pets, consultations, users, media, notifications)
-├── .env                       # ⚠️ CREDENCIALES REALES COMMITEADAS — rotar
-└── package.json
+│   │   │   └── auth.middleware.ts  # authenticate() (valida tokenVersion) + authorize(roles)
+│   │   └── types/index.ts     # JwtPayload, ApiResponse (re-export de packages/shared)
+│   └── __tests__/             # 119 tests (auth, pets, consultations, users, media, notifications, ...)
+├── .env                       # ⚠️ NO versionado (gitignored); copiar .env.example
+└── package.json               # postinstall: prisma generate
 ```
 
 ### Modelos (Prisma)
 
 | Modelo | Campos clave |
 |--------|-------------|
-| `User` | id, email, password (hash), firstName, lastName, phone, role (CLIENT/VET/ADMIN), isOnline |
+| `User` | id, email, password (hash), firstName, lastName, phone, role (CLIENT/VET/ADMIN), isOnline, **tokenVersion** (revocación de sesiones) |
 | `Pet` | id, name, species, breed, age, weight, weightKg, sex, birthDate, allergies, ownerId, photoUrl, deletedAt, isDeceased |
 | `Consultation` | id, clientId, vetId (nullable), petId, status (WAITING/ACTIVE/COMPLETED/CANCELLED), notes, startedAt, endedAt |
 | `Message` | id, consultationId, senderId, content, **attachmentUrl**, createdAt |
@@ -115,9 +114,9 @@ backend/
 | `PushToken` | id, userId, token (único), platform, createdAt |
 | `Notification` | id, userId, type, title, body, data (Json), readAt, createdAt |
 
-> ⚠️ **Migraciones desalineadas** (B5 en `CODE_AUDIT.md`): `2_cleanup_mvp` dropeó `isOnline`, la init no crea `messages`/`prescriptions` ni `CANCELLED`. Dev funciona por `prisma db push`; `migrate deploy` en prod fallaría. Alinear antes de deployar.
+> ✅ **Migraciones alineadas al schema** (resuelto en S13): la migración correctiva `20260810000000_sprint13_align` re-agrega `isOnline`, crea `messages`/`prescriptions`/`attachments`/`push_tokens`/`notifications`, hace `vetId` nullable y agrega el enum `CANCELLED`; `20260812000000_session_revocation` agrega `tokenVersion`. `prisma migrate deploy` ya replica el schema en prod.
 
-### Endpoints (reales al 5-Ago)
+### Endpoints (reales al 11-Ago)
 
 | Recurso | Métodos | Auth |
 |---------|---------|------|
@@ -146,16 +145,18 @@ backend/
 | `/api/notifications/token` | POST, DELETE | Sí | `{ token, platform }`
 | `/api/notifications/:id/read` | PATCH | Sí | Marca leída
 
-> ⚠️ `/me` existe en `auth.routes` y en `users.routes`; `PATCH /api/users/me` es el toggle online/offline (`{ isOnline }`) que dispara la auto-asignación de la cola.
+> ⚠️ `/auth/me` existe en `auth.routes` y `GET /api/users/me` en `users.routes`; `PATCH /api/users/me` es el toggle online/offline (`{ isOnline }`) que dispara la auto-asignación de la cola.
+> ⚠️ `/api/auth/logout` ahora **revoca la sesión**: incrementa `tokenVersion` y todos los JWT emitidos antes quedan invalidados (access 7d y refresh 30d).
+> ⚠️ `POST /api/consultations/:id/messages` y `message:send` (socket) solo aceptan mensajes en consultas `ACTIVE`; en `WAITING` devuelven 409 (`ConflictError`).
 
-### Notificaciones push
+### Media (imágenes) y Notificaciones push (S12)
 - `POST /api/media` solo imágenes (jpeg/png/webp/gif, máx 5 MB); responde 201 `{ id, url: /uploads/…, mimeType, size }`. Los archivos se sirven desde `GET /uploads/*` (estático, gitignoreado).
 - `Message.attachmentUrl` DEBE empezar con `/uploads/`; el mensaje puede tener `content` vacío si trae imagen.
 - Tipos de evento (push + bandeja): `consultation_new`, `consultation_assigned`, `consultation_completed`, `message`, `prescription_new`.
 - Push por API de Expo (best-effort); `EXPO_PUSH_DISABLED=true` desactiva el envío real (usado en tests).
 
 ### Tests
-**108 tests** en 9 archivos con Jest + supertest. Usan schema `test_` dinámico en Supabase.
+**119 tests** en 9 archivos con Jest + supertest. Usan schema `test_` dinámico en Supabase.
 
 ---
 
@@ -231,7 +232,7 @@ Funcional para MVP + Sprint 11 + Sprint 12:
 - Historial con rating post-consulta
 - Inicio de la app: `npm start` (o `npm run start:metro` para Expo puro); `start.ps1` con flags `-ADB`, `-Tunnel`, `-Fast`
 
-> ⚠️ Conocidos v3: `logout()` no desconecta el socket (M4), `petId` enviado a queue pero no leído (M5), `eas.json` producción apunta a localhost (M7). Ver `CODE_AUDIT.md`.
+> ⚠️ Conocidos (v5): `logout()` no desconecta el socket (M4), `petId` enviado a queue pero no leído (M5), `eas.json` producción apunta a localhost (M7). Ver `CODE_AUDIT.md`.
 
 ### Design System
 Misma paleta teal que la web. Componentes UI compartidos en `src/components/ui/`.
@@ -245,11 +246,11 @@ Misma paleta teal que la web. Componentes UI compartidos en `src/components/ui/`
 | `SPRINT_PLAN.md` | Plan maestro con timeline, sprints, tareas |
 | `MVP_SCOPE.md` | Definición de alcance MVP |
 | `TECH_REFERENCE.md` | **Este archivo** — referencia técnica completa |
-| `DECISIONS.md` | 9 ADR (decisiones de arquitectura) |
+| `DECISIONS.md` | 11 ADR (decisiones de arquitectura) |
 | `FAANG_AUDIT.md` | Auditoría técnica (score actual: 6.7/10 v4) |
-| `CODE_AUDIT.md` | **Auditoría completa 5-Ago** de las 3 capas (severidad por archivo:línea) |
+| `CODE_AUDIT.md` | **Auditoría completa 5-Ago + resoluciones (S9/S12/S13/11-Ago)** de las 3 capas |
 | `RUN_GUIDE.md` | Guía para correr el proyecto local |
-| `DEPLOY.md` | Instrucciones de deploy a Koyeb/Vercel/EAS |
+| `DEPLOY.md` | Instrucciones de deploy a Railway (backend) / Vercel / EAS |
 | `CHANNEL_DECISION.md` | Estrategia web + mobile por rol |
 | `STANDUP_GUIDE.md` | Reglas de daily standup |
 | `HOTFIX_PROTOCOL.md` | Protocolo de bugs post-MVP |

@@ -169,7 +169,7 @@
 
 ## Ya resuelto en Sprint 12 (6-Ago, para no re-aparecer)
 
-- ✅ **Imágenes: backend completo (Tobías)** — `POST /api/media` (multer, 5 MB, jpeg/png/webp/gif → `/uploads/*`), modelo `Attachment`, `Message.attachmentUrl` validado en service/controller/socket. → **108/108 tests pasan**, `tsc` limpio. Commit pendiente.
+- ✅ **Imágenes: backend completo (Tobías, `a936685`)** — `POST /api/media` (multer, 5 MB, jpeg/png/webp/gif → `/uploads/*`), modelo `Attachment`, `Message.attachmentUrl` validado en service/controller/socket. → **108/108 tests pasan** al cierre del S12, `tsc` limpio.
 - ✅ **Notificaciones: backend (Tobías)** — `PushToken`, `Notification`, `POST/DELETE /api/notifications/token`, `GET /api/notifications`, `PATCH /:id/read`; push vía API de Expo (más bandeja in-app, `EXPO_PUSH_DISABLED` en tests). Triggers en create/assign/complete/message/prescription y en auto-asignación (`users.controller`).
 - ✅ **Mobile imágenes + push (Juan)** — botón "image-plus" en el chat con expo-image-picker, subida multipart (`FormData`, interceptor de `api.ts` sin `Content-Type` fijo), burbujas con `<Image>`, estados optimistas con `attachmentUrl`, registro de push token (hook `usePushToken`); `expo-notifications` + plugins en `app.json`.
 - ✅ **Web: imagen + pulido (Damián)** — burbuja de mensaje renderiza `attachmentUrl`, proxy `/uploads` en `vite.config.ts`, badge móvil "3" hardcodeado (W13) reemplazado por conteo real de consultas en espera, y chip del chat del cliente distingue `WAITING`.

@@ -1,9 +1,9 @@
 # MVP Scope — Definición Final
 
 > **Fecha:** 30 de junio, 2026
-> **Última actualización:** 6 de agosto, 2026 (post S11 + S12)
+> **Última actualización:** 11 de agosto, 2026 (post S9/S11/S12/S13)
 > **Objetivo:** Definir QUÉ entra y QUÉ no entra en el MVP del 20 de julio.
-> **Estado:** ✅ APROBADO — Proyecto alineado al MVP. Post-MVP: S11 (cola) y S12 (imágenes + push) ya implementados.
+> **Estado:** ✅ APROBADO — Proyecto alineado al MVP. Post-MVP: S11 (cola + online/offline), S12 (imágenes + push) y S13 (seguridad/estabilización backend) ya implementados.
 
 ---
 
@@ -36,8 +36,8 @@
 | Feature | Sprint estimado | Nota | Estado |
 |---------|----------------|------|--------|
 | **LiveKit (videollamada)** | Post-MVP (S11+) | Código eliminado del proyecto MVP. Se reemplazó por chat de texto. | — |
-| **Cola de espera automática** | Post-MVP (S11) | Simplificado a solicitud manual. | ✅ S11 |
-| **Online/Offline del médico** | Post-MVP (S11) | Eliminado del backend y frontend. | ✅ S11 (backend + mobile; web pendiente) |
+| **Cola de espera automática** | Post-MVP (S11) | Auto-asignación de `WAITING` al ponerse online un vet (S11, backend + web). | ✅ S11 |
+| **Online/Offline del médico** | Post-MVP (S11) | Toggle en la web del médico con feedback de error + sync por socket. | ✅ S11 backend + web + mobile |
 | **Historial clínico completo** | Post-MVP (S12+) | Se muestra historial básico de consultas anteriores. | — |
 | **Asistente IA (Claude)** | Post-MVP | Código eliminado del proyecto MVP. | — |
 | **Sistema de honorarios** | Post-MVP (S15+) | Eliminado del proyecto MVP. | — |

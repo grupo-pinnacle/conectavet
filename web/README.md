@@ -45,7 +45,7 @@ src/
 ├── pages/
 │   ├── LandingPage.tsx     # Landing profesional
 │   ├── LoginPage.tsx       # Login con validación
-│   ├── RegisterPage.tsx    # Registro con selector de rol
+│   ├── RegisterPage.tsx    # Registro (⏳ el selector de rol quedó obsoleto: el backend fija CLIENT, S13)
 │   ├── DashboardPage.tsx   # Dashboard cliente (6 secciones)
 │   └── VetDashboardPage.tsx # Dashboard vet (3 secciones)
 ├── context/AuthContext.tsx  # Estado global de auth

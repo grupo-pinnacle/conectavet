@@ -1,9 +1,9 @@
 # Deploy — VetConnect
 
-> ⚠️ **ANTES DE DEPLOYAR — bloqueantes de la auditoría 5-Ago (CODE_AUDIT.md):**
-> 1. **`.env` commiteados con credenciales reales** (`backend/.env`, `web/.env`, `mobile/.env` están en git). Rotar `DATABASE_URL`/`DIRECT_URL`/`JWT_SECRET` en Supabase, quitar los archivos del repo (`git rm --cached`) y purgar el historial (`git filter-repo` o `BFG`). Sin esto **no deployar**.
-> 2. **Migraciones desalineadas**: `prisma migrate deploy` (ejecutado por `npm start`) fallaría en prod porque `2_cleanup_mvp` dropeó `isOnline` y la init no crea `messages`/`prescriptions`/`CANCELLED`. Correr `npx prisma migrate dev` y commitear la migración nueva **antes** de deployar.
-> 3. **EAS build**: `eas.json` (preview/production) apunta a `http://localhost:3001` y `app.json` tiene `eas.projectId` vacío → un APK release no llega al backend y Android 9+ bloquea cleartext HTTP. Configurar URLs HTTPS reales y el projectId.
+> ✅ **Bloqueantes de la auditoría 5-Ago ya resueltos (S13):**
+> 1. **`.env` fuera de git** — `backend/.env`, `web/.env` y `mobile/.env` ya no están trackeados (`git rm --cached`), el `.gitignore` está ampliado y existen `.env.example` en las 3 capas. **Pendiente manual:** rotar credenciales Supabase y `JWT_SECRET` (estuvieron expuestos) y purgar el historial git (`git filter-repo`/`BFG`) antes de hacer el repo público en serio.
+> 2. **Migraciones alineadas** — `prisma migrate deploy` (ejecutado por `npm start`) ya replica el schema: la migración `20260810000000_sprint13_align` + `20260812000000_session_revocation` están commiteadas.
+> 3. **`eas.json`/`app.json` (mobile)** — ⚠️ sigue pendiente: los perfiles `preview`/`production` apuntan a `http://localhost:3001` y `eas.projectId` está vacío. Configurar la URL HTTPS real y el projectId antes de un build de producción.
 
 ## Stack de producción
 
@@ -17,7 +17,14 @@
 
 ---
 
-## Backend — Opción 1: Koyeb (recomendado, gratis)
+## Backend — Railway (activo, vía CI/CD)
+
+El pipeline actual (`backend` y docs README) deploya a **Railway** automáticamente desde GitHub Actions al pushear a `main`:
+`push a main → tests (unit + integration + tsc) → build web → railway up --service conectavet-api → smoke test /health`.
+
+> Abajo se deja la opción alternativa **Koyeb** (si se prefiere otro proveedor gratis):
+
+## Backend — Opción alternativa: Koyeb (gratis)
 
 ### Por qué Koyeb
 
@@ -130,10 +137,10 @@ O convertí manualmente en [svgtopng.com](https://svgtopng.com).
 
 En producción las migraciones se ejecutan automáticamente al iniciar el servidor (`npm start` ejecuta `prisma migrate deploy` antes de arrancar).
 
-> ⚠️ **Estado actual (auditoría 5-Ago):** las migraciones no están alineadas con `schema.prisma` (`isOnline`, `vetId` nullable, tablas `messages`/`prescriptions`, enum `CANCELLED`). Antes de cualquier deploy de producción:
-> 1. Correr `npx prisma migrate dev --name alinear-schema-11` en dev
-> 2. Verificar que el SQL generado re-agrega `isOnline` y hace `vetId` nullable
-> 3. Commitear la migración y recién ahí deployar
+> ✅ **Estado (11-Ago):** las migraciones están **alineadas** con `schema.prisma` desde S13 (migración correctiva `20260810000000_sprint13_align` + `20260812000000_session_revocation`). `prisma migrate deploy` en prod ya replica el schema. Para cambios futuros:
+> 1. Correr `npx prisma migrate dev --name descripcion` en dev
+> 2. Verificar el SQL generado y commitear la migración
+> 3. Deploy (Railway la aplica automáticamente al arrancar)
 
 Para desarrollo:
 
@@ -147,14 +154,9 @@ npx prisma migrate dev --name descripcion
 
 ## Notas de seguridad
 
-- **BLOQUEANTE (auditoría 5-Ago):** los 3 `.env` están trackeados en git. Verificá y limpiá:
-  ```bash
-  git ls-files | findstr .env        # backend/.env, web/.env, mobile/.env — deben salir de git
-  git rm --cached backend/.env web/.env mobile/.env
-  ```
-- Rotar las credenciales de Supabase **ya** porque estuvieron expuestas en el repo (público en GitHub)
-- Cambiar el `JWT_SECRET` placeholder `change-me-to-a-random-secret` **antes** de cualquier deploy (hoy cualquiera forja JWTs)
-- Crear `.env.example` en cada capa (no existe ninguno) y usarlo como template en los READMEs
-- Generar un `JWT_SECRET` nuevo para producción (`openssl rand -hex 32`)
+- ✅ **`.env` ya fuera de git** (S13): `git ls-files` ya no lista `backend/.env`, `web/.env`, `mobile/.env`. Cada capa tiene `.env.example` como template.
+- ⚠️ **Pendiente manual (CRITICO):** rotar las credenciales de Supabase (password de la BD) porque estuvieron expuestas en el historial del repo
+- ⚠️ **Pendiente manual:** cambiar el `JWT_SECRET` placeholder `change-me-to-a-random-secret` **antes** de cualquier deploy de producción (hoy cualquiera con el repo puede forjar JWTs) — generar uno nuevo con `openssl rand -hex 32`
+- 🦠 **Purgar historial git** de los `.env`: requiere `git filter-repo` o BFG y re-clonar todos los miembros del equipo
 - Las variables de entorno se configuran en el dashboard del proveedor, nunca en archivos
 - Revisar antes de cada release: secretos, migraciones alineadas, config de mobile/cada capa (`eas.json` HTTPS + projectId)

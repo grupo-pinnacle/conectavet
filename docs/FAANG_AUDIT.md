@@ -58,7 +58,7 @@
 ## 3. Testing — 9/10
 
 ### ✅ Lo que está bien
-- Suite de **108 tests** en 9 archivos (S11: cola de espera; S12: `media` y `notifications`)
+- Suite de **119 tests** en 9 archivos (S11: cola de espera; S12: `media` y `notifications`; S13/11-Ago: seguridad y bugs backend)
 - Tests unitarios + integración HTTP
 - globalSetup/globalTeardown con schema test_ dinámico
 - Coverage configurado con thresholds
@@ -204,9 +204,11 @@
 | | | | | | | |
 | **PROMEDIO PONDERADO** | **4.0/10** | **7.0/10** | **7.9/10** | **6.7/10** | **6.8/10** | 🟢 +0.1 |
 
-> El descenso de v3 → v4 **no es una regresión del código**: es el resultado de la *auditoría real y completa* del 5-Ago (ver `CODE_AUDIT.md`). La puntuación previa de Security (9/10) y Frontend/Mobile sobreestimaban el estado; ahora los findings están verificados y planificados para corregir en S12–S13.
+> El descenso de v3 → v4 **no es una regresión del código**: es el resultado de la *auditoría real y completa* del 5-Ago (ver `CODE_AUDIT.md`). La puntuación previa de Security (9/10) y Frontend/Mobile sobreestimaban el estado.
 >
-> v5 (6-Ago): sube **Mobile 6→7** por el Sprint 12 (imágenes en el chat + push + feedback de espera). Los pendientes críticos (credenciales, `/register` con `role`, `password` expuesta, migraciones) siguen abiertos — bloque de bugs S12–S13.
+> v5 (6-Ago): sube **Mobile 6→7** por el Sprint 12 (imágenes en el chat + push + feedback de espera).
+>
+> **v6 (11-Ago):** Sprint 13 + cierre de bugs backend (Tobias) resuelven **los 4 CRITICOS** (`.env` fuera de git, rol fijo en `/register`, `password` fuera de respuestas, migraciones alineadas), el IDOR de mascota, `/my-history` separado, el caché de vets (B11) y **logout con revocación real** (`tokenVersion`). **119/119 tests.** Quedan los pendientes de Web/Mobile (top-10 de `CODE_AUDIT.md`) y los manuales: rotar credenciales Supabase + `JWT_SECRET` + purgar historial git.
 
 ---
 
@@ -215,16 +217,16 @@
 > Lista completa con archivo:línea en [`CODE_AUDIT.md`](./CODE_AUDIT.md).
 
 ### Backend (Tobias)
-1. 🔴 CRITICO — Rotar credenciales y sacar `.env` de git (`git filter-repo`); crear `.env.example`
-2. 🔴 CRITICO — Fijar rol en `/register` (no aceptar `role` del cliente)
-3. 🔴 CRITICO — No exponer `password` en los `include`/raw SQL de consultas y vet card
-4. 🔴 CRITICO — Alinear migraciones con el schema (re-agregar `isOnline`, `vetId` nullable, `messages`, `prescriptions`, `CANCELLED`)
-5. 🟠 ALTO — Ownership de mascota en `createConsultation` (IDOR)
-6. 🟠 ALTO — Separar `/my-history` de `/mine` (no exponer colas WAITING ajenas)
-7. 🟠 MEDIO — Mapear `species` de verdad en vets disponibles; invalidar caché al asignar
+1. ✅ `.env` fuera de git + `.env.example` (S13). 🔶 **Manual:** rotar credenciales + purgar historial (`git filter-repo`)
+2. ✅ Fijar rol en `/register` (no acepta `role`)
+3. ✅ No exponer `password` en respuestas de consultas/vet card
+4. ✅ Migraciones alineadas al schema (S13 + logout tokenVersion)
+5. ✅ Ownership de mascota en `createConsultation` (IDOR)
+6. ✅ `/my-history` separado de `/mine`
+7. 🟠 MEDIO — Mapear `species` en vets disponibles requiere columna nueva (decisión de producto). Caché del pick único eliminado (B11 cerrado).
 
 ### Web (Damián)
-8. 🟠 ALTO — Toggle online/offline del médico (Sprint 11) + acompañamiento real-time
+8. ✅ Toggle online/offline del médico (Sprint 11, marcha completa vía socket) — acompañamiento real-time
 9. 🟠 ALTO — No usar `localStorage` para el JWT; interceptor de 401 fuera del flujo de login
 10. 🟠 ALTO — Socket: origen correcto en dev (proxy `/socket.io`) y eventos de cola legibles
 

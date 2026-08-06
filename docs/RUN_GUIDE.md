@@ -44,7 +44,7 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-Registrate como CLIENT o VET y probá login + dashboard por rol.
+Registrate (el backend crea usuarios **CLIENT**; los VET de la demo se crean directo en la BD o con una cuenta existente) y probá login + dashboard por rol.
 
 ---
 
@@ -75,7 +75,7 @@ Escaneá el QR que quedó en el **Escritorio** (o en la terminal) con **Expo Go*
 ### 3.3 Verificar conexión
 
 Cuando la app cargue en el celu:
-1. **Registrate** (completá nombre, email, contraseña, seleccioná rol)
+1. **Registrate** (completá nombre, email y contraseña — el backend fija el rol CLIENT)
 2. **Iniciá sesión** con el mismo email y contraseña
 3. Si ves el home → **todo funciona**
 

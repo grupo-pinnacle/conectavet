@@ -59,11 +59,15 @@ app.get('/health', async (_req: Request, res: Response) => {
   }
 });
 
+// Rate limit global: solo mutaciones (POST/PATCH/DELETE).
+// El front tiene polling GET (consultas/mensajes c/10s) y varias pestañas:
+// exentamos GET/HEAD para que el 429 global no tumbe el dashboard.
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 200,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.method === 'GET' || req.method === 'HEAD',
   message: { success: false, message: 'Demasiadas solicitudes, intentá de nuevo más tarde' },
 });
 app.use(limiter);

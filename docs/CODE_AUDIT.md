@@ -186,6 +186,9 @@
 - ✅ **B12 (MEDIO) — `getMessages` acotado**: paginación `?page&limit` con tope 500 por request.
 - ✅ **Optimización de queries**: replaces de `include` (traía todos los campos) por `select` con las columnas que los frontends usan; `parsePagination` reutilizado en users/pets controllers (elimina el parseo duplicado).
 - ✅ **`.env` fuera de git**: `backend/.env`, `web/.env`, `mobile/.env` des-trackeados (`git rm --cached`) + `.gitignore` ampliado + `.env.example` para las 3 capas.
+- ✅ **Rate limit vs polling (Reporte Damián)**: el límite global (100 req/15 min) podía dar 429 con el polling GET c/10s y varias pestañas. Ahora el limiter global **salta GET/HEAD** (max 200 mutaciones/15 min); `/api/auth/login` conserva su límite estricto de 10.
+- ✅ **`prisma generate` automático (Reporte Damián)**: `postinstall` en `backend/package.json` regenera el Prisma Client al instalar dependencias → no reaparece el 500 por Client desactualizado.
+- ✅ **W6/W7/W9 + input vet (Damián, `a8be548`)**: peso de mascota como número + input `type=number`, 401 del login sin recarga, `leaveConsultation` al cambiar de sala, input del vet bloqueado en `WAITING`, y visor de imágenes. `tsc -b` limpio.
 
 ## ⚠️ Queda manual para el equipo (no automatizable desde código)
 

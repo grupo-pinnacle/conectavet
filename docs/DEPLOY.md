@@ -46,6 +46,9 @@
 | `NODE_ENV` | `production` |
 | `CORS_ORIGIN` | URL de Vercel (ej. `https://vetconnect.vercel.app`) |
 | `LOG_LEVEL` | `info` |
+| `EXPO_PUSH_DISABLED` | `true` desactiva el envío real de push (útil para tests/dev) |
+
+> ⚠️ **Imágenes del chat (S12):** `POST /api/media` guarda en `backend/uploads/`, que en Koyeb/Render es **disco efímero** (se pierde en cada redeploy). Para producción persistente migrar a Cloudinary/S3 (la columna `photoUrl` de mascotas ya usa Cloudinary) o montar un volumen persistente. En dev local funciona sin cambios.
 
 5. Ir a **App Settings** → **Domains** → copiar la URL de Koyeb
 6. **(importante)** Ir a Supabase → Project Settings → API → en **Settings > API > Config > User Authorization** → agregar `https://tudominio.koyeb.app` a los redirect URLs permitidos

@@ -188,8 +188,10 @@ curl http://localhost:3001/health
 | S8 | 9-11 Jul | Pulir flujo completo + testing | ✅ |
 | **→ S9** | **13-15 Jul** | **Bugs + Preparar presentación** | **🔄 Activo** |
 | S10 | 16-18 Jul | Freeze — solo bugs críticos | ⏳ |
-| **🎯 MVP** | **20 Jul** | **Entrega** | ⏳ |
-| S11-S20 | 3 Ago - 5 Sep | Features post-MVP, testing, deploy | ⏳ |
+| **🎯 MVP** | **20 Jul** | **Entrega** | ✅ |
+| **S11** | **3-5 Ago** | **Cola de espera + online/offline** | ✅ |
+| **S12** | **6-8 Ago** | **Imágenes en chat + notificaciones push** | ✅ |
+| S13-S20 | 10 Ago - 5 Sep | Estabilización, testing 2GB, deploy | ⏳ |
 
 ---
 
@@ -200,7 +202,7 @@ curl http://localhost:3001/health
 | [`docs/MVP_SCOPE.md`](docs/MVP_SCOPE.md) | **Alcance del MVP** — qué entra y qué no |
 | [`docs/TECH_REFERENCE.md`](docs/TECH_REFERENCE.md) | **Referencia técnica completa** — leer primero |
 | [`docs/SPRINT_PLAN.md`](docs/SPRINT_PLAN.md) | Planificación completa de sprints |
-| [`docs/DECISIONS.md`](docs/DECISIONS.md) | Architecture Decision Records (9 ADR) |
+| [`docs/DECISIONS.md`](docs/DECISIONS.md) | Architecture Decision Records (11 ADR) |
 | [`docs/FAANG_AUDIT.md`](docs/FAANG_AUDIT.md) | Auditoría técnica y scores |
 | [`docs/STANDUP_GUIDE.md`](docs/STANDUP_GUIDE.md) | Reglas de daily standup |
 | [`docs/HOTFIX_PROTOCOL.md`](docs/HOTFIX_PROTOCOL.md) | Protocolo de bugs durante vacaciones |

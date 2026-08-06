@@ -111,3 +111,23 @@ model Message {
 ```
 
 **Consecuencias:** + Tiempo real sin infraestructura adicional (misma BD, mismo servidor), + Socket.io es maduro y bien documentado, + Historial persiste aunque el usuario se desconecte. - Sin caché, consultas anteriores requieren query a PostgreSQL. - Escalabilidad horizontal requiere sticky sessions o adaptador Redis (post-MVP).
+
+---
+
+## ADR-010: Imágenes del chat en disco local (multer) en vez de Cloudinary
+
+**Contexto (Sprint 12):** El chat necesitaba adjuntar fotos. Las fotos de mascotas ya usan Cloudinary, pero hacer el upload directo desde el cliente a Cloudinary en el chat complicaba el flujo (preset unsigned, URL pública inmediata sin control de acceso).
+
+**Decisión:** El backend recibe el archivo (`POST /api/media`, multer, 5 MB máx, jpeg/png/webp/gif), lo guarda en `backend/uploads/` y persiste solo `attachmentUrl` (`/uploads/<archivo>`) en `Message`.
+
+**Consecuencias:** + Un solo punto de entrada con validación y auth, + URL relativa sirve igual en web y mobile vía proxy/estático. - El disco es **efímero** en Koyeb/Render (las imágenes se pierden al redeployear; para producción migrar a Cloudinary/S3 o volumen persistente, ver `DEPLOY.md`). - Sin CDN ni resize server-side.
+
+---
+
+## ADR-011: Notificaciones push vía API de Expo + bandeja in-app
+
+**Contexto (Sprint 12):** Habilitar notificaciones push sin agregar FCM/APNs a mano ni infraestructura propia.
+
+**Decisión:** `expo-notifications` en mobile genera el `ExpoPushToken`, que el usuario publica en `POST /api/notifications/token`. El backend guarda `PushToken` (único por token) y envía con `sendExpoPush` (fetch a `exp.host/--/api/v2/push/send`, timeout 5s, best-effort). Además se persiste una `Notification` por usuario (bandeja in-app: `GET /api/notifications`, `PATCH /:id/read`).
+
+**Consecuencias:** + Cero infraestructura de push, + La bandeja in-app funciona aunque el push no llegue (app cerrada/sin permiso). - `sendExpoPush` es best-effort (si Expo responde 5xx, el usuario igual ve la bandeja), - En tests se desactiva con `EXPO_PUSH_DISABLED=true`.

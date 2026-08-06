@@ -231,9 +231,46 @@ model Message {
   senderId       String
   sender         User         @relation(fields: [senderId], references: [id])
   content        String
+  attachmentUrl  String?      // /uploads/<archivo> (imagen adjunta, S12)
   createdAt      DateTime     @default(now())
   @@index([consultationId, createdAt])
   @@map("messages")
+}
+
+model Attachment {
+  id         String   @id @default(cuid())
+  uploaderId String
+  uploader   User     @relation(fields: [uploaderId], references: [id])
+  url        String   // /uploads/<archivo>
+  mimeType   String
+  size       Int
+  createdAt  DateTime @default(now())
+  @@index([uploaderId])
+  @@map("attachments")
+}
+
+model PushToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  token     String   @unique // ExpoPushToken
+  platform  String   // android | ios | web
+  createdAt DateTime @default(now())
+  @@map("push_tokens")
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  type      String    // consultation_new | consultation_assigned | consultation_completed | message | prescription_new
+  title     String
+  body      String
+  data      Json?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  @@index([userId, createdAt])
+  @@map("notifications")
 }
 ```
 
@@ -653,13 +690,15 @@ router.get('/admin-only', authenticate, authorize(Role.ADMIN), handler);
 npm test
 ```
 
-Actualmente **89 tests** en 7 archivos:
+Actualmente **108 tests** en 9 archivos:
 
 ```
 PASS src/__tests__/auth.test.ts          — 21 tests (service + JWT + HTTP controllers + refresh + roles)
-PASS src/__tests__/consultations.test.ts — 15 tests (CRUD consultas + chat + permisos + logout)
+PASS src/__tests__/consultations.test.ts — 23 tests (CRUD consultas + chat + cola de espera + permisos + logout)
 PASS src/__tests__/pets.test.ts          — 18 tests (CRUD mascotas + soft delete + ownership + paginación + restore)
-PASS src/__tests__/users.test.ts         —  7 tests (me, admin-only, vets)
+PASS src/__tests__/users.test.ts         —  7 tests (me, admin-only, vets, auto-asignación al ponerse online)
+PASS src/__tests__/media.test.ts         —  4 tests (upload imagen, 400 sin archivo/tipo inválido, 401)
+PASS src/__tests__/notifications.test.ts — 10 tests (token push, bandeja, notificaciones al asignar/mensaje/leída)
 PASS src/__tests__/utils.test.ts         — 12 tests (parsePagination, excludePassword, asyncHandler, AppError)
 PASS src/__tests__/cache.test.ts         —  4 tests (set/get, clear, pattern clear)
 PASS src/__tests__/app.test.ts           —  3 tests (health, 404, login validation)
@@ -674,7 +713,7 @@ PASS src/__tests__/app.test.ts           —  3 tests (health, 404, login valida
 El deploy a Railway es automático mediante GitHub Actions al hacer push a `main`:
 
 ```
-push a main → tests (89 tests, unit + integration) → build → deploy a Railway
+push a main → tests (108 tests, unit + integration) → build → deploy a Railway
 ```
 
 ### Docker (cualquier proveedor)
@@ -815,11 +854,48 @@ VET cierra consulta. Body opcional: `{ notes }`.
 ### `GET /api/consultations/:id/messages`
 Historial de mensajes de una consulta.
 
+### `POST /api/consultations/:id/messages`
+Envía un mensaje (participante de la consulta). Body: `{ content?, attachmentUrl? }` — al menos uno; `attachmentUrl` debe empezar con `/uploads/`.
+
+### `POST /api/consultations/:id/prescriptions` · `GET /api/consultations/:id/prescriptions`
+VET crea receta / participante la lista.
+
 ### WebSocket (Socket.io)
 Conectar con `{ auth: { token } }`. Eventos:
 - `join:consultation` → `consultationId`
-- `message:send` → `{ consultationId, content }`
+- `message:send` → `{ consultationId, content?, attachmentUrl? }`
 - `message:new` → mensaje broadcast a la sala
+- `consultation:updated` → estado de la consulta
+- `prescription:new` → receta creada
+
+---
+
+## API — Media + Notificaciones (S12)
+
+### `POST /api/media`
+Sube una imagen (auth). Multipart `file` (jpeg/png/webp/gif, máx 5 MB).
+
+**Response** `201`
+```json
+{ "status": "success", "data": { "id": "...", "url": "/uploads/1715....jpg", "mimeType": "image/jpeg", "size": 48213 } }
+```
+
+### `GET /uploads/:file`
+Sirve los archivos estáticos subidos.
+
+### `POST /api/notifications/token`
+Registra un ExpoPushToken. Body: `{ token, platform: "android" | "ios" | "web" }` (upsert por token).
+
+### `DELETE /api/notifications/token`
+Desregistra el token. Body: `{ token }`.
+
+### `GET /api/notifications`
+Lista la bandeja in-app. **Response** `200` → `{ items: Notification[], unreadCount: number }`.
+
+### `PATCH /api/notifications/:id/read`
+Marca una notificación como leída. **404** si no existe o no es del usuario.
+
+> El envío real a Expo (`sendExpoPush`) es best-effort; se desactiva con `EXPO_PUSH_DISABLED=true` (tests).
 
 ---
 
@@ -828,10 +904,11 @@ Conectar con `{ auth: { token } }`. Eventos:
 - [x] Auth (register, login, JWT, roles, refresh token)
 - [x] CRUD mascotas (soft delete + restore)
 - [x] Consultations + Chat de texto (Socket.io)
-- [ ] Cola de espera y asignación automática
+- [x] Cola de espera y asignación automática (S11)
+- [x] Imágenes en el chat (S12)
+- [x] Notificaciones push (S12)
 - [ ] Videollamadas con LiveKit (post-MVP)
 - [ ] Historial clínico y resumen automático
 - [ ] Asistente IA con Claude
 - [ ] Sistema de honorarios
-- [ ] Notificaciones push
 - [ ] Deploy producción

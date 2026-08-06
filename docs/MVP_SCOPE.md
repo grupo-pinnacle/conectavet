@@ -1,9 +1,9 @@
 # MVP Scope — Definición Final
 
 > **Fecha:** 30 de junio, 2026
-> **Última actualización:** 12 de julio, 2026
+> **Última actualización:** 6 de agosto, 2026 (post S11 + S12)
 > **Objetivo:** Definir QUÉ entra y QUÉ no entra en el MVP del 20 de julio.
-> **Estado:** ✅ APROBADO — Proyecto alineado al MVP.
+> **Estado:** ✅ APROBADO — Proyecto alineado al MVP. Post-MVP: S11 (cola) y S12 (imágenes + push) ya implementados.
 
 ---
 
@@ -33,18 +33,18 @@
 
 ## ❌ EXCLUIDO del MVP (pasa a post-MVP)
 
-| Feature | Sprint estimado | Nota |
-|---------|----------------|------|
-| **LiveKit (videollamada)** | Post-MVP (S11+) | Código eliminado del proyecto MVP. Se reemplazó por chat de texto. |
-| **Cola de espera automática** | Post-MVP (S11) | Simplificado a solicitud manual. |
-| **Online/Offline del médico** | Post-MVP (S11) | Eliminado del backend y frontend. |
-| **Historial clínico completo** | Post-MVP (S12+) | Se muestra historial básico de consultas anteriores. |
-| **Asistente IA (Claude)** | Post-MVP | Código eliminado del proyecto MVP. |
-| **Sistema de honorarios** | Post-MVP (S15+) | Eliminado del proyecto MVP. |
-| **Notificaciones push** | Post-MVP (S12) | Eliminado del proyecto MVP. |
-| **Imágenes en chat** | Post-MVP (S12) | Eliminado del proyecto MVP. |
-| **Stripe / pagos** | Post-MVP | Eliminado del proyecto MVP. |
-| **Testing en 2GB RAM** | S14 (13-15 Ago) | Post-MVP por definición. |
+| Feature | Sprint estimado | Nota | Estado |
+|---------|----------------|------|--------|
+| **LiveKit (videollamada)** | Post-MVP (S11+) | Código eliminado del proyecto MVP. Se reemplazó por chat de texto. | — |
+| **Cola de espera automática** | Post-MVP (S11) | Simplificado a solicitud manual. | ✅ S11 |
+| **Online/Offline del médico** | Post-MVP (S11) | Eliminado del backend y frontend. | ✅ S11 (backend + mobile; web pendiente) |
+| **Historial clínico completo** | Post-MVP (S12+) | Se muestra historial básico de consultas anteriores. | — |
+| **Asistente IA (Claude)** | Post-MVP | Código eliminado del proyecto MVP. | — |
+| **Sistema de honorarios** | Post-MVP (S15+) | Eliminado del proyecto MVP. | — |
+| **Notificaciones push** | Post-MVP (S12) | Eliminado del proyecto MVP. | ✅ S12 (backend + token mobile) |
+| **Imágenes en chat** | Post-MVP (S12) | Eliminado del proyecto MVP. | ✅ S12 |
+| **Stripe / pagos** | Post-MVP | Eliminado del proyecto MVP. | — |
+| **Testing en 2GB RAM** | S14 (13-15 Ago) | Post-MVP por definición. | — |
 
 ---
 

@@ -1,7 +1,7 @@
 # FAANG Audit — VetConnect
 
 > Evaluación del proyecto contra estándares de ingeniería de FAANG.
-> **Fecha:** 5 de agosto, 2026 | **Versión:** v4 — Post Sprint 11 + Code Audit completo
+> **Fecha:** 6 de agosto, 2026 | **Versión:** v5 — Post Sprint 12 (Imágenes + Notificaciones)
 > Detalle de todos los hallazgos en [`CODE_AUDIT.md`](./CODE_AUDIT.md).
 
 ---
@@ -55,13 +55,14 @@
 
 ---
 
-## 3. Testing — 9/10 ↑ (+1)
+## 3. Testing — 9/10
 
 ### ✅ Lo que está bien
-- Suite de **94 tests** en 7 archivos (se agregó el test de la cola de espera)
+- Suite de **108 tests** en 9 archivos (S11: cola de espera; S12: `media` y `notifications`)
 - Tests unitarios + integración HTTP
 - globalSetup/globalTeardown con schema test_ dinámico
 - Coverage configurado con thresholds
+- `EXPO_PUSH_DISABLED=true` en tests para no disparar push reales
 
 ### ❌ Lo que falta
 - Tests escriben a Supabase real (no BD local aislada)
@@ -138,6 +139,7 @@
 - Dashboard por rol (CLIENT vs VET)
 - Chat con Socket.io
 - Cerrar consulta con modal de notas
+- Imágenes adjuntas visibles en el chat (S12); chip de estado distingue `WAITING`; badge de espera real en el dashboard médico (S12)
 
 ### ❌ Lo que falta (v4)
 - **No existe el toggle online/offline del médico (Sprint 11)**: la cola real-time es inalcanzable desde la web
@@ -147,7 +149,7 @@
 
 ---
 
-## 8. Mobile Quality — 6/10 (v4: -1)
+## 8. Mobile Quality — 7/10 ↑ (+1)
 
 ### ✅ Lo que está bien
 - Proyecto Expo completo con Expo Router
@@ -158,9 +160,9 @@
 - Solicitar consulta simple
 - Design system alineado con web (misma paleta teal)
 - TypeScript en toda la app
+- Sprint 12: enviar imágenes desde galería (expo-image-picker → `POST /api/media`), visor en burbujas, registro de push token (expo-notifications), feedback correcto en espera ("En cola de espera")
 
 ### ❌ Lo que falta (v4)
-- Consulta `WAITING` muestra "Finalizada"/"Chat finalizado" sin feedback de espera (Sprint 11)
 - Las consultas WAITING se filtran del tab Chat
 - `logout()` no desconecta el socket (fuga de eventos entre cuentas)
 - `eas.json` producción/preview apuntan a localhost; `eas.projectId` vacío
@@ -188,21 +190,23 @@
 
 ## 📊 Resumen de calificaciones
 
-| Categoría | v1 (30 Jun) | v2 (1 Jul) | v3 (12 Jul) | v4 (5 Ago) | Tendencia |
-|-----------|-------------|------------|-------------|------------|-----------|
-| Code Quality & Structure | 5/10 | 8/10 | 8/10 | **7/10** | 🔻 -1 |
-| Security | 3/10 | 9/10 | 9/10 | **4/10** | 🔻🔻 -5 |
-| Testing | 3/10 | 8/10 | 8/10 | **9/10** | 🟢 +1 |
-| Documentation | 8/10 | 9/10 | 9/10 | **8/10** | 🔻 -1 |
-| Architecture & Scalability | 4/10 | 8/10 | 8/10 | **7/10** | 🔻 -1 |
-| DevOps & Deploy | 3/10 | 7/10 | 7/10 | **6/10** | 🔻 -1 |
-| Frontend Web | 3/10 | 7/10 | 8/10 | **6/10** | 🔴 -2 |
-| Mobile | 1/10 | 1/10 | 7/10 | **6/10** | 🔴 -1 |
-| Project Management | 6/10 | 6/10 | 7/10 | **7/10** | — |
-| | | | | | |
-| **PROMEDIO PONDERADO** | **4.0/10** | **7.0/10** | **7.9/10** | **6.7/10** | 🔴 -1.2 |
+| Categoría | v1 (30 Jun) | v2 (1 Jul) | v3 (12 Jul) | v4 (5 Ago) | v5 (6 Ago) | Tendencia |
+|-----------|-------------|------------|-------------|------------|------------|-----------|
+| Code Quality & Structure | 5/10 | 8/10 | 8/10 | **7/10** | **7/10** | — |
+| Security | 3/10 | 9/10 | 9/10 | **4/10** | **4/10** | — |
+| Testing | 3/10 | 8/10 | 8/10 | **9/10** | **9/10** | — |
+| Documentation | 8/10 | 9/10 | 9/10 | **8/10** | **8/10** | — |
+| Architecture & Scalability | 4/10 | 8/10 | 8/10 | **7/10** | **7/10** | — |
+| DevOps & Deploy | 3/10 | 7/10 | 7/10 | **6/10** | **6/10** | — |
+| Frontend Web | 3/10 | 7/10 | 8/10 | **6/10** | **6/10** | — |
+| Mobile | 1/10 | 1/10 | 7/10 | **6/10** | **7/10** | 🟢 +1 |
+| Project Management | 6/10 | 6/10 | 7/10 | **7/10** | **7/10** | — |
+| | | | | | | |
+| **PROMEDIO PONDERADO** | **4.0/10** | **7.0/10** | **7.9/10** | **6.7/10** | **6.8/10** | 🟢 +0.1 |
 
 > El descenso de v3 → v4 **no es una regresión del código**: es el resultado de la *auditoría real y completa* del 5-Ago (ver `CODE_AUDIT.md`). La puntuación previa de Security (9/10) y Frontend/Mobile sobreestimaban el estado; ahora los findings están verificados y planificados para corregir en S12–S13.
+>
+> v5 (6-Ago): sube **Mobile 6→7** por el Sprint 12 (imágenes en el chat + push + feedback de espera). Los pendientes críticos (credenciales, `/register` con `role`, `password` expuesta, migraciones) siguen abiertos — bloque de bugs S12–S13.
 
 ---
 
@@ -225,7 +229,7 @@
 10. 🟠 ALTO — Socket: origen correcto en dev (proxy `/socket.io`) y eventos de cola legibles
 
 ### Mobile (Juan)
-11. 🟠 ALTO — Feedback de espera en consulta `WAITING` (chat "Finalizada" ⚠️)
+11. ✅ **Resuelto en S12** — Feedback de espera en consulta `WAITING` (ahora "En cola de espera" con dot ámbar)
 12. 🟠 ALTO — No filtrar las `WAITING` del tab Chat
 13. 🟠 ALTO — `disconnectSocket()` en logout; leer `petId` en queue
 14. 🟠 ALTO — Arreglar `eas.json` producción/preview + limpiar el path `/ws/queue` fantasma

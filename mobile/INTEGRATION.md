@@ -1,5 +1,7 @@
 # VetConnect Mobile — Documento de Integración
 
+> ⚠️ **AVISO (6 Ago 2026):** este documento describe el **diseño original** del MVP (cola `/api/queue/*`, videollamadas LiveKit, asistente IA, subida de fotos por Cloudinary), que el **código actual ya no implementa** (ver `../docs/CODE_AUDIT.md` y `../docs/TECH_REFERENCE.md`). Los flujos reales actuales son: auth, pets, **colas de espera automatica** (S11), chat con mensajes e **imagenes** (S12) y **notificaciones push** (S12). Las secciones de Queue/LiveKit/AI/Cloudinary se mantienen solo como referencia historica. La reescritura completa queda a cargo de QA.
+
 > Este documento registra **qué elementos de las otras plataformas** (backend, web, shared-types, LiveKit, Cloudinary) se utilizan en la app móvil y **cómo interactúa la app con el backend**. Es la referencia obligatoria para cualquier dev que toque el código mobile.
 
 ---
@@ -221,12 +223,27 @@ La app móvil consume los siguientes endpoints del backend. Todos están prefija
 
 | Método | Path | Servicio mobile | Hook |
 |--------|------|-----------------|------|
-| `POST` | `/consultations/:entryId/ping` | `consultationsService.ping` | `useConsultationPing` (heartbeat cada 30s en call) |
-| `POST` | `/consultations/:entryId/rate` | `consultationsService.rate` | `useRateConsultation` (en history) |
-| `GET` | `/consultations/:id` | `consultationsService.getById` | `useConsultation(id)` |
+| `POST` | `/consultations/:id/messages` | `consultationsService.sendMessage` (`{ content?, attachmentUrl? }`) | `useConsultationMessages(id).send` |
+| `GET` | `/consultations/:id/messages` | `consultationsService.getMessages` | `useConsultationMessages(id).list` |
+| `GET` | `/consultations/:id/prescriptions` | `consultationsService.getPrescriptions` | `useConsultationPrescriptions` |
 | `GET` | `/consultations/my-history` | `consultationsService.myHistory` | `useConsultationHistory` |
 
+### Media + Notificaciones (S12)
+
+| Método | Path | Servicio mobile | Hook |
+|--------|------|-----------------|------|
+| `POST` | `/media` | `mediaService.upload` (multipart `/uploads`) | `pickAndSendImage` (chat) |
+| `POST` | `/notifications/token` | `notificationsService.registerToken` | `usePushToken` (layout) |
+| `GET` | `/notifications` | `notificationsService.list` | — |
+| `PATCH` | `/notifications/:id/read` | `notificationsService.markRead` | — |
+
 > Los endpoints de notas post-consulta (`PATCH /consultations/:id/notes`, `POST /consultations/:id/summary`) son exclusivos de VET — no se usan en mobile.
+
+### Push notifications (S12)
+
+1. `usePushToken` (en `app/(app)/_layout.tsx`): pide permiso (`expo-notifications`), obtiene `ExpoPushToken` y lo publica en `POST /api/notifications/token`.
+2. El backend dispara `sendExpoPush` (API de Expo) en nuevos eventos: consulta asignada, mensaje nuevo, receta, consulta finalizada.
+3. En dev/test el envío real se desactiva con `EXPO_PUSH_DISABLED=true`.
 
 ### AI Assistant (SP-06)
 

@@ -27,16 +27,17 @@ enum ConsultationStatus {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  firstName String?
-  lastName  String?
-  phone     String?
-  role      Role
-  isOnline  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  email        String   @unique
+  password     String
+  firstName    String?
+  lastName     String?
+  phone        String?
+  role         Role
+  isOnline     Boolean  @default(false)
+  tokenVersion Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   pets                  Pet[]
   consultationsAsClient Consultation[] @relation("ClientConsultations")

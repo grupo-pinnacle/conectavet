@@ -26,7 +26,31 @@ export class AuthError extends Error {
   }
 }
 
+function signAccessToken(user: { id: string; email: string; role: string; tokenVersion: number }) {
+  return jwt.sign(
+    { userId: user.id, email: user.email, role: user.role, tokenVersion: user.tokenVersion },
+    process.env.JWT_SECRET as string,
+    { expiresIn: '7d' }
+  );
+}
+
+function signRefreshToken(userId: string, tokenVersion: number) {
+  return jwt.sign(
+    { userId, type: 'refresh', tokenVersion },
+    process.env.JWT_SECRET as string,
+    { expiresIn: '30d' }
+  );
+}
+
+/**
+ * Revoca todas las sesiones del usuario: se incrementa tokenVersion y
+ * cualquier access/refresh emitido antes queda invalidado.
+ */
 export async function logout(userId: string) {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { tokenVersion: { increment: 1 } },
+  });
   clearCache('vets:');
 }
 
@@ -52,23 +76,11 @@ export async function register(input: RegisterInput) {
     }
   });
 
-  const token = jwt.sign(
-    { userId: user.id, email: user.email, role: user.role },
-    process.env.JWT_SECRET as string,
-    { expiresIn: '7d' }
-  );
-
-  const refreshTokenValue = jwt.sign(
-    { userId: user.id, type: 'refresh' },
-    process.env.JWT_SECRET as string,
-    { expiresIn: '30d' }
-  );
-
   const { password, ...userWithoutPassword } = user;
 
   return {
-    accessToken: token,
-    refreshToken: refreshTokenValue,
+    accessToken: signAccessToken(user),
+    refreshToken: signRefreshToken(user.id, user.tokenVersion),
     user: userWithoutPassword,
   };
 }
@@ -88,27 +100,11 @@ export async function login(input: LoginInput) {
     throw new AuthError('Credenciales inválidas', 401);
   }
 
-  const token = jwt.sign(
-    {
-      userId: user.id,
-      email: user.email,
-      role: user.role
-    },
-    process.env.JWT_SECRET as string,
-    { expiresIn: '7d' }
-  );
-
-  const refreshTokenValue = jwt.sign(
-    { userId: user.id, type: 'refresh' },
-    process.env.JWT_SECRET as string,
-    { expiresIn: '30d' }
-  );
-
   const { password, ...userWithoutPassword } = user;
 
   return {
-    accessToken: token,
-    refreshToken: refreshTokenValue,
+    accessToken: signAccessToken(user),
+    refreshToken: signRefreshToken(user.id, user.tokenVersion),
     user: userWithoutPassword
   };
 }
@@ -123,18 +119,15 @@ export async function refreshAccessToken(refreshTokenValue: string) {
     if (!user) {
       throw new AuthError('Usuario no encontrado', 401);
     }
-    const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET as string,
-      { expiresIn: '7d' }
-    );
-    const newRefreshToken = jwt.sign(
-      { userId: user.id, type: 'refresh' },
-      process.env.JWT_SECRET as string,
-      { expiresIn: '30d' }
-    );
+    if (decoded.tokenVersion !== user.tokenVersion) {
+      throw new AuthError('Sesión cerrada. Iniciá sesión de nuevo', 401);
+    }
     const { password, ...userWithoutPassword } = user;
-    return { accessToken: token, refreshToken: newRefreshToken, user: userWithoutPassword };
+    return {
+      accessToken: signAccessToken(user),
+      refreshToken: signRefreshToken(user.id, user.tokenVersion),
+      user: userWithoutPassword,
+    };
   } catch (err) {
     if (err instanceof AuthError) throw err;
     throw new AuthError('Token de refresco inválido o expirado', 401);

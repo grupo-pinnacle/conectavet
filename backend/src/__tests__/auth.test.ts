@@ -204,5 +204,33 @@ describe('Auth Service', () => {
         .send({});
       expect(res.status).toBe(400);
     });
+
+    test('POST /api/auth/logout — revoca access y refresh tokens', async () => {
+      const loginRes = await request(app)
+        .post('/api/auth/login')
+        .send({ email, password: '123456' });
+      expect(loginRes.status).toBe(200);
+      const { accessToken, refreshToken } = loginRes.body.data;
+
+      const meBefore = await request(app)
+        .get('/api/auth/me')
+        .set('Authorization', `Bearer ${accessToken}`);
+      expect(meBefore.status).toBe(200);
+
+      const logoutRes = await request(app)
+        .post('/api/auth/logout')
+        .set('Authorization', `Bearer ${accessToken}`);
+      expect(logoutRes.status).toBe(200);
+
+      const meAfter = await request(app)
+        .get('/api/auth/me')
+        .set('Authorization', `Bearer ${accessToken}`);
+      expect(meAfter.status).toBe(401);
+
+      const refreshAfter = await request(app)
+        .post('/api/auth/refresh')
+        .send({ refreshToken });
+      expect(refreshAfter.status).toBe(401);
+    });
   });
 });

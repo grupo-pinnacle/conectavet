@@ -52,16 +52,15 @@ const consultationWithMessages = {
 } satisfies Prisma.ConsultationSelect;
 
 export async function findFirstAvailableVet(species?: string) {
-  const cacheKey = species ? `vets:available:${species.toLowerCase()}` : 'vets:available';
-  const cached = getCached<any>(cacheKey);
-  if (cached) return cached;
-  const vet = await prisma.user.findFirst({
+  // Sin caché: el pick se consume una sola vez (se asigna a una consulta).
+  // Cachearlo 30s re-servía el MISMO vet a todos los clients en esa ventana
+  // (sobrecarga del vet) y podía devolver un vet recién puesto offline.
+  void species;
+  return prisma.user.findFirst({
     where: { role: 'VET', isOnline: true },
     orderBy: { createdAt: 'asc' },
     select: { id: true, email: true, firstName: true, lastName: true, isOnline: true },
   });
-  if (vet) setCache(cacheKey, vet, 30);
-  return vet;
 }
 
 export async function createConsultation(data: {

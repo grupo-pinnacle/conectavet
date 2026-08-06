@@ -53,12 +53,12 @@
 
 | # | Archivo:línea | Descripción |
 |---|----------------|-------------|
-| B9 | `auth.service.ts:31-33` | `logout` no revoca nada: JWT access (7d) y refresh (30d) siguen válidos. |
-| B10 | `pets.service.ts:53,92` + `pets.controller.ts:22,35` | `birthDate` con `z.string()` sin validar → `new Date('asdf')` ⇒ 500. |
-| B11 | `consultations.service.ts:12-21,141-153` | `findFirstAvailableVet`/`getAvailableVets` **ignoran `species`** en el filtro (solo `role:VET, isOnline`); caché `vets:available:*` TTL 30s puede doble-asignar un vet offline reciente. |
-| B12 | `consultations.service.ts:177-183` | `getMessages` sin paginación/límite; el historial no está acotado. |
-| B13 | `app.ts:90` | Error handler muestra `err.message`/stack si `NODE_ENV ≠ production` (filtra internals en deploys sin env). |
-| B14 | `chat.gateway.ts:66-95` | `message:send` no valida `status` de la consulta (mensajes en WAITING/COMPLETED) ni sanitiza. |
+| B9 | `auth.service.ts:29` | `logout` no revocaba ningún token (solo limpiaba caché) → access 7d y refresh 30d seguían válidos. **Fix (11-Ago): `tokenVersion` en User; logout lo incrementa, middleware y `/refresh` rechazan tokens viejos.** |
+| B10 | `pets.service.ts:53,92` + `pets.controller.ts:22,35` | `birthDate` con `z.string()` sin validar → `new Date('asdf')` ⇒ 500. (Fix S9 ✅) |
+| B11 | `consultations.service.ts:54-64,218-231` | `findFirstAvailableVet` cacheaba 30s un vet y lo re-servía a varios clientes; podía devolver vet recién offline. (Fix 11-Ago ✅ pick fresco). Mapeo real especialidad→especie: requiere columna nueva (decisión de producto). |
+| B12 | `consultations.service.ts:268-273` | `getMessages` sin paginación/límite. (Fix S13 ✅ paginado, tope 500 por request). |
+| B13 | `app.ts:96-100` | Error handler: en `production` devuelve mensaje genérico; en dev expone `err.message` (comportamiento intencional). |
+| B14 | `chat.gateway.ts:66-95` + service `sendMessage` | `message:send` no valida `status` de la consulta. (Fix S9 ✅ 409/socket solo `ACTIVE`). |
 
 ### 4. BAJO
 
@@ -196,6 +196,12 @@
 - ✅ **B10 (MEDIO) — `birthDate` validada**: en create/update de mascota pasa por `dateStringSchema` (refine con `Date.parse`) → `birthDate: "asdf"` devuelve 400 y no 500.
 - ✅ **B14 (MEDIO) — mensajes solo en `ACTIVE`**: `sendMessage` valida el estado de la consulta y devuelve 409 `ConflictError('La consulta no está activa. No podés enviar mensajes.')`; el socket (`chat.gateway`) también rechaza con evento `error`. Tests de regresión: 409 en `WAITING`, 201 al asignarse un vet.
 - **Suite**: **118/118 tests pasan**, `tsc --noEmit` limpio.
+
+## Ya resuelto en sesión 11-Ago (backend Tobias, para no re-aparecer)
+
+- ✅ **B11 (MEDIO) — caché que re-servía el mismo vet**: `findFirstAvailableVet` cacheaba por 30s el vet elegido → en esa ventana TODOS los clientes nuevos recibían el MISMO vet (sobrecarga) y podía devolver un vet recién puesto offline. El pick ahora es **siempre fresco** (sin caché); la lista `GET /consultations/vets` conserva su caché (se invalida al togglear disponibilidad). Nota: el mapeo real de especialidades vet→especie requiere una columna nueva (decisión de producto, no un fix).
+- ✅ **Logout ahora revoca sesiones**: se agrega `tokenVersion` a `User` (migración `20260812000000_session_revocation`). Cada login/register firma access (7d) y refresh (30d) con el `tokenVersion` del usuario; `logout` lo incrementa → **todos los JWTs previos quedan inválidos** en middleware y en `/auth/refresh`. Test de regresión: tras logout, `/me` → 401 y `/refresh` con el token viejo → 401.
+- **Suite**: **119/119 tests pasan**, `tsc --noEmit` limpio.
 
 ## ⚠️ Queda manual para el equipo (no automatizable desde código)
 

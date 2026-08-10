@@ -81,14 +81,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   function normalizeUser(u: any): User {
-    const roleMap: Record<string, "owner" | "vet" | "admin"> = { CLIENT: "owner", VET: "vet", ADMIN: "admin" };
+    const roleMap: Record<string, "owner" | "vet" | "admin"> = { 
+        CLIENT: "owner", 
+        VET: "vet", 
+        ADMIN: "admin" 
+    };
+    
     return {
       id: u.id,
       name: u.name || [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email,
       email: u.email,
-      phone: u.phone || undefined,
+      // Si u.phone tiene valor, se incluye. Si no, se omite completamente del objeto
+      ...(u.phone ? { phone: u.phone } : {}),
       isOnline: typeof u.isOnline === "boolean" ? u.isOnline : false,
-      role: roleMap[u.role] || "owner",
+      // Se añade 'as string' para evitar errores en modo strict
+      role: roleMap[u.role as string] || "owner",
     };
   }
 

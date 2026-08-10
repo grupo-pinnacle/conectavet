@@ -126,6 +126,8 @@ No es necesario instalar PostgreSQL local — la base de datos corre en **Supaba
 
 ## Setup local
 
+> **Importante:** los archivos `.env` ya vienen commiteados con las credenciales del equipo (Supabase, JWT, IPs). **No hace falta crearlos a mano.** Cada carpeta tiene su `requirements.txt` con las dependencias y los comandos exactos.
+
 ### 1. Clonar e instalar dependencias
 
 ```bash
@@ -134,7 +136,7 @@ cd conectavet
 
 # Backend (siempre primero)
 cd backend
-npm install
+npm install                # ver backend/requirements.txt
 npm run dev                # http://localhost:3001
 
 # Web (otra terminal, opcional)
@@ -144,25 +146,23 @@ npm run dev                # http://localhost:5173
 
 # Mobile (otra terminal)
 cd mobile
-npm install
-npx expo start             # Escanear QR con Expo Go en el celu
+npm install                # ver mobile/requirements.txt
+npm start                  # usa start.ps1: configura IP/ADB y abre Expo
 ```
 
-### 2. Variables de entorno
+> **¿Olvidaste qué instalar?** Cada carpeta tiene un checklist: `backend/requirements.txt` y `mobile/requirements.txt`. El comando es siempre el mismo: `npm install` (instala todo lo listado automáticamente).
 
-**Backend (`backend/.env`):**
-```env
-DATABASE_URL="postgresql://user:pass@host:6543/postgres?pgbouncer=true"
-DIRECT_URL="postgresql://user:pass@host:5432/postgres"
-JWT_SECRET="tu-clave-secreta-aqui"
-PORT=3001
-CORS_ORIGIN="http://localhost:5173,http://localhost:8081"
-```
+### 2. Variables de entorno (ya commiteadas)
 
-**Mobile (`mobile/.env`):**
-```env
-EXPO_PUBLIC_API_URL=http://192.168.1.x:3001   # IP de tu compu
-```
+Los `.env` reales ya están en el repo — los demás no necesitan pedirlos:
+
+| Archivo | Contenido |
+|---------|-----------|
+| `backend/.env` | `DATABASE_URL` + `DIRECT_URL` (Supabase pooler), `JWT_SECRET`, `PORT=3001`, `CORS_ORIGIN` |
+| `mobile/.env` | `EXPO_PUBLIC_API_URL` + `EXPO_PUBLIC_WS_URL` (IP local `192.168.0.8`) |
+| `web/.env` | `VITE_API_URL` |
+
+> ⚠️ **Seguridad:** si el repo alguna vez se hace público, rotá el password de Supabase (Dashboard → Database → Reset password) y el `JWT_SECRET`. Los `.env.example` son las plantillas sin valores.
 
 ### 3. Verificar instalación
 
@@ -182,9 +182,9 @@ curl http://localhost:3001/health
 | Sprint | Fechas | Tema | Estado |
 |--------|--------|------|--------|
 | S1 | 15-17 Jun | Setup monorepo + proyectos | ✅ |
-| S2 | 18-20 Jun | Modelos BD + navegación + wireframes | ⚠️ Parcial |
-| S3 | 22-24 Jun | Auth backend (JWT, roles) | ✅ |
-| S4 | 25-27 Jun | Conectar frontends a auth | ⚠️ Parcial |
+| S2 | 18-20 Jun | Modelos BD + navegación + wireframes | ✅ (cubierto por Tobias/Thiago) |
+| S3 | 22-24 Jun | Auth backend (JWT, roles) | ✅ (frontends cubiertos por Tobias) |
+| S4 | 25-27 Jun | Conectar frontends a auth | ✅ (cubierto por Tobias) |
 | S5 | 29 Jun - 1 Jul | Roles + Mascotas | ✅ |
 | S6 | 2-4 Jul | Conexión mobile + chat inicio | ✅ |
 | S7 | 6-8 Jul | Chat de texto + historial básico | ✅ |

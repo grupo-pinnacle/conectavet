@@ -17,11 +17,13 @@ import {
   saveMessage,
   savePrescription,
   getPrescriptions,
+  createReview,
 } from './consultations.service';
 
 const createSchema = z.object({
   petId: z.string().min(1, 'petId es requerido'),
   notes: z.string().min(5, 'Describí el motivo de la consulta (mín. 5 caracteres)').max(1000, 'El motivo no puede superar los 1000 caracteres'),
+  vetId: z.string().optional(),
 });
 
 const completeSchema = z.object({
@@ -63,6 +65,7 @@ export async function createController(req: RequestWithUser, res: Response) {
       clientId: req.user.userId,
       petId: parsed.data.petId,
       notes: parsed.data.notes,
+      vetId: parsed.data.vetId,
     });
     try {
       const io = getIO();
@@ -330,6 +333,36 @@ export async function createPrescriptionController(req: RequestWithUser, res: Re
       return res.status(error.statusCode).json({ success: false, message: error.message });
     }
     console.error('Error en createPrescriptionController:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+}
+
+const reviewSchema = z.object({
+  rating: z.coerce.number({ message: 'rating debe ser un número' }).int().min(1, 'La calificación mínima es 1').max(5, 'La calificación máxima es 5'),
+  comment: z.string().trim().max(500, 'El comentario no puede superar los 500 caracteres').optional(),
+});
+
+export async function createReviewController(req: RequestWithUser, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'No autenticado' });
+    }
+    const parsed = reviewSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, message: parsed.error.issues[0].message });
+    }
+    const review = await createReview({
+      consultationId: req.params.id as string,
+      clientId: req.user.userId,
+      rating: parsed.data.rating,
+      comment: parsed.data.comment,
+    });
+    return res.status(201).json({ success: true, data: review });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
+    console.error('Error en createReviewController:', error);
     return res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 }

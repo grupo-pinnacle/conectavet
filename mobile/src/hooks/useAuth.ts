@@ -28,6 +28,7 @@ export function useAuth() {
     login: store.login,
     register: store.register,
     logout: store.logout,
+    updateUser: store.updateUser,
     clearSessionExpired: store.clearSessionExpired,
   };
 }

@@ -44,10 +44,21 @@ export const userSchema = z.object({
   lastName: z.string(),
   phone: z.string(),
   isActive: z.boolean(),
+  bio: z.string().nullable().optional(),
+  specialty: z.string().nullable().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
 export type User = z.infer<typeof userSchema>;
+
+export const updateProfileSchema = z.object({
+  firstName: z.string().min(2).max(50).optional(),
+  lastName: z.string().min(2).max(50).optional(),
+  phone: z.string().regex(/^\+?[\d\s-]{6,20}$/, 'Teléfono inválido').optional(),
+  bio: z.string().max(500).nullable().optional(),
+  specialty: z.string().max(100).nullable().optional(),
+});
+export type UpdateProfilePayload = z.infer<typeof updateProfileSchema>;
 
 export const passwordSchema = z
   .string()
@@ -192,14 +203,60 @@ export const consultationSchema = z.object({
     firstName: z.string().nullable().optional(),
     lastName: z.string().nullable().optional(),
   }).nullable().optional(),
+  review: z.object({
+    id: z.string(),
+    rating: z.number(),
+    comment: z.string().nullable(),
+  }).nullable().optional(),
 });
 export type Consultation = z.infer<typeof consultationSchema>;
 
 export const createConsultationSchema = z.object({
   petId: z.string(),
   notes: z.string().min(5, 'Describí el motivo de la consulta').max(1000),
+  vetId: z.string().optional(),
 });
 export type CreateConsultationPayload = z.infer<typeof createConsultationSchema>;
+
+export const vetSchema = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  firstName: z.string().nullable(),
+  lastName: z.string().nullable(),
+  role: z.string(),
+  isOnline: z.boolean(),
+  specialty: z.string().nullable().optional(),
+  bio: z.string().nullable().optional(),
+  ratingAvg: z.number().nullable().optional(),
+  ratingCount: z.number().optional(),
+  isFavorite: z.boolean().optional(),
+  createdAt: z.string(),
+});
+export type Vet = z.infer<typeof vetSchema>;
+
+export const reviewSchema = z.object({
+  id: z.string(),
+  consultationId: z.string(),
+  clientId: z.string(),
+  vetId: z.string(),
+  rating: z.number(),
+  comment: z.string().nullable(),
+  createdAt: z.string(),
+});
+export type Review = z.infer<typeof reviewSchema>;
+
+export const rateConsultationSchema = z.object({
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().max(500).optional(),
+});
+export type RateConsultationPayload = z.infer<typeof rateConsultationSchema>;
+
+export const favoriteVetSchema = z.object({
+  id: z.string(),
+  createdAt: z.string(),
+  vet: vetSchema,
+});
+export type FavoriteVet = z.infer<typeof favoriteVetSchema>;
 
 export const chatMessageSchema = z.object({
   id: z.string(),

@@ -13,6 +13,7 @@ interface AuthState {
   login: (payload: LoginPayload) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
+  updateUser: (user: User) => Promise<void>;
   handleSessionExpired: () => void;
   clearSessionExpired: () => void;
 }
@@ -82,6 +83,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       await secureStorage.clearAll();
       set({ user: null, isAuthenticated: false });
     }
+  },
+
+  async updateUser(user) {
+    await secureStorage.setUser(user);
+    set({ user });
   },
 
   handleSessionExpired() {

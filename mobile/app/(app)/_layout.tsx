@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Pressable, View, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
 import { usePushToken } from '@/hooks/usePushToken';
@@ -29,6 +30,7 @@ function TabIcon({ icon, focused }: { icon: IconName; focused: boolean }) {
 
 function HeaderRight() {
   const { colors: c } = useTheme();
+  const router = useRouter();
   const { user, logout } = useAuth();
 
   return (
@@ -46,12 +48,18 @@ function HeaderRight() {
           color="red"
         />
       </Pressable>
-      <View style={{ width: 48, aspectRatio: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Pressable
+        onPress={() => router.push('/(app)/profile')}
+        style={{ width: 48, aspectRatio: 1, justifyContent: 'center', alignItems: 'center' }}
+        accessibilityRole="button"
+        accessibilityLabel="Ver mi perfil"
+        accessibilityHint="Presioná para ver y editar tu perfil"
+      >
         <Avatar
           name={`${user?.firstName ?? ''} ${user?.lastName ?? ''}`}
           size={32}
         />
-      </View>
+      </Pressable>
     </View>
   );
 }
@@ -99,6 +107,9 @@ export default function AppLayout() {
       <Tabs.Screen name="pets/[id]" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="pets/new" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="chat/[consultationId]" options={{ href: null, headerShown: false }} />
+      <Tabs.Screen name="vets/index" options={{ href: null, headerShown: false }} />
+      <Tabs.Screen name="profile/index" options={{ href: null, headerShown: false }} />
+      <Tabs.Screen name="profile/edit" options={{ href: null, headerShown: false }} />
     </Tabs>
   );
 }

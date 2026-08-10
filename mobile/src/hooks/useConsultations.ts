@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { consultationsService, type SendMessagePayload } from '@/services';
 import { connectSocket, joinConsultation, leaveConsultation } from '@/lib/socket';
-import type { ChatMessage, Consultation, CreateConsultationPayload, Prescription } from '@/types';
+import type { ChatMessage, Consultation, CreateConsultationPayload, Prescription, RateConsultationPayload } from '@/types';
 
 export function useConsultationHistory(params?: { page?: number; limit?: number }) {
   return useQuery({
@@ -39,6 +39,18 @@ export function useCreateConsultation() {
     mutationFn: (payload: CreateConsultationPayload) =>
       consultationsService.create(payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['consultations'] }),
+  });
+}
+
+export function useRateConsultation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ consultationId, payload }: { consultationId: string; payload: RateConsultationPayload }) =>
+      consultationsService.rate(consultationId, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['consultations'] });
+      qc.invalidateQueries({ queryKey: ['vets'] });
+    },
   });
 }
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button, EmptyState, SkeletonCard } from '@/components/ui';
@@ -9,11 +10,12 @@ import { useCreateConsultation } from '@/hooks/useConsultations';
 import { usePets } from '@/hooks/usePets';
 import { useTheme, spacing, fontSizes, fontWeights, radius, speciesIcon, speciesLabel } from '@/theme';
 import { formatAge } from '@/utils/format';
-import { ApiError, type Pet } from '@/types';
+import { ApiError, type Pet, type Vet } from '@/types';
 
 export default function QueueScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const qc = useQueryClient();
   const { colors: c } = useTheme();
   const { list } = usePets();
   const createConsultation = useCreateConsultation();
@@ -21,6 +23,16 @@ export default function QueueScreen() {
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const pets = list.data ?? [];
+
+  const { data: selectedVet } = useQuery<Vet | undefined>({
+    queryKey: ['queue', 'selectedVet'],
+    queryFn: () => qc.getQueryData<Vet>(['queue', 'selectedVet']),
+    initialData: () => qc.getQueryData<Vet>(['queue', 'selectedVet']),
+  });
+
+  const clearSelectedVet = () => {
+    qc.removeQueries({ queryKey: ['queue', 'selectedVet'] });
+  };
 
   const onSubmit = async () => {
     if (!selectedPetId) {
@@ -33,7 +45,12 @@ export default function QueueScreen() {
     }
     setSubmitting(true);
     try {
-      const consultation = await createConsultation.mutateAsync({ petId: selectedPetId, notes: reason.trim() });
+      const consultation = await createConsultation.mutateAsync({
+        petId: selectedPetId,
+        notes: reason.trim(),
+        vetId: selectedVet?.id,
+      });
+      clearSelectedVet();
       router.replace(`/(app)/chat/${consultation.id}`);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'No pudimos crear la consulta.';
@@ -107,6 +124,57 @@ export default function QueueScreen() {
               autoFocus
             />
           </View>
+
+          <Text style={{ fontSize: fontSizes.subtitle, fontWeight: fontWeights.semibold, color: c.ink, marginBottom: spacing.sm }}>Veterinario</Text>
+          <Text style={{ fontSize: fontSizes.body, color: c.inkMuted, marginBottom: spacing.md, lineHeight: 20 }}>
+            Elegí con quién querés hablar, o dejá que se asigne el primer disponible.
+          </Text>
+          {selectedVet ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.lg, borderRadius: radius.xl, borderWidth: 1.5, borderColor: c.primary, backgroundColor: c.primaryBg, marginBottom: spacing.xxl }}>
+              <View style={{ width: 44, height: 44, borderRadius: radius.full, backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center' }}>
+                <MaterialCommunityIcons name="stethoscope" size={22} color={c.white} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: fontSizes.subtitle, fontWeight: fontWeights.bold, color: c.ink }}>
+                  {[selectedVet.firstName, selectedVet.lastName].filter(Boolean).join(' ')}
+                </Text>
+                <Text style={{ fontSize: fontSizes.label, color: c.inkMuted }}>Elegido por vos</Text>
+              </View>
+              <Pressable
+                onPress={() => { clearSelectedVet(); }}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Quitar veterinario elegido"
+              >
+                <MaterialCommunityIcons name="close-circle" size={22} color={c.inkMuted} />
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable
+              onPress={() => router.push('/(app)/vets')}
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing.md,
+                padding: spacing.lg,
+                borderRadius: radius.xl,
+                borderWidth: 1.5,
+                borderColor: c.border,
+                backgroundColor: pressed ? c.borderLight : c.surface,
+                marginBottom: spacing.xxl,
+              })}
+              accessibilityRole="button"
+              accessibilityLabel="Elegir veterinario"
+              accessibilityHint="Abre la lista de veterinarios para elegir con quién atenderte"
+            >
+              <MaterialCommunityIcons name="account-search-outline" size={24} color={c.primary} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: fontSizes.subtitle, fontWeight: fontWeights.semibold, color: c.ink }}>Elegir veterinario</Text>
+                <Text style={{ fontSize: fontSizes.label, color: c.inkMuted }}>O dejá que te asignemos el primero disponible</Text>
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={24} color={c.inkMuted} />
+            </Pressable>
+          )}
 
           <Button
             onPress={onSubmit}

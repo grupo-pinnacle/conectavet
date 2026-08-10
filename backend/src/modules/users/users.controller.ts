@@ -1,14 +1,34 @@
 import { Response } from 'express';
 import { z } from 'zod';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
-import { getUserById, listVets, updateAvailability } from './users.service';
+import {
+  getUserById,
+  listVets,
+  updateAvailability,
+  updateProfile,
+  getVetById,
+  addFavorite,
+  removeFavorite,
+  listFavorites,
+} from './users.service';
 import { assignNextPendingVet } from '../consultations/consultations.service';
 import { getIO } from '../consultations/chat.gateway';
 import { notifyUser } from '../notifications';
+import { AppError } from '../../shared/errors';
 import { parsePagination } from '../../shared/utils';
 
 const availabilitySchema = z.object({
   isOnline: z.boolean({ message: 'isOnline debe ser un booleano' }),
+});
+
+const updateProfileSchema = z.object({
+  firstName: z.string().trim().min(1, 'El nombre no puede estar vacío').max(100).optional(),
+  lastName: z.string().trim().min(1, 'El apellido no puede estar vacío').max(100).optional(),
+  phone: z.string().trim().max(30).optional(),
+  bio: z.string().trim().max(500, 'La bio no puede superar los 500 caracteres').optional(),
+  specialty: z.string().trim().max(100, 'La especialidad no puede superar los 100 caracteres').optional(),
+}).refine((d) => Object.values(d).some((v) => v !== undefined), {
+  message: 'Enviá al menos un campo para actualizar',
 });
 
 export async function getMeController(req: RequestWithUser, res: Response) {
@@ -98,10 +118,88 @@ export async function setAvailabilityController(req: RequestWithUser, res: Respo
 export async function listVetsController(req: RequestWithUser, res: Response) {
   try {
     const { page, limit } = parsePagination(req.query as Record<string, string>);
-    const result = await listVets(page, limit);
+    const search = typeof req.query.search === 'string' ? req.query.search.trim() : undefined;
+    const onlineOnly = req.query.online === 'true';
+    const result = await listVets(page, limit, {
+      search,
+      onlineOnly,
+      viewerId: req.user?.userId,
+    });
     return res.status(200).json({ success: true, ...result });
   } catch (error) {
     console.error('Error en listVetsController:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+}
+
+export async function getVetByIdController(req: RequestWithUser, res: Response) {
+  try {
+    const vet = await getVetById(req.params.id as string);
+    return res.status(200).json({ success: true, data: vet });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
+    console.error('Error en getVetByIdController:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+}
+
+export async function updateProfileController(req: RequestWithUser, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'No autenticado' });
+    }
+    const parsed = updateProfileSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, message: parsed.error.issues[0].message });
+    }
+    const user = await updateProfile(req.user.userId, parsed.data);
+    return res.status(200).json({ success: true, data: user });
+  } catch (error) {
+    console.error('Error en updateProfileController:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+}
+
+export async function addFavoriteController(req: RequestWithUser, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'No autenticado' });
+    }
+    await addFavorite(req.user.userId, req.params.id as string);
+    return res.status(200).json({ success: true, data: { favorited: true } });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
+    console.error('Error en addFavoriteController:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+}
+
+export async function removeFavoriteController(req: RequestWithUser, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'No autenticado' });
+    }
+    await removeFavorite(req.user.userId, req.params.id as string);
+    return res.status(200).json({ success: true, data: { favorited: false } });
+  } catch (error) {
+    console.error('Error en removeFavoriteController:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+}
+
+export async function listFavoritesController(req: RequestWithUser, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'No autenticado' });
+    }
+    const favorites = await listFavorites(req.user.userId);
+    return res.status(200).json({ success: true, data: favorites });
+  } catch (error) {
+    console.error('Error en listFavoritesController:', error);
     return res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 }

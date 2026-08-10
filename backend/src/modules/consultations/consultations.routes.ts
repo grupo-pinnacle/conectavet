@@ -13,6 +13,7 @@ import {
   sendMessageController,
   getPrescriptionsController,
   createPrescriptionController,
+  createReviewController,
 } from './consultations.controller';
 
 const router = Router();
@@ -28,5 +29,6 @@ router.get('/:id/messages', authenticate, getMessagesController);
 router.post('/:id/messages', authenticate, sendMessageController);
 router.get('/:id/prescriptions', authenticate, getPrescriptionsController);
 router.post('/:id/prescriptions', authenticate, authorize(Role.VET, Role.ADMIN), createPrescriptionController);
+router.post('/:id/rating', authenticate, createReviewController);
 
 export default router;

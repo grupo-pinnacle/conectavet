@@ -7,11 +7,17 @@ import type {
   Consultation,
   CreateConsultationPayload,
   CreatePetPayload,
+  FavoriteVet,
   LoginPayload,
   Pet,
   Prescription,
+  RateConsultationPayload,
   RegisterPayload,
+  Review,
   UpdatePetPayload,
+  UpdateProfilePayload,
+  User,
+  Vet,
   VetCard,
 } from '@/types';
 
@@ -51,6 +57,19 @@ export const consultationsService = {
     api.post<ChatMessage>(`/consultations/${consultationId}/messages`, payload),
   getPrescriptions: (consultationId: string) =>
     api.get<Prescription[]>(`/consultations/${consultationId}/prescriptions`),
+  rate: (consultationId: string, payload: RateConsultationPayload) =>
+    api.post<Review>(`/consultations/${consultationId}/rating`, payload),
+};
+
+export const usersService = {
+  listVets: (params?: { search?: string; online?: boolean; page?: number; limit?: number }) =>
+    api.get<Vet[]>('/users/vets', { params }),
+  getVetById: (id: string) => api.get<Vet>(`/users/vets/${id}`),
+  updateMe: (payload: UpdateProfilePayload) => api.patch<User>('/users/me', payload),
+  listFavorites: () => api.get<FavoriteVet[]>('/users/favorites'),
+  addFavorite: (vetId: string) => api.post<{ favorited: boolean }>(`/users/vets/${vetId}/favorite`),
+  removeFavorite: (vetId: string) =>
+    api.delete<{ favorited: boolean }>(`/users/vets/${vetId}/favorite`),
 };
 
 export const mediaService = {

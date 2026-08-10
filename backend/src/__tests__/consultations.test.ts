@@ -80,6 +80,43 @@ describe('POST /api/consultations', () => {
       .send({});
     expect(res.status).toBe(400);
   });
+
+  test('201 — CLIENT crea consulta eligiendo un vet online específico', async () => {
+    await prisma.user.update({ where: { id: vetUser.id }, data: { isOnline: true } });
+    const res = await request(app)
+      .post('/api/consultations')
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ petId: pet.id, notes: 'Quiero que me atienda este doctor', vetId: vetUser.id });
+    expect(res.status).toBe(201);
+    expect(res.body.data.vetId).toBe(vetUser.id);
+    expect(res.body.data.status).toBe('ACTIVE');
+    await prisma.user.update({ where: { id: vetUser.id }, data: { isOnline: false } });
+  });
+
+  test('409 — vet offline no se puede elegir', async () => {
+    await prisma.user.update({ where: { id: vetUser.id }, data: { isOnline: false } });
+    const res = await request(app)
+      .post('/api/consultations')
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ petId: pet.id, notes: 'Elegí un vet que está offline', vetId: vetUser.id });
+    expect(res.status).toBe(409);
+  });
+
+  test('404 — vet inexistente no se puede elegir', async () => {
+    const res = await request(app)
+      .post('/api/consultations')
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ petId: pet.id, notes: 'Vet que no existe', vetId: 'id-que-no-existe' });
+    expect(res.status).toBe(404);
+  });
+
+  test('404 — un CLIENT no puede ser elegido como vet', async () => {
+    const res = await request(app)
+      .post('/api/consultations')
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ petId: pet.id, notes: 'Elegir un client como vet', vetId: clientUser.id });
+    expect(res.status).toBe(404);
+  });
 });
 
 describe('POST /api/consultations — ownership de mascota (IDOR)', () => {
@@ -532,6 +569,87 @@ describe('GET /api/consultations/:id/prescriptions', () => {
       .set('Authorization', `Bearer ${strangerToken}`);
     expect(res.status).toBe(403);
     await prisma.user.delete({ where: { id: stranger.id } });
+  });
+});
+
+describe('POST /api/consultations/:id/rating', () => {
+  async function makeCompletedConsultation() {
+    const res = await request(app)
+      .post('/api/consultations')
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ petId: pet.id, notes: 'Consulta para calificar' });
+    const c = res.body.data;
+    await request(app)
+      .patch(`/api/consultations/${c.id}/assign`)
+      .set('Authorization', `Bearer ${vetToken}`);
+    await request(app)
+      .patch(`/api/consultations/${c.id}/complete`)
+      .set('Authorization', `Bearer ${vetToken}`)
+      .send({ notes: 'Cierre para rating' });
+    return c;
+  }
+
+  afterEach(async () => {
+    await prisma.review.deleteMany({ where: { client: { email: { startsWith: prefix } } } });
+  });
+
+  test('201 — CLIENT califica una consulta completada', async () => {
+    const c = await makeCompletedConsultation();
+    const res = await request(app)
+      .post(`/api/consultations/${c.id}/rating`)
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ rating: 5, comment: 'Excelente atención' });
+    expect(res.status).toBe(201);
+    expect(res.body.data.rating).toBe(5);
+    expect(res.body.data.vetId).toBe(vetUser.id);
+  });
+
+  test('409 — no se puede calificar dos veces la misma consulta', async () => {
+    const c = await makeCompletedConsultation();
+    await request(app)
+      .post(`/api/consultations/${c.id}/rating`)
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ rating: 4 });
+    const res = await request(app)
+      .post(`/api/consultations/${c.id}/rating`)
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ rating: 3 });
+    expect(res.status).toBe(409);
+  });
+
+  test('409 — no se puede calificar una consulta no finalizada', async () => {
+    const c = await createFreshConsultation();
+    await request(app)
+      .patch(`/api/consultations/${c.id}/assign`)
+      .set('Authorization', `Bearer ${vetToken}`);
+    const res = await request(app)
+      .post(`/api/consultations/${c.id}/rating`)
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ rating: 5 });
+    expect(res.status).toBe(409);
+  });
+
+  test('403 — otro CLIENT no califica la consulta ajena', async () => {
+    const c = await makeCompletedConsultation();
+    const stranger = await prisma.user.create({
+      data: { email: `${prefix}-stranger-rating-${uniqueId}@test.com`, password: 'hash', role: 'CLIENT' },
+    });
+    const strangerToken = jwt.sign({ userId: stranger.id, email: stranger.email, role: 'CLIENT' as Role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
+    const res = await request(app)
+      .post(`/api/consultations/${c.id}/rating`)
+      .set('Authorization', `Bearer ${strangerToken}`)
+      .send({ rating: 5 });
+    expect(res.status).toBe(403);
+    await prisma.user.delete({ where: { id: stranger.id } });
+  });
+
+  test('400 — rating fuera de rango', async () => {
+    const c = await makeCompletedConsultation();
+    const res = await request(app)
+      .post(`/api/consultations/${c.id}/rating`)
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ rating: 7 });
+    expect(res.status).toBe(400);
   });
 });
 

@@ -1,16 +1,18 @@
-import { useMemo } from 'react';
-import { FlatList, Pressable, RefreshControl, Text, View, Platform } from 'react-native';
+import { useMemo, useState } from 'react';
+import { FlatList, Pressable, RefreshControl, Text, TextInput, View, Platform } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Card, Badge, SkeletonCard, EmptyState } from '@/components/ui';
-import { useConsultationHistory } from '@/hooks/useConsultations';
+import { Card, Badge, SkeletonCard, EmptyState, Modal, Button } from '@/components/ui';
+import { RatingStars } from '@/components/RatingStars';
+import { useConsultationHistory, useRateConsultation } from '@/hooks/useConsultations';
 import { useTheme, spacing, fontSizes, fontWeights, radius, speciesIcon, speciesLabel } from '@/theme';
 import { formatDateTime } from '@/utils/format';
 import type { Consultation } from '@/types';
 
 type Grouped = { pet: Consultation['pet']; consultations: Consultation[] };
+type RatingTarget = { consultationId: string; vetName: string } | null;
 
 export default function HistoryScreen() {
   const router = useRouter();
@@ -18,6 +20,10 @@ export default function HistoryScreen() {
   const { colors: c } = useTheme();
   const { data, isFetching, refetch, isLoading, isError, error } = useConsultationHistory({ limit: 50 });
   const consultations = data ?? [];
+  const [ratingTarget, setRatingTarget] = useState<RatingTarget>(null);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const rate = useRateConsultation();
 
   const grouped: Grouped[] = useMemo(
     () => Object.values(
@@ -149,6 +155,33 @@ export default function HistoryScreen() {
                           Sin notas registradas
                         </Text>
                       )}
+                      {isCompleted && item.review && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm }}>
+                          <RatingStars value={item.review.rating} size={14} disabled />
+                          <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted, flex: 1 }}>
+                            {item.review.comment || 'Calificaste esta consulta'}
+                          </Text>
+                        </View>
+                      )}
+                      {isCompleted && !item.review && (
+                        <Pressable
+                          onPress={() => {
+                            setRating(0);
+                            setComment('');
+                            setRatingTarget({ consultationId: item.id, vetName });
+                          }}
+                          style={{ marginTop: spacing.sm, alignSelf: 'flex-start' }}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Calificar consulta con ${vetName}`}
+                        >
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: c.accentBg, borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm }}>
+                            <MaterialCommunityIcons name="star-outline" size={16} color={c.accentDark} />
+                            <Text style={{ fontSize: fontSizes.caption, color: c.accentDark, fontWeight: fontWeights.semibold }}>
+                              Calificar consulta
+                            </Text>
+                          </View>
+                        </Pressable>
+                      )}
                     </View>
                   </View>
                 );
@@ -157,6 +190,79 @@ export default function HistoryScreen() {
           );
         }}
       />
+      <Modal
+        visible={ratingTarget !== null}
+        title={`Calificá a ${ratingTarget?.vetName ?? ''}`}
+        onClose={() => setRatingTarget(null)}
+        footer={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onPress={() => setRatingTarget(null)}
+              style={{ flex: 1 }}
+              accessibilityLabel="Cancelar calificación"
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              loading={rate.isPending}
+              disabled={rating === 0}
+              onPress={() => {
+                if (!ratingTarget) return;
+                rate.mutate(
+                  { consultationId: ratingTarget.consultationId, payload: { rating, comment: comment.trim() || undefined } },
+                  {
+                    onSuccess: () => {
+                      setRatingTarget(null);
+                      setRating(0);
+                      setComment('');
+                    },
+                  }
+                );
+              }}
+              style={{ flex: 1 }}
+              accessibilityLabel="Enviar calificación"
+            >
+              Enviar
+            </Button>
+          </>
+        }
+      >
+        <View style={{ gap: spacing.lg }}>
+          <Text style={{ fontSize: fontSizes.body, color: c.inkMuted, textAlign: 'center' }}>
+            ¿Cómo fue la atención de esta consulta?
+          </Text>
+          <RatingStars value={rating} onChange={setRating} size={36} />
+          <TextInput
+            value={comment}
+            onChangeText={setComment}
+            placeholder="Contanos cómo fue (opcional)…"
+            placeholderTextColor={c.inkMuted}
+            multiline
+            maxLength={500}
+            style={{
+              backgroundColor: c.surface,
+              borderRadius: radius.lg,
+              borderWidth: 1.5,
+              borderColor: c.border,
+              padding: spacing.md,
+              minHeight: 90,
+              fontSize: fontSizes.body,
+              color: c.ink,
+              textAlignVertical: 'top',
+            }}
+            accessibilityLabel="Comentario sobre la consulta"
+          />
+          {rate.isError && (
+            <Text style={{ fontSize: fontSizes.label, color: c.danger, textAlign: 'center' }}>
+              {(rate.error as any)?.message ?? 'No pudimos guardar tu calificación. Intentá de nuevo.'}
+            </Text>
+          )}
+        </View>
+      </Modal>
     </Animated.View>
   );
 }

@@ -33,6 +33,8 @@ model User {
   firstName    String?
   lastName     String?
   phone        String?
+  bio          String?
+  specialty    String?
   role         Role
   isOnline     Boolean  @default(false)
   tokenVersion Int      @default(1)
@@ -47,6 +49,10 @@ model User {
   pushTokens            PushToken[]
   notifications         Notification[]
   attachments           Attachment[]
+  reviewsAsClient       Review[]       @relation("ClientReviews")
+  reviewsAsVet          Review[]       @relation("VetReviews")
+  favoriteVets          FavoriteVet[]  @relation("FavoriteVetClient")
+  favoritedBy           FavoriteVet[]  @relation("FavoriteVetVet")
 
   @@map("users")
 }
@@ -96,6 +102,7 @@ model Consultation {
   updatedAt     DateTime           @updatedAt
   messages      Message[]
   prescriptions Prescription[]
+  review        Review?
 
   @@index([clientId])
   @@index([vetId])
@@ -169,4 +176,34 @@ model Notification {
 
   @@index([userId, createdAt])
   @@map("notifications")
+}
+
+model Review {
+  id             String   @id @default(cuid())
+  rating         Int
+  comment        String?
+  consultationId String   @unique
+  consultation   Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  clientId       String
+  client         User     @relation("ClientReviews", fields: [clientId], references: [id])
+  vetId          String
+  vet            User     @relation("VetReviews", fields: [vetId], references: [id])
+  createdAt      DateTime @default(now())
+
+  @@index([vetId])
+  @@index([clientId])
+  @@map("reviews")
+}
+
+model FavoriteVet {
+  id        String   @id @default(cuid())
+  clientId  String
+  client    User     @relation("FavoriteVetClient", fields: [clientId], references: [id], onDelete: Cascade)
+  vetId     String
+  vet       User     @relation("FavoriteVetVet", fields: [vetId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([clientId, vetId])
+  @@index([vetId])
+  @@map("favorite_vets")
 }

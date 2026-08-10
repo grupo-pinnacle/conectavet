@@ -1,0 +1,197 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FlatList, Pressable, Switch, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQueryClient } from '@tanstack/react-query';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useVets } from '@/hooks/useVets';
+import { useFavorites } from '@/hooks/useFavorites';
+import { Input, SkeletonCard, EmptyState } from '@/components/ui';
+import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
+import type { Vet } from '@/types';
+
+export default function VetPickerScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const qc = useQueryClient();
+  const { colors: c } = useTheme();
+  const [search, setSearch] = useState('');
+  const [debounced, setDebounced] = useState('');
+  const [onlineOnly, setOnlineOnly] = useState(true);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const { data: vets, isLoading, isError, refetch } = useVets({
+    search: debounced || undefined,
+    online: onlineOnly || undefined,
+  });
+  const { toggle } = useFavorites();
+
+  const visible = useMemo(() => {
+    const all = vets ?? [];
+    return favoritesOnly ? all.filter((v) => v.isFavorite) : all;
+  }, [vets, favoritesOnly]);
+
+  const onSelect = useCallback(
+    (vet: Vet) => {
+      qc.setQueryData(['queue', 'selectedVet'], vet);
+      router.back();
+    },
+    [qc, router]
+  );
+
+  const onToggleFavorite = useCallback(
+    (vet: Vet) => {
+      toggle.mutate({ vetId: vet.id, favorited: Boolean(vet.isFavorite) });
+    },
+    [toggle]
+  );
+
+  return (
+    <View style={{ flex: 1, backgroundColor: c.background, paddingTop: insets.top }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.md }}>
+        <Pressable onPress={() => router.back()} hitSlop={8} accessibilityRole="button" accessibilityLabel="Volver">
+          <MaterialCommunityIcons name="arrow-left" size={24} color={c.ink} />
+        </Pressable>
+        <Text style={{ fontSize: fontSizes.title, fontWeight: fontWeights.bold, color: c.ink, letterSpacing: -0.5, flex: 1 }}>
+          Elegir veterinario
+        </Text>
+      </View>
+
+      <View style={{ paddingHorizontal: spacing.lg }}>
+        <Input
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Buscar por nombre, email o especialidad…"
+          leftIcon="magnify"
+          accessibilityLabel="Buscar veterinarios"
+          containerStyle={{ marginBottom: spacing.sm }}
+        />
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md }}>
+          <Text style={{ fontSize: fontSizes.body, color: c.ink, fontWeight: fontWeights.medium }}>Solo disponibles</Text>
+          <Switch
+            value={onlineOnly}
+            onValueChange={setOnlineOnly}
+            trackColor={{ false: c.border, true: c.primary }}
+            thumbColor={c.white}
+            accessibilityLabel="Filtrar solo veterinarios disponibles"
+          />
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md }}>
+          <Text style={{ fontSize: fontSizes.body, color: c.ink, fontWeight: fontWeights.medium }}>Solo favoritos</Text>
+          <Switch
+            value={favoritesOnly}
+            onValueChange={setFavoritesOnly}
+            trackColor={{ false: c.border, true: c.accentDark }}
+            thumbColor={c.white}
+            accessibilityLabel="Filtrar solo veterinarios favoritos"
+          />
+        </View>
+      </View>
+
+      {isLoading ? (
+        <View style={{ padding: spacing.lg, gap: spacing.md }}>
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </View>
+      ) : isError ? (
+        <View style={{ flex: 1, padding: spacing.lg }}>
+          <EmptyState
+            icon="alert-circle-outline"
+            title="Error al buscar"
+            subtitle="No pudimos cargar los veterinarios. Revisá tu conexión."
+            ctaLabel="Reintentar"
+            onCta={() => refetch()}
+          />
+        </View>
+      ) : visible.length === 0 ? (
+        <View style={{ flex: 1, padding: spacing.lg }}>
+          <EmptyState
+            icon="account-search-outline"
+            title="Sin resultados"
+            subtitle={
+              favoritesOnly
+                ? 'Aún no guardaste veterinarios como favoritos. Tocá el corazón para guardarlos.'
+                : debounced
+                  ? 'No encontramos veterinarios con ese nombre.'
+                  : 'Todavía no hay veterinarios disponibles.'
+            }
+          />
+        </View>
+      ) : (
+        <FlatList
+          data={visible}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: insets.bottom + spacing.huge }}
+          ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
+          keyboardShouldPersistTaps="handled"
+          renderItem={({ item }) => {
+            const name = [item.firstName, item.lastName].filter(Boolean).join(' ') || 'Veterinario';
+            const isFav = Boolean(item.isFavorite);
+            return (
+              <Pressable
+                onPress={() => onSelect(item)}
+                disabled={!item.isOnline}
+                style={({ pressed }) => ({
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: spacing.md,
+                  padding: spacing.lg,
+                  borderRadius: radius.xl,
+                  borderWidth: 1.5,
+                  borderColor: c.border,
+                  backgroundColor: pressed ? c.borderLight : c.surface,
+                  opacity: item.isOnline ? 1 : 0.55,
+                })}
+                accessibilityRole="button"
+                accessibilityLabel={`Elegir a ${name}`}
+                accessibilityState={{ disabled: !item.isOnline }}
+              >
+                <View style={{ width: 44, height: 44, borderRadius: radius.full, backgroundColor: item.isOnline ? c.primaryBg : c.borderLight, alignItems: 'center', justifyContent: 'center' }}>
+                  <MaterialCommunityIcons name="stethoscope" size={22} color={item.isOnline ? c.primary : c.inkMuted} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: fontSizes.subtitle, fontWeight: fontWeights.bold, color: c.ink }} numberOfLines={1}>{name}</Text>
+                  <Text style={{ fontSize: fontSizes.label, color: c.inkMuted }} numberOfLines={1}>
+                    {item.specialty || item.email}
+                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 2 }}>
+                    {typeof item.ratingAvg === 'number' && item.ratingCount ? (
+                      <>
+                        <MaterialCommunityIcons name="star" size={12} color={c.accent} />
+                        <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted }}>
+                          {item.ratingAvg.toFixed(1)} ({item.ratingCount})
+                        </Text>
+                      </>
+                    ) : (
+                      <Text style={{ fontSize: fontSizes.caption, color: c.inkSoft }}>Sin calificaciones</Text>
+                    )}
+                  </View>
+                </View>
+                <Pressable
+                  onPress={() => onToggleFavorite(item)}
+                  hitSlop={10}
+                  style={{ padding: spacing.xs }}
+                  accessibilityRole="button"
+                  accessibilityLabel={isFav ? `Quitar a ${name} de favoritos` : `Agregar a ${name} a favoritos`}
+                  accessibilityState={{ selected: isFav }}
+                >
+                  <MaterialCommunityIcons
+                    name={isFav ? 'heart' : 'heart-outline'}
+                    size={22}
+                    color={isFav ? c.danger : c.inkMuted}
+                  />
+                </Pressable>
+              </Pressable>
+            );
+          }}
+        />
+      )}
+    </View>
+  );
+}

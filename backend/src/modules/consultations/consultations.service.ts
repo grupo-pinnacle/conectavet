@@ -41,6 +41,7 @@ const consultationSnapshot = {
   pet: true,
   client: { select: publicUser },
   vet: { select: publicUser },
+  review: { select: { id: true, rating: true, comment: true } },
 } satisfies Prisma.ConsultationSelect;
 
 const consultationWithMessages = {
@@ -51,15 +52,36 @@ const consultationWithMessages = {
   },
 } satisfies Prisma.ConsultationSelect;
 
+const vetPublicSelect = {
+  id: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  isOnline: true,
+} as const;
+
 export async function findFirstAvailableVet(species?: string) {
   // Sin caché: el pick se consume una sola vez (se asigna a una consulta).
   // Cachearlo 30s re-servía el MISMO vet a todos los clients en esa ventana
   // (sobrecarga del vet) y podía devolver un vet recién puesto offline.
-  void species;
+  // Si hay una especie, se priorizan los vets que ya atendieron mascotas de
+  // esa especie; si ninguno tiene historial, se cae a cualquier vet online.
+  if (species) {
+    const experienced = await prisma.user.findFirst({
+      where: {
+        role: 'VET',
+        isOnline: true,
+        consultationsAsVet: { some: { pet: { species } } },
+      },
+      orderBy: { createdAt: 'asc' },
+      select: vetPublicSelect,
+    });
+    if (experienced) return experienced;
+  }
   return prisma.user.findFirst({
     where: { role: 'VET', isOnline: true },
     orderBy: { createdAt: 'asc' },
-    select: { id: true, email: true, firstName: true, lastName: true, isOnline: true },
+    select: vetPublicSelect,
   });
 }
 
@@ -67,6 +89,7 @@ export async function createConsultation(data: {
   clientId: string;
   petId: string;
   notes?: string;
+  vetId?: string;
 }) {
   const pet = await prisma.pet.findUnique({ where: { id: data.petId } });
   if (!pet) throw new NotFoundError('Mascota no encontrada');
@@ -74,15 +97,32 @@ export async function createConsultation(data: {
     throw new ForbiddenError('La mascota no te pertenece');
   }
 
-  const vet = await findFirstAvailableVet(pet.species);
+  let vetId: string | undefined;
+  let status: 'ACTIVE' | 'WAITING' = 'WAITING';
+
+  if (data.vetId) {
+    const chosen = await prisma.user.findUnique({ where: { id: data.vetId } });
+    if (!chosen || chosen.role !== 'VET') {
+      throw new NotFoundError('Veterinario no encontrado');
+    }
+    if (!chosen.isOnline) {
+      throw new ConflictError('Ese veterinario no está disponible en este momento');
+    }
+    vetId = chosen.id;
+    status = 'ACTIVE';
+  } else {
+    const vet = await findFirstAvailableVet(pet.species);
+    vetId = vet?.id;
+    status = vet ? 'ACTIVE' : 'WAITING';
+  }
 
   return prisma.consultation.create({
     data: {
       clientId: data.clientId,
       petId: data.petId,
-      status: vet ? 'ACTIVE' : 'WAITING',
-      vetId: vet?.id,
-      startedAt: vet ? new Date() : undefined,
+      status,
+      vetId,
+      startedAt: status === 'ACTIVE' ? new Date() : undefined,
       notes: data.notes,
     },
     select: consultationSnapshot,
@@ -220,8 +260,15 @@ export async function getAvailableVets(species?: string) {
     : 'vets:list:available';
   const cached = getCached<any[]>(cacheKey);
   if (cached) return cached;
+  const where: Prisma.UserWhereInput = {
+    role: 'VET',
+    isOnline: true,
+    ...(species
+      ? { consultationsAsVet: { some: { pet: { species } } } }
+      : {}),
+  };
   const vets = await prisma.user.findMany({
-    where: { role: 'VET', isOnline: true },
+    where,
     select: { id: true, email: true, firstName: true, lastName: true, isOnline: true },
     orderBy: { createdAt: 'asc' },
   });
@@ -301,5 +348,43 @@ export async function getPrescriptions(consultationId: string) {
       vet: { select: { id: true, firstName: true, lastName: true } },
     },
     orderBy: { createdAt: 'asc' },
+  });
+}
+
+export async function createReview(data: {
+  consultationId: string;
+  clientId: string;
+  rating: number;
+  comment?: string;
+}) {
+  const consultation = await prisma.consultation.findUnique({
+    where: { id: data.consultationId },
+  });
+  if (!consultation) throw new NotFoundError('Consulta no encontrada');
+  if (consultation.clientId !== data.clientId) {
+    throw new ForbiddenError('Solo el cliente de la consulta puede calificarla');
+  }
+  if (consultation.status !== 'COMPLETED') {
+    throw new ConflictError('Solo se pueden calificar consultas finalizadas');
+  }
+  if (!consultation.vetId) {
+    throw new ConflictError('Esta consulta no tiene veterinario asignado');
+  }
+
+  const existing = await prisma.review.findUnique({
+    where: { consultationId: data.consultationId },
+  });
+  if (existing) {
+    throw new ConflictError('Esta consulta ya fue calificada');
+  }
+
+  return prisma.review.create({
+    data: {
+      rating: data.rating,
+      comment: data.comment,
+      consultationId: data.consultationId,
+      clientId: data.clientId,
+      vetId: consultation.vetId,
+    },
   });
 }

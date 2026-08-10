@@ -193,6 +193,11 @@ export default function ConsultationChatScreen() {
           keyboardShouldPersistTaps="handled"
           renderItem={renderMessage}
           ItemSeparatorComponent={() => <View style={{ height: 2 }} />}
+          initialNumToRender={15}
+          maxToRenderPerBatch={10}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
+          updateCellsBatchingPeriod={50}
           ListHeaderComponent={
             <View>
               {rxList.length > 0 && (

@@ -56,6 +56,10 @@ export default function ChatListScreen() {
         keyExtractor={(item) => item.type}
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: insets.bottom + spacing.lg }}
         refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={c.primary} />}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        removeClippedSubviews={Platform.OS === 'android'}
         ListEmptyComponent={
           <EmptyState
             icon="chat-processing"

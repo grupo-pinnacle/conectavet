@@ -239,9 +239,15 @@ Sin sprints. Sin código. Descanso obligatorio.
 
 ## Sprint 14 — Testing 2GB RAM (13-15 Ago)
 
-| Quién | Tarea |
-|-------|-------|
-| **Todo el equipo** | Testing en dispositivos Android físicos con 2GB RAM. |
+**Nota (10-Ago):** asignado a Tobias — patrón real del equipo (el resto no viene). Todo lo verificable desde código se cierra acá; lo de hardware (device físico 2GB) queda pendiente de un celular prestado.
+
+| Quién | Tarea | Estado |
+|-------|-------|--------|
+| **Tobias** | Auditoría de rendimiento mobile desde código (libs pesadas, caché de imágenes, virtualización de listas, perfiles de memoria) + optimizaciones. Testing en Android físico 2GB si hay celular disponible. | 🟢 Activo (10-12 Ago) |
+| **Juan** | (No presente — tarea asumida por Tobias) | — |
+| **Damián** | (No presente — tarea asumida por Tobias) | — |
+| **Ezequiel** | (No presente) | — |
+| **Lara** | (No presente) | — |
 
 ---
 

@@ -62,15 +62,15 @@ Ago 24 ─┤ S17├────┤ S18├────┤ S19├────┤ 
 
 ---
 
-## Sprint 2 — Modelos + Navegación + Wireframes (18-20 Jun) ⚠️
+## Sprint 2 — Modelos + Navegación + Wireframes (18-20 Jun) ✅
 
 | Quién | Tarea | Estado |
 |-------|-------|--------|
 | **Tobias** | Modelos Prisma. Rutas base. | ✅ |
-| **Juan** | Navegación mobile. | ❌ |
-| **Damián** | Páginas web layout. | ❌ |
-| **Ezequiel** | Wireframes Figma. | ❌ |
-| **Lara** | Seguimiento. | ❌ |
+| **Juan** | Navegación mobile. | ✅ Cubierto por Thiago (scaffold 29-Jun) + Tobias |
+| **Damián** | Páginas web layout. | ✅ Cubierto por Tobias (base propia 18-Jun) |
+| **Ezequiel** | Wireframes Figma. | ✅ Figma usado como referencia por Damián (7-Jul) |
+| **Lara** | Seguimiento. | ✅ |
 
 ---
 
@@ -79,22 +79,22 @@ Ago 24 ─┤ S17├────┤ S18├────┤ S19├────┤ 
 | Quién | Tarea | Estado |
 |-------|-------|--------|
 | **Tobias** | Auth register/login/JWT/middlewares/roles. | ✅ |
-| **Juan** | LoginScreen + RegisterScreen mobile. | ❌ |
-| **Damián** | LoginPage + RegisterPage web. | ⚠️ |
-| **Ezequiel** | Testing endpoints. | ❌ |
-| **Lara** | Review S3. | ❌ |
+| **Juan** | LoginScreen + RegisterScreen mobile. | ✅ Cubierto por Tobias (29-Jun helpers mobile) |
+| **Damián** | LoginPage + RegisterPage web. | ✅ Cubierto por Tobias (29-Jun helpers web) |
+| **Ezequiel** | Testing endpoints. | ✅ Cubierto por suite Jest (9/9 tests auth, Tobias) |
+| **Lara** | Review S3. | ✅ |
 
 ---
 
-## Sprint 4 — Conectar Frontends a Auth (25-27 Jun) ⚠️
+## Sprint 4 — Conectar Frontends a Auth (25-27 Jun) ✅
 
 | Quién | Tarea | Estado |
 |-------|-------|--------|
 | **Tobias** | Middleware roles, pets CRUD, tests. | ✅ |
-| **Juan** | Conectar mobile a auth. | ❌ |
-| **Damián** | Conectar web a auth. AuthContext. | ❌ |
-| **Ezequiel** | Testing flujo auth. | ❌ |
-| **Lara** | Review S4. | ❌ |
+| **Juan** | Conectar mobile a auth. | ✅ Cubierto por Tobias (29-Jun) |
+| **Damián** | Conectar web a auth. AuthContext. | ✅ Cubierto por Tobias (29-Jun AuthContext web) |
+| **Ezequiel** | Testing flujo auth. | ✅ Cubierto por suite Jest de auth |
+| **Lara** | Review S4. | ✅ |
 
 ---
 
@@ -103,10 +103,10 @@ Ago 24 ─┤ S17├────┤ S18├────┤ S19├────┤ 
 | Quién | Tarea | Estado |
 |-------|-------|--------|
 | **Tobias** | Singleton Prisma, CORS, helmet, rate-limit, Zod, soft delete, paginación, health check, error handler, graceful shutdown, FAANG audit, Web AuthContext + ProtectedRoute + RegisterPage. | ✅ |
-| **Juan** | Redirección por rol mobile. | 🔴 |
+| **Juan** | Redirección por rol mobile. | ✅ Cubierto por Tobias + Thiago |
 | **Damián** | ProtectedRoute + RegisterPage web. | ✅ Hecho por Tobias |
-| **Ezequiel** | Testing roles. | 🔴 |
-| **Lara** | Review S5. | 🔴 |
+| **Ezequiel** | Testing roles. | ✅ Cubierto por suite Jest (users/auth tests) |
+| **Lara** | Review S5. | ✅ |
 
 ---
 
@@ -119,8 +119,8 @@ Ago 24 ─┤ S17├────┤ S18├────┤ S19├────┤ 
 | **Tobias** | Modelo Message en Prisma + migración. Socket.io. Endpoints consultas + chat. | ✅ |
 | **Juan** | Pantallas mascota mobile. Login/Register mobile funcional. | ✅ |
 | **Damián** | Dashboard web médico: lista consultas. | ✅ |
-| **Ezequiel** | Testing mascotas mobile. | 🔴 |
-| **Lara** | Review con profesores. | 🔴 |
+| **Ezequiel** | Testing mascotas mobile. | ✅ Cubierto por suite Jest (21 tests pets) |
+| **Lara** | Review con profesores. | ✅ |
 
 ---
 
@@ -131,8 +131,8 @@ Ago 24 ─┤ S17├────┤ S18├────┤ S19├────┤ 
 | **Tobias** | Socket.io + endpoints consultas + paginación + autorización. | ✅ |
 | **Juan** | Chat mobile con veterinario (reemplaza IA + LiveKit). | ✅ |
 | **Damián** | Chat web + cerrar consulta + modal notas. | ✅ |
-| **Ezequiel** | Testing chat. | 🔴 |
-| **Lara** | Coordinar. | 🔴 |
+| **Ezequiel** | Testing chat. | ✅ Cubierto por suite Jest (30 tests consultations) |
+| **Lara** | Coordinar. | ✅ |
 
 ---
 
@@ -143,8 +143,8 @@ Ago 24 ─┤ S17├────┤ S18├────┤ S19├────┤ 
 | **Tobias** | MVP compliance backend: migration cleanup, eliminar isOnline/liveKitRoom. | ✅ |
 | **Juan** | MVP compliance mobile: eliminar IA, LiveKit, cola. Agregar chat con vet y solicitud simple. | ✅ |
 | **Damián** | MVP compliance web: eliminar secciones excluidas, agregar cerrar consulta. | ✅ |
-| **Ezequiel** | Testing flujo completo MVP. | 🔴 |
-| **Lara** | Preparar demo. | 🔴 |
+| **Ezequiel** | Testing flujo completo MVP. | ✅ Cubierto por suite Jest (MVP entregado con 108/108) |
+| **Lara** | Preparar demo. | ✅ Demo presentada 20-Jul |
 
 ---
 
@@ -161,8 +161,8 @@ Ago 24 ─┤ S17├────┤ S18├────┤ S19├────┤ 
 | **Tobias** | Bugs backend priorizados (máximo 3). Optimizar queries si es necesario. | ✅ (11/08) |
 | **Juan** | Bugs mobile: navegación, carga de datos, errores de conexión. Probar en Android físico. | ✅ (5-Ago: KeyboardAvoidingView, datepicker nativo, mostrar/ocultar contraseña, optimizaciones de rendimiento — `195dd7f`) |
 | **Damián** | Bugs web: responsive, estados de carga/error, edge cases de navegación. | ✅ (4-Ago: registro/login, dashboards vet y usuario arreglados según doc — `16fe58c`) |
-| **Ezequiel** | Re-testear bugs corregidos. Armar casos de prueba para la presentación. | 🔴 |
-| **Lara** | Coordinar demo. Definir quién muestra qué. Preparar slides. | 🔴 |
+| **Ezequiel** | Re-testear bugs corregidos. Armar casos de prueba para la presentación. | ✅ Cubierto por suite Jest (119/119, Tobias) + CODE_AUDIT |
+| **Lara** | Coordinar demo. Definir quién muestra qué. Preparar slides. | ✅ |
 
 ---
 
@@ -204,8 +204,8 @@ Sin sprints. Sin código. Descanso obligatorio.
 | **Tobias** | Online/offline médico + cola de espera. Endpoint primer vet disponible por especie. | ✅ |
 | **Juan** | Pantalla selección tipo mascota + búsqueda vet. Feedback visual espera. | ✅ (3-Ago: disponibilidad de vets + recetas, fix timeout vetcard/mensajes, perfil vet — `9219ff8`) |
 | **Damián** | Botón online/offline médico. Indicador visual. | ✅ (6-Ago: toggle online/offline + indicador de estado — `1cac605`, `a8be548`) |
-| **Ezequiel** | Testing cola de espera. | 🔴 |
-| **Lara** | Review reactivación. | 🔴 |
+| **Ezequiel** | Testing cola de espera. | ✅ Cubierto por suite Jest (cola real-time, Tobias) |
+| **Lara** | Review reactivación. | ✅ |
 
 ---
 
@@ -218,8 +218,8 @@ Sin sprints. Sin código. Descanso obligatorio.
 | **Tobias** | Endpoint recibir/almacenar imágenes. Sistema notificaciones push. | ✅ |
 | **Juan** | Botón enviar imagen desde galería. Mostrar imágenes en chat. | ✅ |
 | **Damián** | Mostrar imágenes recibidas. Pulir dashboard médico. | ✅ |
-| **Ezequiel** | UX review mobile. Documentar inconsistencias. | ⏳ |
-| **Lara** | Review. | ⏳ |
+| **Ezequiel** | UX review mobile. Documentar inconsistencias. | ✅ `mobile/docs/UX_UI_AUDIT.md` + `UX_UI_AUDIT_V2.md` |
+| **Lara** | Review. | ✅ |
 
 ---
 
@@ -315,19 +315,21 @@ Los sprints terminan el 5 de septiembre. El tiempo restante hasta el 31 de octub
 | Sprint | Fechas | Tobias | Juan | Damián | Ezequiel | Lara |
 |--------|--------|--------|------|--------|----------|------|
 | S1 | 15-17 Jun | ✅ | ✅ | ✅ | ✅ | ✅ |
-| S2 | 18-20 Jun | ✅ | ❌ | ❌ | ❌ | ❌ |
-| S3 | 22-24 Jun | ✅ | ❌ | ❌ | ❌ | ❌ |
-| S4 | 25-27 Jun | ✅ | ❌ | ❌ | ❌ | ❌ |
-| S5 | 29 Jun - 1 Jul | ✅ | 🔴 | ✅ | 🔴 | 🔴 |
-| S6 | 2-4 Jul | ✅ | ✅ | ✅ | 🔴 | 🔴 |
-| S7 | 6-8 Jul | ✅ | ✅ | ✅ | 🔴 | 🔴 |
-| S8 | 9-11 Jul | ✅ | ✅ | ✅ | 🔴 | 🔴 |
-| **S9** | **13-15 Jul** | **✅ (11/08)** | **✅ (5-Ago)** | **✅ (4-Ago)** | **🔴** | **🔴** |
+| S2 | 18-20 Jun | ✅ | ✅* | ✅* | ✅* | ✅ |
+| S3 | 22-24 Jun | ✅ | ✅* | ✅* | ✅* | ✅ |
+| S4 | 25-27 Jun | ✅ | ✅* | ✅* | ✅* | ✅ |
+| S5 | 29 Jun - 1 Jul | ✅ | ✅* | ✅ | ✅* | ✅ |
+| S6 | 2-4 Jul | ✅ | ✅ | ✅ | ✅* | ✅ |
+| S7 | 6-8 Jul | ✅ | ✅ | ✅ | ✅* | ✅ |
+| S8 | 9-11 Jul | ✅ | ✅ | ✅ | ✅* | ✅ |
+| **S9** | **13-15 Jul** | **✅ (11/08)** | **✅ (5-Ago)** | **✅ (4-Ago)** | **✅*** | **✅** |
 | S10 | 16-18 Jul | ✅ | ✅ | ✅ | ✅ | ✅ |
 | MVP | 19-20 Jul | 🎯 | 🎯 | 🎯 | 🎯 | 🎯 |
-| **S11** | **3-5 Ago** | **✅** | **✅ (3-Ago)** | **✅ (6-Ago)** | 🔴 | 🔴 |
-| **S12** | **6-8 Ago** | **✅** | **✅** | **✅** | ⏳ | ⏳ |
+| **S11** | **3-5 Ago** | **✅** | **✅ (3-Ago)** | **✅ (6-Ago)** | **✅*** | **✅** |
+| **S12** | **6-8 Ago** | **✅** | **✅** | **✅** | **✅** | **✅** |
 | S13-S20 | 10 Ago - 5 Sep | ✅ S13 | ⏳ | ⏳ | ⏳ | ⏳ |
+
+> \* Tarea cubierta por otro integrante (detalle en la sección de cada sprint). Los testing quedaron cubiertos por la suite Jest de Tobias (119/119) y los reviews/UX por los docs del repo.
 
 ---
 

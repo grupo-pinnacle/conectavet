@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, Text, View, Platform } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -62,6 +62,10 @@ export default function HistoryScreen() {
         keyExtractor={(item) => item.pet?.id || 'unknown'}
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: insets.bottom + spacing.huge }}
         refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={c.primary} />}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        removeClippedSubviews={Platform.OS === 'android'}
         ListEmptyComponent={
           <EmptyState
             icon="clipboard-text-outline"

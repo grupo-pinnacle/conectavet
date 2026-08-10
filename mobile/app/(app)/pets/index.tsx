@@ -1,4 +1,4 @@
-import { View, FlatList, RefreshControl } from 'react-native';
+import { View, FlatList, RefreshControl, Platform } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -62,6 +62,10 @@ export default function PetsListScreen() {
         ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
         refreshControl={<RefreshControl refreshing={list.isFetching} onRefresh={list.refetch} tintColor={c.primary} />}
         renderItem={({ item }) => <PetCard pet={item} onPress={() => router.push(`/(app)/pets/${item.id}`)} />}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        removeClippedSubviews={Platform.OS === 'android'}
         ListHeaderComponent={
           <View style={{ marginBottom: spacing.lg }}>
             <Button onPress={() => router.push('/(app)/pets/new')} size="md" fullWidth icon={<MaterialCommunityIcons name="plus" size={18} color={c.white} />}>

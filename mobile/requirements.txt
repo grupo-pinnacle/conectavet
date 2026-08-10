@@ -70,10 +70,11 @@ socket.io-client                        # ^4.8.3     chat tiempo real
 zod                                     # ^3.23.8    validación
 zustand                                 # ^4.5.4     estado global
 
-# ── NO USAR (heredadas de LiveKit, quedaron en package.json pero el
-# ── MVP usa chat de texto, ver MVP_SCOPE.md): ──────────────────────
+# ── ELIMINADAS en S14 (2GB RAM) ──────────────────────────────
 # @livekit/react-native, @livekit/react-native-webrtc,
-# livekit-client, react-native-webrtc, react-native-worklets, expo-av
+# livekit-client, react-native-webrtc, expo-av → eran de videollamada,
+# el MVP usa chat de texto. Pesaban ~200MB de bundle y RAM.
+# react-native-worklets SE MANTIENE (lo requiere reanimated).
 
 # ═══════════════════════════════════════════════════════════════
 # DEPENDENCIAS DE DESARROLLO (devDependencies)

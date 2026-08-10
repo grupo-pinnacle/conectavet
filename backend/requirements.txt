@@ -65,5 +65,8 @@ typescript                # ^6.0.3
 #   npm test           → correr la suite (119 tests)
 #   npm run build      → compilar a dist/
 #   npm run migrate    → aplicar migraciones
+#   npm run seed       → crear usuarios de prueba (cliente.demo@conectavet.com
+#                        / vet.demo@conectavet.com / vet.demo2@conectavet.com
+#                        password: test1234) — los vets quedan online
 #
 # ⚠ NOTA: el .env NO se commitea. Ver backend/.env.example para la plantilla.

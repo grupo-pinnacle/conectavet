@@ -55,7 +55,8 @@
 | Imágenes en el chat | Mobile + Web | S12 | ✅ |
 | Notificaciones push | Mobile | S12 | ✅ (backend + registro de token mobile) |
 | Seguridad/estabilización backend (S13) | — | S13 | ✅ Tobías: rol fijo, password oculta, migraciones, `.env` fuera de git, logout revoca |
-| Videollamada (LiveKit) | Mobile + Web | Post-MVP | — |
+| **Sistema de calificaciones** | Mobile + Web | S11+ (sesión 11-Ago) | ✅ Reviews 1-5 post-consulta (`POST /consultations/:id/rating`), promedio + cantidad en directorio, filtro `minRating`, orden por rating, estrellas en historial mobile y directorio web |
+| **Videollamada (LiveKit)** | Mobile + Web | S13 (sesión 12-Ago) | ✅ Backend (tokens + rooms) + sala web + WebView mobile. **Pendiente:** credenciales de producción (`LIVEKIT_URL/API_KEY/API_SECRET`) + prueba real con 2 dispositivos |
 | Asistente IA | Mobile | Post-MVP | — |
 | Sistema de honorarios | Web | Post-MVP | — |
 

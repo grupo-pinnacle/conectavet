@@ -3,13 +3,13 @@
 > **Fecha:** 11 de agosto, 2026
 > **Autor:** Tobias (sesión de cierre S13/S14)
 > **Propósito:** Documento único y exhaustivo de TODO lo que falta por hacer para llevar el proyecto a producción y demo final. Complementa `MVP_SCOPE.md`, `CODE_AUDIT.md`, `SPRINT_PLAN.md` y `DEPLOY.md`.
-> **Estado:** ACTUALIZADO al commit `49fc880` + sesión del 11-Ago (flujo PENDING: el vet decide atender o no, receta estructurada, chat web en vivo, búsqueda con rating/orden, pulido UX). Ver sección 7.1.
+> **Estado:** ACTUALIZADO al commit `1c73b87` + sesión 12-Ago (ronda UX/QA: edad años+meses, alta de mascota, cola, pestaña Veterinarios, toggle contraseña, dedup de imágenes **y videollamadas LiveKit implementadas** — backend 155/155 tests). El sistema de calificaciones ya está operativo desde la sesión 11-Ago. Ver secciones 4, 7.1 y 7.1b.
 
 ---
 
 ## 1. Resumen ejecutivo
 
-El proyecto ya cumple el MVP completo (20-Jul) y post-MVP S11-S13 (cola, online/offline, imágenes, push, seguridad). En la sesión del 11-Ago se implementaron los 7 pedidos del CEO: flujo PENDING (el vet decide atender), receta estructurada, chat web en vivo, búsqueda con rating/orden y fix del optimista (backend 149/149 tests).
+El proyecto ya cumple el MVP completo (20-Jul) y post-MVP S11-S13 (cola, online/offline, imágenes, push, seguridad, **calificaciones**, **videollamadas**). En la sesión del 11-Ago se implementaron los 7 pedidos del CEO: flujo PENDING (el vet decide atender), receta estructurada, chat web en vivo, búsqueda con rating/orden y fix del optimista (backend 149/149 tests). En la del 12-Ago se cerró la ronda UX/QA del CEO + las videollamadas LiveKit (backend 155/155 tests, commit `1c73b87`).
 
 Lo que falta se divide en **6 frentes**:
 
@@ -17,7 +17,7 @@ Lo que falta se divide en **6 frentes**:
 |--------|-----------|----------|-----------------|
 | 1. QA: testing real en hardware 2GB RAM + web + E2E | CRITICA | Medio | S14-S16 |
 | 2. Deuda técnica heredada (CODE_AUDIT M/W) | ALTA | Medio | S14-S15 |
-| 3. Videollamadas (LiveKit) — la feature grande pendiente | ALTA | Alto | S15-S17 |
+| 3. Videollamadas (LiveKit) — **implementadas**; falta credenciales de producción y prueba real | ALTA | Bajo | Inmediato (credenciales), S14-S15 (pruebas) |
 | 4. Features post-MVP planificadas pero no empezadas (IA, honorarios, historial clínico, ADMIN) | MEDIA | Alto | S17-S20 |
 | 5. Seguridad/operaciones manuales (JWT_SECRET, credenciales, builds) | CRITICA | Bajo | Inmediato |
 | 6. Pulido de producto (perfiles más personalizables, mejoras UX) | MEDIA | Medio | S16-S18 |
@@ -110,54 +110,28 @@ Del `CODE_AUDIT.md` quedan pendientes de Mobile (M) y Web (W). Los críticos de 
 
 ---
 
-## 4. Videollamadas — LiveKit (frente 3, la feature grande)
+## 4. Videollamadas — LiveKit (frente 3, implementado el 12-Ago)
 
-Decisión tomada en `CHANNEL_DECISION.md` y comunicada a Lara: videollamada es post-MVP y se reemplazó por chat en el MVP. Es la feature de producto más importante que queda sin hacer. Esta vez hay que hacerla bien, no como el intento anterior (libs instaladas sin uso que se quitaron en `d67dbdd` porque sumaban ~200MB al bundle).
+La feature se **implementó completa en la sesión 12-Ago** (commit `1c73b87`), después de dos intentos previos: el original (reemplazado por chat en el MVP, ver ADR-009) y las libs instaladas sin uso que sumaban ~200MB al bundle y se quitaron en `d67dbdd`. Esta vez se hizo con el backend real emitiendo tokens.
 
-### 4.1 Requisitos previos (infraestructura)
+### 4.1 Lo que ya está hecho ✅
 
-- [ ] **Instancia LiveKit**: deploy en Railway o Cloudflare Workers (SFU autogestionado) O usar LiveKit Cloud (plan free: 1000 min/mes). Recomendado: **LiveKit Cloud** para demo.
-- [ ] **Cantidad de credenciales**: `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_URL` (wss://...).
-- [ ] **HTTPS obligatorio**: getUserMedia (cámara/mic) solo funciona con `https://` (o `localhost`). El celular físico no puede probar video contra IP LAN `http://`.
-- [ ] **Nuevo endpoint backend** `POST /consultations/:id/livekit-token`:
-  - Solo participantes de la consulta (reusar `assertParticipation`).
-  - Solo consultas `ACTIVE`.
-  - Devuelve `{ token, url, roomName }` con JWT de LiveKit firmado con expiración (p.ej. 2h) y grants de `roomJoin` + `canPublish` + `canSubscribe`.
-  - Librería: `livekit-server-sdk` (solo en el backend, no pesa en el bundle mobile).
+| Capa | Implementación |
+|------|----------------|
+| Backend | `POST /api/calls/:id/token` en `backend/src/modules/calls/`: solo participantes de la consulta, solo `ACTIVE` (409 si no), 403 ajeno, 404 inexistente, token LiveKit con TTL 10 min y room `consultation-{id}`; 503 "no habilitadas" si faltan credenciales. 4 tests en la suite (155/155 en verde) |
+| Web | Sala completa con `livekit-client` (`web/src/components/call/CallRoom.tsx`): video remoto/local, mic/cam toggle, timer, esperando al otro; `CallButton` lazy (code-split, el bundle principal sigue en ~139 KB gzip); página `/call` que al colgar vuelve al chat con `vetconnect://call-ended` |
+| Mobile | Pantalla `app/(app)/call/[consultationId].tsx` con WebView a `${WEB_URL}/call` (funciona en Expo Go, sin prebuild nativo) + botón "Videollamada" en el chat activo |
 
-### 4.2 Backend
+### 4.2 Lo que queda (sin código, manual)
 
-- [ ] `POST /consultations/:id/livekit-token` con las validaciones de arriba.
-- [ ] Almacenar `livekitRoomId` en `Consultation`? No es necesario si el room se deriva del `consultationId` (p.ej. `room = "consultation-<id>"`) — decidir y documentar.
-- [ ] Tests: 200 participante ACTIVE, 403 ajeno, 409 no ACTIVE, 404 inexistente.
-- [ ] Mantener la regla: la consulta sigue funcionando por chat aunque el video falle (degradación graceful).
+- [ ] **Credenciales reales** en `backend/.env`: `LIVEKIT_URL` (formato `wss://proyecto.livekit.cloud`), `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` (documentadas en `.env.example`).
+- [ ] **HTTPS obligatorio**: `getUserMedia` solo funciona con `https://` — el celular físico no puede probar video contra IP LAN `http://` con `ws://localhost:7880`.
+- [ ] **Prueba real 2 dispositivos**: CLIENT mobile ↔ VET web, llamada completa con audio/video en ambos sentidos (criterios de S14/S15).
+- [ ] **Regresión 2GB**: el WebView carga `livekit-client` solo al entrar a la llamada (lazy por diseño); verificar que la app sigue liviana.
+- [ ] **Push "Te está llamando"** al otro lado (reusar el sistema de S12) — opcional.
+- [ ] Si el otro lado no contesta en 30s, la llamada se cae sola con aviso — opcional.
 
-### 4.3 Mobile
-
-- [ ] Instalar `@livekit/react-native` + `react-native-webrtc` (el soporte RN requiere pod install / expo prebuild).
-- [ ] **PANTALLA de videollamada** `app/(app)/call/[consultationId].tsx`:
-  - Preview de cámara propia (piP pequeño) + video del vet (full screen).
-  - Botones: mute mic, toggle camera, colgar.
-  - Timer de duración.
-  - Indicadores de "cámara apagada" / "sin conexión".
-- [ ] Botón "Llamar" en el chat activo (tanto para CLIENT como para VET en la web).
-- [ ] Push notification al otro lado: "Te está llamando" (reusar el sistema de notificaciones de S12).
-- [ ] Colgar → volver al chat; el estado de la consulta no cambia (el video es complementario al chat).
-- [ ] **Regresión 2GB**: verificar que la app sigue siendo liviana; `react-native-webrtc` se debe cargar lazy (no importar al arranque) para no sumar ~50-80MB a la carga inicial.
-
-### 4.4 Web (médico)
-
-- [ ] Instalar `livekit-client` + `@livekit/components-react` (en la web sí).
-- [ ] Panel de video en el chat del médico (misma experiencia que mobile).
-- [ ] Soporte de pantalla compartida opcional (el médico puede mostrar placas) — bonus.
-
-### 4.5 Criterios de aceptación
-
-- [ ] Llamada completa 2 participantes (CLIENT mobile ↔ VET web) con audio y video en ambos sentidos.
-- [ ] Mute/desmute + toggle de cámara + colgar funcionan en ambas puntas.
-- [ ] Si el otro lado no contesta en 30s, la llamada se cae sola con aviso.
-- [ ] El chat sigue funcionando durante y después de la llamada.
-- [ ] 0 leaks de memoria en una llamada de 10 min en Android 2GB (probar!).
+**Regla mantenida:** la consulta sigue funcionando por chat aunque el video falle (degradación graceful).
 
 ---
 
@@ -276,4 +250,4 @@ Verificación: backend `tsc` limpio + **155/155 tests jest OK** (incl. 4 de `cal
 - [ ] Probado en las 2 plataformas (mobile 2GB + web) cuando aplica.
 - [ ] Docs actualizados (MVP_SCOPE / CHANNEL_DECISION / CODE_AUDIT).
 - [ ] Commit con mensaje descriptivo siguiendo la convención del repo.
-- [ ] Sin regresiones: `npx jest` backend en verde (149+ tests) antes de cerrar la sesión.
+- [ ] Sin regresiones: `npx jest` backend en verde (155+ tests) antes de cerrar la sesión.

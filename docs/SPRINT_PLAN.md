@@ -25,6 +25,8 @@
 | **MVP compliance** | Completado | ✅ Proyecto alineado al alcance MVP |
 
 > **Actualización 10-Ago:** sprints S9 (web), S11 (mobile + web) cerrados por Juan y Damián con commits propios (4-6 Ago). Detalle de aportes no registrados al final de este documento.
+>
+> **Actualización 12-Ago (sesión QA/UX del CEO, commit `1c73b87`):** edad en años+meses (mobile + web), alta de mascota rediseñada, cola rediseñada (modo rápido / elegir vet), pestaña **Veterinarios** en el tab bar, navegación del picker arreglada, toggle de contraseña en web, flujo de imágenes sin duplicados **y videollamadas LiveKit** (endpoint de tokens, sala web code-split, WebView mobile). El sistema de calificaciones (1-5) quedó operativo en la sesión 11-Ago (historial + directorio con promedio). Backend en **155/155 tests**.
 
 ---
 
@@ -229,7 +231,7 @@ Sin sprints. Sin código. Descanso obligatorio.
 
 | Quién | Tarea | Estado |
 |-------|-------|--------|
-| **Tobias** | Deuda técnica. Optimizar queries Prisma. Revisar seguridad. | ✅ |
+| **Tobias** | Deuda técnica. Optimizar queries Prisma. Revisar seguridad. | ✅ (11-Ago, 149/149; + videollamadas y ronda UX 12-Ago, 155/155) |
 | **Juan** | Bugs UX. Rendimiento en 2GB RAM. | ⏳ (pendientes CODE_AUDIT: `disconnectSocket()` en logout, leer `petId` en queue) |
 | **Damián** | Bugs web. Chrome, Firefox, Edge. | ⏳ (pendiente CODE_AUDIT: unificar `WS_URL` real en mobile + eas.json) |
 | **Ezequiel** | Re-testear. Reporte para profesores. | ⏳ |

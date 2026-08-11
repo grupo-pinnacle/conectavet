@@ -9,6 +9,8 @@ const registerSchema = z.object({
   firstName: z.string().max(50).optional(),
   lastName: z.string().max(50).optional(),
   phone: z.string().max(20).optional(),
+  // Whitelist explícita: el registro jamás puede pedir ADMIN por API.
+  role: z.enum(['CLIENT', 'VET']).optional(),
 });
 
 const loginSchema = z.object({

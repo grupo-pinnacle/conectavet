@@ -11,6 +11,7 @@ interface RegisterInput {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  role?: 'CLIENT' | 'VET';
 }
 
 interface LoginInput {
@@ -69,7 +70,9 @@ export async function register(input: RegisterInput) {
     data: {
       email: input.email,
       password: hashedPassword,
-      role: 'CLIENT',
+      // El schema valida la whitelist (CLIENT|VET); acá solo se define el
+      // default: sin role indicado, siempre se crea un cliente.
+      role: input.role ?? 'CLIENT',
       firstName: input.firstName,
       lastName: input.lastName,
       phone: input.phone,

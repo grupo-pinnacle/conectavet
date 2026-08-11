@@ -144,10 +144,25 @@ describe('Auth Service', () => {
       expect(res.status).toBe(400);
     });
 
-    test('POST /api/auth/register — ignora role malicioso y fija CLIENT', async () => {
+    test('POST /api/auth/register — rechaza role ADMIN (whitelist)', async () => {
       const res = await request(app)
         .post('/api/auth/register')
         .send({ email: `auth-http-${authUnique}-role@test.com`, password: '123456', role: 'ADMIN' });
+      expect(res.status).toBe(400);
+    });
+
+    test('POST /api/auth/register — 201 crea veterinario cuando role=VET', async () => {
+      const res = await request(app)
+        .post('/api/auth/register')
+        .send({ email: `auth-http-${authUnique}-vet@test.com`, password: '123456', role: 'VET', firstName: 'Vet', lastName: 'Registro' });
+      expect(res.status).toBe(201);
+      expect(res.body.data.user.role).toBe('VET');
+    });
+
+    test('POST /api/auth/register — 201 sin role crea CLIENT por defecto', async () => {
+      const res = await request(app)
+        .post('/api/auth/register')
+        .send({ email: `auth-http-${authUnique}-nodefault@test.com`, password: '123456' });
       expect(res.status).toBe(201);
       expect(res.body.data.user.role).toBe('CLIENT');
     });

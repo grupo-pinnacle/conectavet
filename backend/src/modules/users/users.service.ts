@@ -53,10 +53,16 @@ export async function updateAvailability(userId: string, isOnline: boolean) {
 export async function listVets(
   page = 1,
   limit = 20,
-  filters: { search?: string; onlineOnly?: boolean; viewerId?: string } = {}
+  filters: {
+    search?: string;
+    onlineOnly?: boolean;
+    viewerId?: string;
+    minRating?: number;
+    sortBy?: 'rating' | 'recent';
+  } = {}
 ) {
-  const { search, onlineOnly, viewerId } = filters;
-  const cacheKey = `vets:list:${page}:${limit}:${search?.toLowerCase()}:${onlineOnly}:${viewerId ?? 'anon'}`;
+  const { search, onlineOnly, viewerId, minRating, sortBy } = filters;
+  const cacheKey = `vets:list:${page}:${limit}:${search?.toLowerCase()}:${onlineOnly}:${viewerId ?? 'anon'}:${minRating ?? 0}:${sortBy ?? 'recent'}`;
   const cached = getCached<any>(cacheKey);
   if (cached) return cached;
   const skip = (page - 1) * limit;
@@ -74,7 +80,7 @@ export async function listVets(
         }
       : {}),
   };
-  const [vets, total] = await Promise.all([
+  const [allVets, total] = await Promise.all([
     prisma.user.findMany({
       where,
       select: {
@@ -89,8 +95,6 @@ export async function listVets(
         reviewsAsVet: { select: { rating: true } },
       },
       orderBy: { createdAt: 'desc' },
-      skip,
-      take: limit,
     }),
     prisma.user.count({ where }),
   ]);
@@ -104,14 +108,22 @@ export async function listVets(
     favoriteIds = new Set(favorites.map((f) => f.vetId));
   }
 
-  const data = vets.map(({ reviewsAsVet, ...vet }) => {
-    const totalRatings = reviewsAsVet.length;
-    const avg = totalRatings > 0
-      ? Math.round((reviewsAsVet.reduce((sum, r) => sum + r.rating, 0) / totalRatings) * 10) / 10
+  const withRatings = allVets.map(({ reviewsAsVet, ...vet }) => {
+    const ratingCount = reviewsAsVet.length;
+    const ratingAvg = ratingCount > 0
+      ? Math.round((reviewsAsVet.reduce((sum, r) => sum + r.rating, 0) / ratingCount) * 10) / 10
       : null;
-    return { ...vet, ratingAvg: avg, ratingCount: totalRatings, isFavorite: favoriteIds.has(vet.id) };
+    return { ...vet, ratingAvg, ratingCount, isFavorite: favoriteIds.has(vet.id) };
   });
 
+  const filtered = withRatings
+    .filter((vet) => (minRating && minRating > 0 ? (vet.ratingAvg ?? 0) >= minRating : true))
+    .sort((a, b) => {
+      if (sortBy === 'rating') return (b.ratingAvg ?? 0) - (a.ratingAvg ?? 0);
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
+
+  const data = filtered.slice(skip, skip + limit);
   const result = { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   setCache(cacheKey, result, 30);
   return result;

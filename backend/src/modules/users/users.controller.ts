@@ -92,15 +92,24 @@ export async function setAvailabilityController(req: RequestWithUser, res: Respo
       }
       if (user.isOnline) {
         const assigned = await assignNextPendingVet(user.id);
-        if (assigned && io) {
-          io.to(`consultation:${assigned.id}`).emit('consultation:updated', assigned);
+        if (assigned) {
+          try {
+            const io = getIO();
+            if (io) {
+              io.to(`consultation:${assigned.id}`).emit('consultation:updated', assigned);
+              io.to(`user:${assigned.clientId}`).emit('consultation:updated', assigned);
+              // El vet también recibe el evento en su sala personal: sin esto,
+              // su web recién se enteraba de la oferta con el polling de 10s.
+              io.to(`user:${user.id}`).emit('consultation:new', assigned);
+            }
+          } catch {}
         }
         if (assigned) {
           await notifyUser(
             assigned.clientId,
-            'consultation_assigned',
-            'Un veterinario tomó tu consulta',
-            'Un veterinario está listo para atenderte',
+            'consultation_offer',
+            'Un veterinario quiere atenderte',
+            'Un veterinario está revisando tu consulta',
             { consultationId: assigned.id }
           );
         }
@@ -120,10 +129,16 @@ export async function listVetsController(req: RequestWithUser, res: Response) {
     const { page, limit } = parsePagination(req.query as Record<string, string>);
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : undefined;
     const onlineOnly = req.query.online === 'true';
+    const minRating = typeof req.query.minRating === 'string' && req.query.minRating !== ''
+      ? Math.max(0, Math.min(5, Number(req.query.minRating) || 0))
+      : undefined;
+    const sortBy = req.query.sortBy === 'rating' ? 'rating' : 'recent';
     const result = await listVets(page, limit, {
       search,
       onlineOnly,
       viewerId: req.user?.userId,
+      minRating,
+      sortBy,
     });
     return res.status(200).json({ success: true, ...result });
   } catch (error) {

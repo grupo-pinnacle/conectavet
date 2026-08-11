@@ -47,6 +47,9 @@ export function setupChatSocket(httpServer: HttpServer) {
   io.on('connection', (socket) => {
     const user = (socket as any).user as JwtPayload;
 
+    // Sala personal: notificaciones y actualizaciones de consultas en vivo
+    socket.join(`user:${user.userId}`);
+
     socket.on('join:consultation', async (consultationId: string) => {
       const consultation = await prisma.consultation.findFirst({
         where: {

@@ -75,8 +75,9 @@ async function sendExpoPush(tokens: string[], title: string, body: string, data?
 }
 
 /**
- * Crea la notificación en BD (bandeja in-app) y, si el usuario tiene
- * tokens registrados, envía push vía API de Expo (best-effort).
+ * Crea la notificación en BD (bandeja in-app), la emite por socket a la sala
+ * personal user:{id} y, si el usuario tiene tokens registrados, envía push
+ * vía API de Expo (best-effort).
  */
 export async function notifyUser(
   userId: string,
@@ -86,6 +87,16 @@ export async function notifyUser(
   data?: unknown
 ) {
   const notification = await createNotification({ userId, type, title, body, data });
+  try {
+    // Emit por socket para que la web/mobile actualice en vivo sin polling
+    const { getIO } = await import('../consultations/chat.gateway.js');
+    const io = getIO();
+    if (io) {
+      io.to(`user:${userId}`).emit('notification:new', notification);
+    }
+  } catch {
+    // socket no disponible; la bandeja in-app igual queda actualizada
+  }
   try {
     const tokens = await prisma.pushToken.findMany({
       where: { userId },

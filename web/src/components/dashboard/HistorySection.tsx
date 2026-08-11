@@ -106,11 +106,33 @@ export default function HistorySection() {
                   <p className="text-xs font-bold uppercase tracking-wider text-teal-700 flex items-center gap-1">
                     <Pill className="h-3.5 w-3.5" /> Recetas / tratamiento
                   </p>
-                  {(prescriptionsByCons[c.id] || []).map((rx) => (
-                    <div key={rx.id} className="rounded-lg border border-teal-100 bg-teal-50 p-3">
-                      <p className="text-sm text-ink whitespace-pre-wrap">{rx.content}</p>
-                    </div>
-                  ))}
+                  {(prescriptionsByCons[c.id] || []).map((rx) => {
+                    const hasDetails = rx.medication || rx.dosage || rx.frequency || rx.durationDays || rx.indications;
+                    return (
+                      <div key={rx.id} className="rounded-lg border border-teal-100 bg-teal-50 p-3">
+                        {hasDetails && (
+                          <div className="mb-2 grid grid-cols-2 gap-x-4 gap-y-1 rounded-md border border-teal-100 bg-white/70 p-2.5 text-xs">
+                            {rx.medication && (
+                              <p><span className="font-bold text-teal-800">Medicación:</span> {rx.medication}</p>
+                            )}
+                            {rx.dosage && (
+                              <p><span className="font-bold text-teal-800">Dosis:</span> {rx.dosage}</p>
+                            )}
+                            {rx.frequency && (
+                              <p><span className="font-bold text-teal-800">Frecuencia:</span> {rx.frequency}</p>
+                            )}
+                            {rx.durationDays && (
+                              <p><span className="font-bold text-teal-800">Duración:</span> {rx.durationDays} días</p>
+                            )}
+                            {rx.indications && (
+                              <p className="col-span-2"><span className="font-bold text-teal-800">Indicaciones:</span> {rx.indications}</p>
+                            )}
+                          </div>
+                        )}
+                        <p className="text-sm text-ink whitespace-pre-wrap">{rx.content}</p>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

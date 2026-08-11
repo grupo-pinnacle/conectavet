@@ -58,7 +58,7 @@ export function useConsultationMessages(consultationId: string | undefined, user
   const qc = useQueryClient();
   const key = ['consultations', consultationId, 'messages'] as const;
   const connectedRef = useRef(false);
-  const [socketConnected, setSocketConnected] = useState(false);
+  const pendingOptimisticRef = useRef<{ id: string; content: string }[]>([]);  const [socketConnected, setSocketConnected] = useState(false);
 
   const list = useQuery({
     queryKey: key,
@@ -88,13 +88,21 @@ export function useConsultationMessages(consultationId: string | undefined, user
         const onMessage = (message: ChatMessage) => {
           if (message.consultationId !== consultationId) return;
           qc.setQueryData<ChatMessage[]>(key, (old = []) => {
-            if (old.some((m) => m.id === message.id || m.id.startsWith('optimistic-'))) {
-              return old.map((m) =>
-                m.id.startsWith('optimistic-') && m.content === message.content && m.createdAt ?
-                  message : m
-              );
-            }
-            return [...old, message];
+            if (old.some((m) => m.id === message.id)) return old;
+            // Reemplaza TODOS los optimistas pendientes con el mismo contenido
+            // y rol: así no quedan clavados en "enviando" ni se duplica el
+            // mensaje si el echo llega antes que la respuesta REST.
+            const withoutOptimistic = old.filter(
+              (m) =>
+                !(
+                  m.id.startsWith('optimistic-') &&
+                  m.content === message.content &&
+                  (typeof m.sender?.role === 'string'
+                    ? m.sender.role === message.sender?.role
+                    : true)
+                )
+            );
+            return [...withoutOptimistic, message];
           });
         };
 
@@ -142,10 +150,15 @@ export function useConsultationMessages(consultationId: string | undefined, user
     onMutate: async (payload: SendMessagePayload) => {
       await qc.cancelQueries({ queryKey: key });
       const previous = qc.getQueryData<ChatMessage[]>(key);
+      const optimisticId = `optimistic-${Date.now()}`;
+      pendingOptimisticRef.current.push({
+        id: optimisticId,
+        content: payload.content ?? '',
+      });
       qc.setQueryData<ChatMessage[]>(key, (old = []) => [
         ...old,
         {
-          id: `optimistic-${Date.now()}`,
+          id: optimisticId,
           consultationId: consultationId!,
           senderId: userId ?? '',
           content: payload.content ?? '',
@@ -156,7 +169,22 @@ export function useConsultationMessages(consultationId: string | undefined, user
       ]);
       return { previous };
     },
+    onSuccess: (real) => {
+      // Reemplaza el optimista más antiguo que coincida con el mensaje
+      // confirmado (FIFO), aunque el socket esté caído: nunca queda
+      // ninguno clavado en "enviando" ni se duplica.
+      const idx = pendingOptimisticRef.current.findIndex(
+        (p) => p.content === real.content
+      );
+      const pending = idx >= 0 ? pendingOptimisticRef.current.splice(idx, 1)[0] : null;
+      qc.setQueryData<ChatMessage[]>(key, (old = []) => {
+        if (old.some((m) => m.id === real.id)) return old;
+        if (!pending) return [...old, real];
+        return old.map((m) => (m.id === pending.id ? real : m));
+      });
+    },
     onError: (_err, _payload, ctx) => {
+      pendingOptimisticRef.current = [];
       if (ctx?.previous) qc.setQueryData(key, ctx.previous);
     },
     onSettled: () => {},

@@ -3,13 +3,13 @@
 > **Fecha:** 11 de agosto, 2026
 > **Autor:** Tobias (sesión de cierre S13/S14)
 > **Propósito:** Documento único y exhaustivo de TODO lo que falta por hacer para llevar el proyecto a producción y demo final. Complementa `MVP_SCOPE.md`, `CODE_AUDIT.md`, `SPRINT_PLAN.md` y `DEPLOY.md`.
-> **Estado:** ACTUALIZADO al commit `8502305` (búsqueda de veterinarios + calificaciones + favoritos + perfiles editables).
+> **Estado:** ACTUALIZADO al commit `49fc880` + sesión del 11-Ago (flujo PENDING: el vet decide atender o no, receta estructurada, chat web en vivo, búsqueda con rating/orden, pulido UX). Ver sección 7.1.
 
 ---
 
 ## 1. Resumen ejecutivo
 
-El proyecto ya cumple el MVP completo (20-Jul) y post-MVP S11-S13 (cola, online/offline, imágenes, push, seguridad). En la última sesión se sumaron las features de producto más pedidas por los clientes: **búsqueda de veterinarios, calificaciones post-consulta, favoritos y perfiles editables** (backend + mobile, 63/63 tests).
+El proyecto ya cumple el MVP completo (20-Jul) y post-MVP S11-S13 (cola, online/offline, imágenes, push, seguridad). En la sesión del 11-Ago se implementaron los 7 pedidos del CEO: flujo PENDING (el vet decide atender), receta estructurada, chat web en vivo, búsqueda con rating/orden y fix del optimista (backend 149/149 tests).
 
 Lo que falta se divide en **6 frentes**:
 
@@ -206,14 +206,21 @@ De `FAANG_AUDIT.md` v6 y `REPORTE_SEMANA_2026-08-03.md`, son acciones manuales p
 
 ## 7. Pulido de producto — lo que el cliente pide y ya está hecho vs. lo que falta (frente 6)
 
-### 7.1 Ya implementado (commit `8502305`) — no volver a hacer, solo retocar
+### 7.1 Ya implementado (sesión 11-Ago, commit base `49fc880`) — no volver a hacer, solo retocar
 
 | Pedido del cliente | Implementación | Estado |
 |--------------------|----------------|--------|
-| "Los clientes deberían poder buscar el veterinario que quieren" | `GET /users/vets?search=&online=`, picker con buscador + toggle disponible | Hecho. Falta: paginación visible, ordenar por rating, búsqueda por ciudad/ubicación |
-| "Debería haber un sistema de calificaciones" | `POST /consultations/:id/rating`, estrellas en historial, ratingAvg en lista de vets | Hecho. Falta: ver las reviews de un vet desde el detalle, responder reviews, filtrar vets por rating |
-| "Los clientes puedan poner veterinarios favoritos" | Favoritos idempotentes + corazón + filtro "Solo favoritos" en el picker | Hecho. Falta: pantalla dedicada de favoritos accesible desde Inicio |
-| "Los perfiles deberían ser más editables, más personalizables" | `PATCH /users/me` (nombre, teléfono, bio, especialidad) + pantallas de perfil | Hecho. Falta: avatar/foto de perfil, más campos, ver perfil del vet |
+| "Los clientes deberían poder buscar el veterinario que quieren" | `GET /users/vets?search=&online=&minRating=&sortBy=`, picker con buscador + toggle disponible + chips de rating + orden mejor calificados/recientes | Hecho en backend, web y mobile. |
+| "Debería haber un sistema de calificaciones" | `POST /consultations/:id/rating`, estrellas en historial, ratingAvg en lista de vets, reviews expandibles en el directorio web | Hecho. Falta: ver reviews del vet en detalle mobile, responder reviews |
+| "Los clientes puedan poner veterinarios favoritos" | Favoritos idempotentes + corazón + filtro "Solo favoritos" | Hecho. |
+| "Los perfiles deberían ser más editables, más personalizables" | `PATCH /users/me` (nombre, teléfono, bio, especialidad) + pantallas de perfil | Hecho. Falta: foto/avatar |
+| "El vet debería poder elegir si atiende la consulta" | Estado `PENDING`: el cliente elige vet y se le ofrece; el vet acepta (→ ACTIVE) o rechaza (→ vuelve a la cola WAITING tomable por cualquiera); si el vet no está online se agenda como WAITING y al conectarse recibe la oferta más antigua | Hecho en backend + web (tabs Ofertas/Cola/Activas) + mobile (banner "Esperando confirmación"). |
+| "Ver ficha del cliente, motivo y expediente antes de aceptar" | Botón "Ficha" en la oferta → `VetPatientProfile` (datos del cliente + mascota + historial) antes de Aceptar/Rechazar | Hecho en web. |
+| "Mejor UX de recetas" | Receta estructurada (medicación, dosis, frecuencia, duración, indicaciones) autogenerada si el vet no escribe texto libre; se muestra formateada en web y mobile | Hecho. |
+| "Chat web instantáneo sin recargas ni polling" | Socket con salas `consultation:{id}` y `user:{id}`; en web los mensajes entran en vivo (polling solo como fallback si el socket cae); badge de mensajes reales vía socket. La lista de consultas y la conversación abierta se cachean (`chatStore`) → volver a la sección es instantáneo | Hecho. |
+| "Mensajes clavados en 'enviando'" | Optimistic confirmado por id exacto (FIFO) en web y mobile; el botón deja de mostrar "enviando" apenas llega el echo del socket (no espera al POST REST) | Hecho. |
+
+Verificación: backend `tsc` limpio + **149/149 tests jest OK**; web `tsc` + build OK (eslint 9 errores preexistentes heredados en archivos no tocados); mobile `tsc` + lint 0 errores.
 
 ### 7.2 Mejoras de producto sugeridas (nuevas, priorizadas)
 
@@ -258,4 +265,4 @@ De `FAANG_AUDIT.md` v6 y `REPORTE_SEMANA_2026-08-03.md`, son acciones manuales p
 - [ ] Probado en las 2 plataformas (mobile 2GB + web) cuando aplica.
 - [ ] Docs actualizados (MVP_SCOPE / CHANNEL_DECISION / CODE_AUDIT).
 - [ ] Commit con mensaje descriptivo siguiendo la convención del repo.
-- [ ] Sin regresiones: `npx jest` backend en verde (63+ tests) antes de cerrar la sesión.
+- [ ] Sin regresiones: `npx jest` backend en verde (149+ tests) antes de cerrar la sesión.

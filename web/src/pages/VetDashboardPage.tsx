@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import {
@@ -24,23 +24,20 @@ export default function VetDashboardPage() {
   const { logout, user, isOnline, syncOnline } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("home");
-  const [waitingCount, setWaitingCount] = useState(0);
+  const [offerCount, setOfferCount] = useState(0);
 
-  useEffect(() => {
-    const fetchWaiting = async () => {
-      try {
-        const cons = await getMyConsultations();
-        setWaitingCount(cons.filter((c) => c.status === "WAITING").length);
-      } catch {
-        // ignore
-      }
-    };
-    fetchWaiting();
-    const interval = setInterval(fetchWaiting, 10000);
-    return () => clearInterval(interval);
+  const refreshCounts = useCallback(async () => {
+    try {
+      const cons = await getMyConsultations();
+      setOfferCount(cons.filter((c) => c.status === "PENDING").length);
+    } catch {
+      // ignore
+    }
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch de contadores al montar
+    refreshCounts();
     if (!user?.id) return;
     let cancelled = false;
     connectSocket()
@@ -51,6 +48,9 @@ export default function VetDashboardPage() {
           if (payload.vetId === user.id) syncOnline(payload.isOnline);
         };
         s.on("vet:availability", onAvailability);
+        s.on("consultation:new", refreshCounts);
+        s.on("consultation:updated", refreshCounts);
+        s.on("notification:new", refreshCounts);
       })
       .catch(() => {
         // Socket opcional en dev: el proxy /socket.io lo habilita; si falla, el estado local sigue valiendo.
@@ -58,7 +58,7 @@ export default function VetDashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id, syncOnline]);
+  }, [user?.id, syncOnline, refreshCounts]);
 
   const handleLogout = () => {
     logout();
@@ -76,7 +76,7 @@ export default function VetDashboardPage() {
   };
 
   const getUnreadBadge = (key: string) => {
-    return key === "messages" && waitingCount > 0 ? waitingCount : null;
+    return key === "messages" && offerCount > 0 ? offerCount : null;
   };
 
   return (
@@ -149,9 +149,9 @@ export default function VetDashboardPage() {
           />
           <button onClick={() => setActiveTab("messages")} className="relative">
             <MessageCircle className="w-5 h-5 text-slate-500" />
-            {waitingCount > 0 && (
+            {offerCount > 0 && (
               <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[10px] font-bold text-white">
-                {waitingCount}
+                {offerCount}
               </span>
             )}
           </button>

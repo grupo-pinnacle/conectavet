@@ -4,7 +4,8 @@ import { getCached, setCache, clearCache } from '../../shared/cache';
 import { Prisma } from '@prisma/client';
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
-  WAITING: ['ACTIVE'],
+  WAITING: ['PENDING', 'ACTIVE'],
+  PENDING: ['ACTIVE', 'WAITING'],
   ACTIVE: ['COMPLETED'],
   COMPLETED: [],
   CANCELLED: [],
@@ -97,23 +98,25 @@ export async function createConsultation(data: {
     throw new ForbiddenError('La mascota no te pertenece');
   }
 
+  // La consulta nunca nace ACTIVA: el veterinario siempre decide si atender.
+  //  - Si el cliente eligió un vet puntual: nace como oferta (PENDING) para él,
+  //    aunque esté offline la verá y decidirá al entrar a la web.
+  //  - Si no eligió: se ofrece al primer vet online (PENDING) o queda WAITING
+  //    para el primer vet que se conecte / para tomar de la cola pública.
   let vetId: string | undefined;
-  let status: 'ACTIVE' | 'WAITING' = 'WAITING';
+  let status: 'PENDING' | 'WAITING' = 'WAITING';
 
   if (data.vetId) {
     const chosen = await prisma.user.findUnique({ where: { id: data.vetId } });
     if (!chosen || chosen.role !== 'VET') {
       throw new NotFoundError('Veterinario no encontrado');
     }
-    if (!chosen.isOnline) {
-      throw new ConflictError('Ese veterinario no está disponible en este momento');
-    }
     vetId = chosen.id;
-    status = 'ACTIVE';
+    status = 'PENDING';
   } else {
     const vet = await findFirstAvailableVet(pet.species);
     vetId = vet?.id;
-    status = vet ? 'ACTIVE' : 'WAITING';
+    status = vet ? 'PENDING' : 'WAITING';
   }
 
   return prisma.consultation.create({
@@ -122,7 +125,6 @@ export async function createConsultation(data: {
       petId: data.petId,
       status,
       vetId,
-      startedAt: status === 'ACTIVE' ? new Date() : undefined,
       notes: data.notes,
     },
     select: consultationSnapshot,
@@ -135,10 +137,13 @@ export async function assignVet(consultationId: string, vetId: string) {
   });
   if (!consultation) throw new NotFoundError('Consulta no encontrada');
   if (!VALID_TRANSITIONS[consultation.status].includes('ACTIVE')) {
-    throw new ConflictError(`No se puede asignar — la consulta está en estado ${consultation.status}`);
+    throw new ConflictError(`No se puede tomar — la consulta está en estado ${consultation.status}`);
   }
-  if (consultation.vetId) {
-    throw new ConflictError('Esta consulta ya tiene un veterinario asignado');
+  // Una oferta PENDING solo la puede aceptar el vet al que fue ofrecida.
+  // Tomar de la cola pública (WAITING) queda abierto a cualquier vet:
+  // la decisión de atender la tomó él al hacer clic en "tomar".
+  if (consultation.status === 'PENDING' && consultation.vetId !== vetId) {
+    throw new ConflictError('Esta oferta es de otro veterinario');
   }
   return prisma.consultation.update({
     where: { id: consultationId },
@@ -148,9 +153,32 @@ export async function assignVet(consultationId: string, vetId: string) {
 }
 
 /**
+ * Rechazo de una oferta PENDING: la consulta vuelve a la cola pública (WAITING)
+ * sin vet asignado para que otro veterinario pueda tomarla u ofrecérsela.
+ */
+export async function declineConsultation(consultationId: string, vetId: string) {
+  const consultation = await prisma.consultation.findUnique({
+    where: { id: consultationId },
+  });
+  if (!consultation) throw new NotFoundError('Consulta no encontrada');
+  if (consultation.status !== 'PENDING') {
+    throw new ConflictError('La consulta no está en estado de aprobación');
+  }
+  if (consultation.vetId && consultation.vetId !== vetId) {
+    throw new ConflictError('Esta oferta es de otro veterinario');
+  }
+  return prisma.consultation.update({
+    where: { id: consultationId },
+    data: { status: 'WAITING', vetId: null },
+    select: consultationSnapshot,
+  });
+}
+
+/**
  * Cola de espera: asigna al primer veterinario que se ponga online
- * la consulta WAITING más antigua. El claim es atómico (WHERE status=WAITING)
- * para que dos vets online simultáneos nunca tomen la misma consulta.
+ * la consulta WAITING más antigua como OFERTA (PENDING) — él decide aceptarla,
+ * nunca arranca sola. El claim es atómico (WHERE status=WAITING) para que dos
+ * vets online simultáneos nunca tomen la misma consulta.
  */
 export async function assignNextPendingVet(vetId: string) {
   // Reintenta el claim atómico: si dos vets online compiten por la misma
@@ -165,7 +193,7 @@ export async function assignNextPendingVet(vetId: string) {
 
     const claimed = await prisma.consultation.updateMany({
       where: { id: pending.id, status: 'WAITING' },
-      data: { vetId, status: 'ACTIVE', startedAt: new Date() },
+      data: { vetId, status: 'PENDING' },
     });
     if (claimed.count === 1) {
       return prisma.consultation.findUnique({
@@ -322,6 +350,11 @@ export async function savePrescription(data: {
   consultationId: string;
   vetId: string;
   content: string;
+  medication?: string;
+  dosage?: string;
+  frequency?: string;
+  durationDays?: string;
+  indications?: string;
 }) {
   if (!data.content || data.content.trim().length === 0) {
     throw new ConflictError('La receta no puede estar vacía');
@@ -334,6 +367,11 @@ export async function savePrescription(data: {
       consultationId: data.consultationId,
       vetId: data.vetId,
       content: data.content,
+      medication: data.medication?.trim() || null,
+      dosage: data.dosage?.trim() || null,
+      frequency: data.frequency?.trim() || null,
+      durationDays: data.durationDays?.trim() || null,
+      indications: data.indications?.trim() || null,
     },
     include: {
       vet: { select: { id: true, firstName: true, lastName: true } },

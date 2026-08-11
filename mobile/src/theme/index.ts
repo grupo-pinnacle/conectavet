@@ -104,15 +104,15 @@ export const speciesLabel: Record<string, string> = {
 // ─── Status Helpers ──────────────────────────────────────────────────────────
 
 export const statusColors: Record<string, keyof ColorScheme> = {
-  WAITING: 'accent', ACTIVE: 'primary', COMPLETED: 'inkMuted', CANCELLED: 'danger',
+  WAITING: 'accent', PENDING: 'accent', ACTIVE: 'primary', COMPLETED: 'inkMuted', CANCELLED: 'danger',
 };
 
 export const statusLabel: Record<string, string> = {
-  WAITING: 'En espera', ACTIVE: 'En consulta', COMPLETED: 'Completada', CANCELLED: 'Cancelada',
+  WAITING: 'En espera', PENDING: 'Por confirmar', ACTIVE: 'En consulta', COMPLETED: 'Completada', CANCELLED: 'Cancelada',
 };
 
 export const statusBgColors: Record<string, keyof ColorScheme> = {
-  WAITING: 'accentBg', ACTIVE: 'primaryBg', COMPLETED: 'borderLight', CANCELLED: 'dangerBg',
+  WAITING: 'accentBg', PENDING: 'accentBg', ACTIVE: 'primaryBg', COMPLETED: 'borderLight', CANCELLED: 'dangerBg',
 };
 
 // ─── Theme Context (re-exported) ─────────────────────────────────────────────

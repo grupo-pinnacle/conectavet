@@ -21,6 +21,7 @@ enum Sex {
 
 enum ConsultationStatus {
   WAITING
+  PENDING
   ACTIVE
   COMPLETED
   CANCELLED
@@ -131,6 +132,11 @@ model Prescription {
   vetId          String
   vet            User         @relation(fields: [vetId], references: [id])
   content        String
+  medication     String?
+  dosage         String?
+  frequency      String?
+  durationDays   String?
+  indications    String?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 

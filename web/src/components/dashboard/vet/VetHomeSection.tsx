@@ -9,6 +9,7 @@ export default function VetHomeSection() {
   const [totalPatients, setTotalPatients] = useState(0);
   const [activeCons, setActiveCons] = useState(0);
   const [waitingCons, setWaitingCons] = useState(0);
+  const [offerCons, setOfferCons] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,6 +22,7 @@ export default function VetHomeSection() {
         setTotalPatients(pets.length);
         setActiveCons(cons.filter((c) => c.status === "ACTIVE").length);
         setWaitingCons(cons.filter((c) => c.status === "WAITING").length);
+        setOfferCons(cons.filter((c) => c.status === "PENDING").length);
       } catch {
         // ignore
       } finally {
@@ -35,6 +37,7 @@ export default function VetHomeSection() {
   const stats = [
     { label: "Pacientes", value: String(totalPatients), color: "text-teal-700", icon: Users },
     { label: "Consultas activas", value: String(activeCons), color: "text-success", icon: MessageCircle },
+    { label: "Ofertas", value: String(offerCons), color: "text-sky-600", icon: Clock },
     { label: "En espera", value: String(waitingCons), color: "text-amber-500", icon: Clock },
   ];
 
@@ -100,13 +103,13 @@ export default function VetHomeSection() {
       )}
 
       {loading ? (
-        <div className="mb-8 grid grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
+        <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-24 animate-pulse rounded-xl bg-slate-100" />
           ))}
         </div>
       ) : (
-        <div className="mb-8 grid grid-cols-3 gap-4">
+        <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
           {stats.map((stat) => {
             const Icon = stat.icon;
             return (

@@ -37,7 +37,7 @@ export interface Consultation {
   clientId: string;
   vetId?: string;
   petId: string;
-  status: "WAITING" | "ACTIVE" | "COMPLETED" | "CANCELLED";
+  status: "WAITING" | "PENDING" | "ACTIVE" | "COMPLETED" | "CANCELLED";
   notes?: string;
   startedAt?: string;
   endedAt?: string;
@@ -64,6 +64,11 @@ export interface Prescription {
   consultationId: string;
   vetId: string;
   content: string;
+  medication?: string | null;
+  dosage?: string | null;
+  frequency?: string | null;
+  durationDays?: string | null;
+  indications?: string | null;
   createdAt: string;
   vet?: { id: string; firstName?: string | null; lastName?: string | null };
 }

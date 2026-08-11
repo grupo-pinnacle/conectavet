@@ -1,14 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { Home, PawPrint, Calendar, ClipboardList, MessageCircle, User, LogOut } from "lucide-react";
+import { Home, PawPrint, Calendar, ClipboardList, MessageCircle, Search, User, LogOut } from "lucide-react";
 import Logo from "../components/Logo";
 import HomeSection from "../components/dashboard/HomeSection";
 import PetsSection from "../components/dashboard/PetsSection";
 import ConsultationsSection from "../components/dashboard/ConsultationsSection";
 import HistorySection from "../components/dashboard/HistorySection";
 import MessagesSection from "../components/dashboard/MessagesSection";
+import DirectorySection from "../components/dashboard/DirectorySection";
 import ProfileSection from "../components/dashboard/ProfileSection";
+import { getMyConsultations } from "../services/endpoints";
+import { connectSocket } from "../services/socket";
 
 const navItems = [
   { label: "Inicio", icon: Home, key: "home" },
@@ -16,6 +19,7 @@ const navItems = [
   { label: "Consultas", icon: Calendar, key: "consultations" },
   { label: "Historial", icon: ClipboardList, key: "history" },
   { label: "Mensajes", icon: MessageCircle, key: "messages" },
+  { label: "Buscar vet", icon: Search, key: "directory" },
   { label: "Perfil", icon: User, key: "profile" },
 ];
 
@@ -24,6 +28,37 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("home");
   const [pendingPetId, setPendingPetId] = useState("");
+  const [pendingCount, setPendingCount] = useState(0);
+  const [activeCount, setActiveCount] = useState(0);
+
+  const refreshCounts = useCallback(async () => {
+    try {
+      const cons = await getMyConsultations();
+      setPendingCount(cons.filter((c) => c.status === "PENDING" || c.status === "WAITING").length);
+      setActiveCount(cons.filter((c) => c.status === "ACTIVE").length);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch de contadores al montar
+    refreshCounts();
+    let cancelled = false;
+    connectSocket()
+      .then((s) => {
+        if (cancelled) return;
+        s.on("consultation:new", refreshCounts);
+        s.on("consultation:updated", refreshCounts);
+        s.on("notification:new", refreshCounts);
+      })
+      .catch(() => {
+        // Socket opcional en dev
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshCounts]);
 
   const handleAgendarCita = (petId: string) => {
     setPendingPetId(petId);
@@ -42,9 +77,15 @@ export default function DashboardPage() {
       case "consultations": return <ConsultationsSection initialPetId={pendingPetId} />;
       case "history": return <HistorySection />;
       case "messages": return <MessagesSection />;
+      case "directory": return <DirectorySection />;
       case "profile": return <ProfileSection />;
       default: return <HomeSection onNavigate={setActiveTab} />;
     }
+  };
+
+  const getBadge = (key: string) => {
+    if (key === "messages" && (pendingCount + activeCount) > 0) return pendingCount + activeCount;
+    return null;
   };
 
   return (
@@ -56,6 +97,7 @@ export default function DashboardPage() {
         <nav className="flex-1 space-y-1 px-3 py-4">
           {navItems.map((item) => {
             const Icon = item.icon;
+            const badge = getBadge(item.key);
             return (
               <button
                 key={item.key}
@@ -67,7 +109,12 @@ export default function DashboardPage() {
                 }`}
               >
                 <Icon className="w-4 h-4 flex-shrink-0" />
-                {item.label}
+                <span className="flex-1 text-left">{item.label}</span>
+                {badge && (
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-danger text-[10px] font-bold text-white">
+                    {badge}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -94,6 +141,14 @@ export default function DashboardPage() {
       <header className="flex items-center justify-between border-b border-border bg-white px-5 py-4 md:hidden">
         <Logo size="sm" />
         <div className="flex items-center gap-3">
+          <button onClick={() => setActiveTab("messages")} className="relative">
+            <MessageCircle className="w-5 h-5 text-slate-500" />
+            {getBadge("messages") && (
+              <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[10px] font-bold text-white">
+                {getBadge("messages")}
+              </span>
+            )}
+          </button>
           <button
             onClick={handleLogout}
             className="flex items-center gap-1 text-sm font-semibold text-danger"

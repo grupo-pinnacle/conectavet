@@ -62,7 +62,7 @@ export const consultationsService = {
 };
 
 export const usersService = {
-  listVets: (params?: { search?: string; online?: boolean; page?: number; limit?: number }) =>
+  listVets: (params?: { search?: string; online?: boolean; minRating?: number; sortBy?: 'rating' | 'recent'; page?: number; limit?: number }) =>
     api.get<Vet[]>('/users/vets', { params }),
   getVetById: (id: string) => api.get<Vet>(`/users/vets/${id}`),
   updateMe: (payload: UpdateProfilePayload) => api.patch<User>('/users/me', payload),

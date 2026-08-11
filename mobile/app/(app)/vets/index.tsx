@@ -19,6 +19,8 @@ export default function VetPickerScreen() {
   const [debounced, setDebounced] = useState('');
   const [onlineOnly, setOnlineOnly] = useState(true);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [minRating, setMinRating] = useState<number>(0);
+  const [sortBy, setSortBy] = useState<'rating' | 'recent'>('rating');
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(search.trim()), 300);
@@ -28,13 +30,16 @@ export default function VetPickerScreen() {
   const { data: vets, isLoading, isError, refetch } = useVets({
     search: debounced || undefined,
     online: onlineOnly || undefined,
+    minRating: minRating > 0 ? minRating : undefined,
+    sortBy,
   });
   const { toggle } = useFavorites();
 
   const visible = useMemo(() => {
     const all = vets ?? [];
-    return favoritesOnly ? all.filter((v) => v.isFavorite) : all;
-  }, [vets, favoritesOnly]);
+    const rated = minRating > 0 ? all.filter((v) => (v.ratingAvg ?? 0) >= minRating) : all;
+    return favoritesOnly ? rated.filter((v) => v.isFavorite) : rated;
+  }, [vets, favoritesOnly, minRating]);
 
   const onSelect = useCallback(
     (vet: Vet) => {
@@ -91,6 +96,47 @@ export default function VetPickerScreen() {
             accessibilityLabel="Filtrar solo veterinarios favoritos"
           />
         </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md }}>
+          <Text style={{ fontSize: fontSizes.body, color: c.ink, fontWeight: fontWeights.medium }}>Calificación</Text>
+          <View style={{ flexDirection: 'row', gap: spacing.xs, marginLeft: 'auto' }}>
+            {[0, 4, 4.5].map((r) => {
+              const selected = minRating === r;
+              return (
+                <Pressable
+                  key={r}
+                  onPress={() => setMinRating(r)}
+                  style={{
+                    paddingHorizontal: spacing.md,
+                    paddingVertical: 6,
+                    borderRadius: radius.full,
+                    borderWidth: 1,
+                    borderColor: selected ? c.primary : c.border,
+                    backgroundColor: selected ? c.primaryBg : c.surface,
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={r === 0 ? 'Todas las calificaciones' : `Solo ${r} o más`}
+                  accessibilityState={{ selected }}
+                >
+                  <Text style={{ fontSize: fontSizes.label, color: selected ? c.primary : c.inkMuted, fontWeight: fontWeights.medium }}>
+                    {r === 0 ? 'Todas' : `${r}+`}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+        <Pressable
+          onPress={() => setSortBy((s) => (s === 'rating' ? 'recent' : 'rating'))}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md }}
+          accessibilityRole="button"
+          accessibilityLabel={sortBy === 'rating' ? 'Ordenar por más recientes' : 'Ordenar por calificación'}
+          accessibilityHint="Alterna el orden de la lista de veterinarios"
+        >
+          <MaterialCommunityIcons name="sort-variant" size={18} color={c.primary} />
+          <Text style={{ fontSize: fontSizes.body, color: c.ink, fontWeight: fontWeights.medium }}>
+            Ordenar: {sortBy === 'rating' ? 'Mejor calificados' : 'Más recientes'}
+          </Text>
+        </Pressable>
       </View>
 
       {isLoading ? (
@@ -136,7 +182,6 @@ export default function VetPickerScreen() {
             return (
               <Pressable
                 onPress={() => onSelect(item)}
-                disabled={!item.isOnline}
                 style={({ pressed }) => ({
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -146,11 +191,11 @@ export default function VetPickerScreen() {
                   borderWidth: 1.5,
                   borderColor: c.border,
                   backgroundColor: pressed ? c.borderLight : c.surface,
-                  opacity: item.isOnline ? 1 : 0.55,
+                  opacity: item.isOnline ? 1 : 0.8,
                 })}
                 accessibilityRole="button"
                 accessibilityLabel={`Elegir a ${name}`}
-                accessibilityState={{ disabled: !item.isOnline }}
+                accessibilityHint={item.isOnline ? undefined : 'No está disponible ahora, pero puede aceptar tu consulta cuando se conecte'}
               >
                 <View style={{ width: 44, height: 44, borderRadius: radius.full, backgroundColor: item.isOnline ? c.primaryBg : c.borderLight, alignItems: 'center', justifyContent: 'center' }}>
                   <MaterialCommunityIcons name="stethoscope" size={22} color={item.isOnline ? c.primary : c.inkMuted} />

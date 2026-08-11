@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useConsultationHistory } from '@/hooks/useConsultations';
-import { Card, Badge, SkeletonCard, EmptyState } from '@/components/ui';
+import { Badge, SkeletonCard, EmptyState } from '@/components/ui';
 import { useTheme, spacing, fontSizes, fontWeights, radius } from '@/theme';
 import { formatDateTime } from '@/utils/format';
 import type { Consultation } from '@/types';
@@ -18,8 +18,8 @@ export default function ChatListScreen() {
     (c: Consultation) => c.status !== 'WAITING'
   );
 
-  const activeConsultations = consultations.filter(c => c.status === 'ACTIVE');
-  const pastConsultations = consultations.filter(c => c.status !== 'ACTIVE');
+  const activeConsultations = consultations.filter(c => c.status === 'ACTIVE' || c.status === 'PENDING');
+  const pastConsultations = consultations.filter(c => c.status !== 'ACTIVE' && c.status !== 'PENDING');
 
   if (isLoading) {
     return (
@@ -79,12 +79,13 @@ export default function ChatListScreen() {
             <View style={{ gap: spacing.sm }}>
               {section.data.map((item: Consultation) => {
                 const isActive = item.status === 'ACTIVE';
+                const isPending = item.status === 'PENDING';
                 const isCompleted = item.status === 'COMPLETED';
-                const iconName = isActive ? 'chat-processing' : isCompleted ? 'check-circle-outline' : 'close-circle-outline';
-                const iconColor = isActive ? c.primary : isCompleted ? c.success : c.inkMuted;
-                const label = isActive ? 'En curso' : isCompleted ? 'Completada' : 'Cancelada';
-                const bgColor = isActive ? c.primaryBg : isCompleted ? c.successBg : c.dangerBg;
-                const textColor = isActive ? c.primary : isCompleted ? c.successDark : c.dangerDark;
+                const iconName = isActive ? 'chat-processing' : isPending ? 'clock-outline' : isCompleted ? 'check-circle-outline' : 'close-circle-outline';
+                const iconColor = isActive ? c.primary : isPending ? c.accentDark : isCompleted ? c.success : c.inkMuted;
+                const label = isActive ? 'En curso' : isPending ? 'Por confirmar' : isCompleted ? 'Completada' : 'Cancelada';
+                const bgColor = isActive ? c.primaryBg : isPending ? c.accentBg : isCompleted ? c.successBg : c.dangerBg;
+                const textColor = isActive ? c.primary : isPending ? c.accentDark : isCompleted ? c.successDark : c.dangerDark;
                 const petDisplay = item.pet?.name || 'Mascota';
                 const vetDisplay = item.vet?.firstName || item.vet?.email;
 
@@ -94,7 +95,7 @@ export default function ChatListScreen() {
                     onPress={() => router.push(`/(app)/chat/${item.id}`)}
                     accessibilityRole="button"
                     accessibilityLabel={`Chat${vetDisplay ? ` con ${vetDisplay}` : ''}, ${petDisplay}`}
-                    style={{ opacity: isActive ? 1 : 0.7 }}
+                    style={{ opacity: isActive || isPending ? 1 : 0.7 }}
                   >
                     <View style={{
                       flexDirection: 'row', borderRadius: radius.xl,
@@ -104,22 +105,22 @@ export default function ChatListScreen() {
                         android: { elevation: isActive ? 3 : 1 },
                       }),
                     }}>
-                      {/* Active consultations get a colored left border */}
-                      {isActive && (
-                        <View style={{ width: 4, backgroundColor: c.primary, borderTopLeftRadius: radius.xl, borderBottomLeftRadius: radius.xl }} />
+                      {/* Active / pending consultations get a colored left border */}
+                      {(isActive || isPending) && (
+                        <View style={{ width: 4, backgroundColor: isActive ? c.primary : c.accent, borderTopLeftRadius: radius.xl, borderBottomLeftRadius: radius.xl }} />
                       )}
-                      <View style={{ flex: 1, padding: spacing.lg, paddingLeft: isActive ? spacing.md : spacing.lg }}>
+                      <View style={{ flex: 1, padding: spacing.lg, paddingLeft: isActive || isPending ? spacing.md : spacing.lg }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 }}>
                             {/* Avatar circle */}
                             <View style={{
                               width: 40, height: 40, borderRadius: 20,
-                              backgroundColor: isActive ? c.primaryBg : c.borderLight,
+                              backgroundColor: isActive ? c.primaryBg : isPending ? c.accentBg : c.borderLight,
                               justifyContent: 'center', alignItems: 'center',
                             }}>
                               <MaterialCommunityIcons
-                                name={isActive ? 'chat-processing' : (isCompleted ? 'check-circle-outline' : 'close-circle-outline')}
-                                size={20} color={isActive ? c.primary : c.inkMuted}
+                                name={iconName as keyof typeof MaterialCommunityIcons.glyphMap}
+                                size={20} color={iconColor}
                               />
                             </View>
                             <View style={{ flex: 1 }}>

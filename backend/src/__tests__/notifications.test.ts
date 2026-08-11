@@ -59,11 +59,17 @@ afterEach(async () => {
 });
 
 async function createWaitingConsultation() {
-  const res = await request(app)
-    .post('/api/consultations')
-    .set('Authorization', `Bearer ${clientToken}`)
-    .send({ petId: pet.id, notes: 'Motivo de prueba de notificación' });
-  return res.body.data;
+  // Insert directo a la BD: el endpoint público la crearía PENDING si hay
+  // cualquier vet online (p.ej. los que dejan las suites paralelas), y este
+  // test necesita una WAITING determinística para ejercitar el assign.
+  return prisma.consultation.create({
+    data: {
+      clientId: clientUser.id,
+      petId: pet.id,
+      status: 'WAITING',
+      notes: 'Motivo de prueba de notificación',
+    },
+  });
 }
 
 describe('POST /api/notifications/token', () => {

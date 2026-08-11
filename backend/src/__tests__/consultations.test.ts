@@ -81,7 +81,7 @@ describe('POST /api/consultations', () => {
     expect(res.status).toBe(400);
   });
 
-  test('201 — CLIENT crea consulta eligiendo un vet online específico', async () => {
+  test('201 — CLIENT crea consulta eligiendo un vet: queda como oferta PENDING (el vet decide)', async () => {
     await prisma.user.update({ where: { id: vetUser.id }, data: { isOnline: true } });
     const res = await request(app)
       .post('/api/consultations')
@@ -89,17 +89,19 @@ describe('POST /api/consultations', () => {
       .send({ petId: pet.id, notes: 'Quiero que me atienda este doctor', vetId: vetUser.id });
     expect(res.status).toBe(201);
     expect(res.body.data.vetId).toBe(vetUser.id);
-    expect(res.body.data.status).toBe('ACTIVE');
+    expect(res.body.data.status).toBe('PENDING');
     await prisma.user.update({ where: { id: vetUser.id }, data: { isOnline: false } });
   });
 
-  test('409 — vet offline no se puede elegir', async () => {
+  test('201 — CLIENT elige un vet offline: igual queda PENDING para cuando se conecte', async () => {
     await prisma.user.update({ where: { id: vetUser.id }, data: { isOnline: false } });
     const res = await request(app)
       .post('/api/consultations')
       .set('Authorization', `Bearer ${clientToken}`)
       .send({ petId: pet.id, notes: 'Elegí un vet que está offline', vetId: vetUser.id });
-    expect(res.status).toBe(409);
+    expect(res.status).toBe(201);
+    expect(res.body.data.status).toBe('PENDING');
+    expect(res.body.data.vetId).toBe(vetUser.id);
   });
 
   test('404 — vet inexistente no se puede elegir', async () => {
@@ -233,6 +235,62 @@ describe('PATCH /api/consultations/:id/assign', () => {
   });
 });
 
+describe('PATCH /api/consultations/:id/decline', () => {
+  test('409 — no se puede rechazar una consulta WAITING sin oferta', async () => {
+    const c = await createFreshConsultation();
+    expect(c.status).toBe('WAITING');
+    const res = await request(app)
+      .patch(`/api/consultations/${c.id}/decline`)
+      .set('Authorization', `Bearer ${vetToken}`);
+    expect(res.status).toBe(409);
+  });
+
+  test('403 — CLIENT no puede rechazar', async () => {
+    await request(app)
+      .patch('/api/users/me/availability')
+      .set('Authorization', `Bearer ${vetToken}`)
+      .send({ isOnline: true });
+    const created = await request(app)
+      .post('/api/consultations')
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ petId: pet.id, notes: 'Oferta para rechazar' });
+    expect(created.body.data.status).toBe('PENDING');
+    const res = await request(app)
+      .patch(`/api/consultations/${created.body.data.id}/decline`)
+      .set('Authorization', `Bearer ${clientToken}`);
+    expect(res.status).toBe(403);
+    await request(app)
+      .patch('/api/users/me/availability')
+      .set('Authorization', `Bearer ${vetToken}`)
+      .send({ isOnline: false });
+  });
+
+  test('409 — otro vet no puede rechazar la oferta ajena', async () => {
+    const vet2 = await prisma.user.create({
+      data: { email: `${prefix}-vet-ajeno2-${uniqueId}@test.com`, password: 'hash', role: 'VET' },
+    });
+    const vet2Token = jwt.sign({ userId: vet2.id, email: vet2.email, role: 'VET' as Role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
+    await request(app)
+      .patch('/api/users/me/availability')
+      .set('Authorization', `Bearer ${vetToken}`)
+      .send({ isOnline: true });
+    const created = await request(app)
+      .post('/api/consultations')
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ petId: pet.id, notes: 'Oferta ajena para rechazar' });
+    expect(created.body.data.status).toBe('PENDING');
+    const res = await request(app)
+      .patch(`/api/consultations/${created.body.data.id}/decline`)
+      .set('Authorization', `Bearer ${vet2Token}`);
+    expect(res.status).toBe(409);
+    await request(app)
+      .patch('/api/users/me/availability')
+      .set('Authorization', `Bearer ${vetToken}`)
+      .send({ isOnline: false });
+    await prisma.user.delete({ where: { id: vet2.id } });
+  });
+});
+
 describe('PATCH /api/consultations/:id/complete', () => {
   let c: any;
 
@@ -290,7 +348,7 @@ describe('GET /api/consultations/mine', () => {
 });
 
 describe('POST /api/consultations — autoasignación de vet online', () => {
-  test('201 — asigna el primer vet online de la especie', async () => {
+  test('201 — ofrece al primer vet online de la especie (PENDING, el vet decide)', async () => {
     await request(app)
       .patch('/api/users/me/availability')
       .set('Authorization', `Bearer ${vetToken}`)
@@ -302,7 +360,7 @@ describe('POST /api/consultations — autoasignación de vet online', () => {
       .send({ petId: pet.id, notes: 'Motivo de prueba' });
     expect(res.status).toBe(201);
     expect(res.body.data.vetId).toBe(vetUser.id);
-    expect(res.body.data.status).toBe('ACTIVE');
+    expect(res.body.data.status).toBe('PENDING');
 
     await request(app)
       .patch('/api/users/me/availability')
@@ -322,7 +380,7 @@ describe('POST /api/consultations — autoasignación de vet online', () => {
 });
 
 describe('POST /api/consultations — cola de espera: vet se pone online', () => {
-  test('201 — asigna la consulta WAITING pendiente al vet recién online', async () => {
+  test('201 — al ponerse online recibe la WAITING como oferta PENDING y la puede aceptar', async () => {
     await request(app)
       .patch('/api/users/me/availability')
       .set('Authorization', `Bearer ${vetToken}`)
@@ -344,13 +402,73 @@ describe('POST /api/consultations — cola de espera: vet se pone online', () =>
     const detail = await request(app)
       .get(`/api/consultations/${created.body.data.id}`)
       .set('Authorization', `Bearer ${clientToken}`);
-    expect(detail.body.data.status).toBe('ACTIVE');
+    expect(detail.body.data.status).toBe('PENDING');
     expect(detail.body.data.vetId).toBe(vetUser.id);
+
+    const accept = await request(app)
+      .patch(`/api/consultations/${created.body.data.id}/assign`)
+      .set('Authorization', `Bearer ${vetToken}`);
+    expect(accept.status).toBe(200);
+    expect(accept.body.data.status).toBe('ACTIVE');
 
     await request(app)
       .patch('/api/users/me/availability')
       .set('Authorization', `Bearer ${vetToken}`)
       .send({ isOnline: false });
+  });
+
+  test('200 — VET rechaza la oferta: vuelve a la cola sin vet asignado', async () => {
+    await request(app)
+      .patch('/api/users/me/availability')
+      .set('Authorization', `Bearer ${vetToken}`)
+      .send({ isOnline: true });
+
+    const created = await request(app)
+      .post('/api/consultations')
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ petId: pet.id, notes: 'Para rechazar' });
+    expect(created.body.data.status).toBe('PENDING');
+
+    const decline = await request(app)
+      .patch(`/api/consultations/${created.body.data.id}/decline`)
+      .set('Authorization', `Bearer ${vetToken}`);
+    expect(decline.status).toBe(200);
+    expect(decline.body.data.status).toBe('WAITING');
+    expect(decline.body.data.vetId).toBeNull();
+
+    await request(app)
+      .patch('/api/users/me/availability')
+      .set('Authorization', `Bearer ${vetToken}`)
+      .send({ isOnline: false });
+  });
+
+  test('409 — otro vet no puede aceptar la oferta ajena', async () => {
+    const vet2 = await prisma.user.create({
+      data: { email: `${prefix}-vet-ajeno-${uniqueId}@test.com`, password: 'hash', role: 'VET' },
+    });
+    const vet2Token = jwt.sign({ userId: vet2.id, email: vet2.email, role: 'VET' as Role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
+
+    await request(app)
+      .patch('/api/users/me/availability')
+      .set('Authorization', `Bearer ${vetToken}`)
+      .send({ isOnline: true });
+
+    const created = await request(app)
+      .post('/api/consultations')
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ petId: pet.id, notes: 'Oferta ajena' });
+    expect(created.body.data.status).toBe('PENDING');
+
+    const res = await request(app)
+      .patch(`/api/consultations/${created.body.data.id}/assign`)
+      .set('Authorization', `Bearer ${vet2Token}`);
+    expect(res.status).toBe(409);
+
+    await request(app)
+      .patch('/api/users/me/availability')
+      .set('Authorization', `Bearer ${vetToken}`)
+      .send({ isOnline: false });
+    await prisma.user.delete({ where: { id: vet2.id } });
   });
 });
 
@@ -386,8 +504,8 @@ describe('POST /api/consultations — dos vets online reparten la cola', () => {
     const d2 = await request(app)
       .get(`/api/consultations/${c2.id}`)
       .set('Authorization', `Bearer ${clientToken}`);
-    expect(d1.body.data.status).toBe('ACTIVE');
-    expect(d2.body.data.status).toBe('ACTIVE');
+    expect(d1.body.data.status).toBe('PENDING');
+    expect(d2.body.data.status).toBe('PENDING');
     expect(d1.body.data.vetId).not.toBe(d2.body.data.vetId);
     expect([d1.body.data.vetId, d2.body.data.vetId].sort()).toEqual([vetUser.id, vet2.id].sort());
 
@@ -500,6 +618,29 @@ describe('POST /api/consultations/:id/prescriptions', () => {
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
     expect(res.body.data.vetId).toBe(vetUser.id);
+  });
+
+  test('201 — receta con campos estructurados', async () => {
+    await request(app)
+      .patch(`/api/consultations/${c.id}/assign`)
+      .set('Authorization', `Bearer ${vetToken}`);
+    const res = await request(app)
+      .post(`/api/consultations/${c.id}/prescriptions`)
+      .set('Authorization', `Bearer ${vetToken}`)
+      .send({
+        content: 'Amoxicilina 500mg cada 8hs por 7 días',
+        medication: 'Amoxicilina 500mg',
+        dosage: '500 mg',
+        frequency: 'Cada 8 horas',
+        durationDays: '7',
+        indications: 'Tomar después de comer',
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.data.medication).toBe('Amoxicilina 500mg');
+    expect(res.body.data.dosage).toBe('500 mg');
+    expect(res.body.data.frequency).toBe('Cada 8 horas');
+    expect(res.body.data.durationDays).toBe('7');
+    expect(res.body.data.indications).toBe('Tomar después de comer');
   });
 
   test('400 — receta vacía', async () => {

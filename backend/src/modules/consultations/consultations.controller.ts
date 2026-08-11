@@ -8,6 +8,7 @@ import { notifyUser, notifyVetsOnline, notifyConsultationMessage } from '../noti
 import {
   createConsultation,
   assignVet,
+  declineConsultation,
   completeConsultation,
   getConsultationById,
   getConsultationsByUser,
@@ -23,7 +24,7 @@ import {
 const createSchema = z.object({
   petId: z.string().min(1, 'petId es requerido'),
   notes: z.string().min(5, 'Describí el motivo de la consulta (mín. 5 caracteres)').max(1000, 'El motivo no puede superar los 1000 caracteres'),
-  vetId: z.string().optional(),
+  vetId: z.string().min(1).optional(),
 });
 
 const completeSchema = z.object({
@@ -41,6 +42,11 @@ const sendMessageSchema = z
 
 const prescriptionSchema = z.object({
   content: z.string().trim().min(1, 'La receta no puede estar vacía').max(5000, 'La receta no puede superar los 5000 caracteres'),
+  medication: z.string().trim().max(200).optional().or(z.literal('')),
+  dosage: z.string().trim().max(200).optional().or(z.literal('')),
+  frequency: z.string().trim().max(200).optional().or(z.literal('')),
+  durationDays: z.string().trim().max(200).optional().or(z.literal('')),
+  indications: z.string().trim().max(1000).optional().or(z.literal('')),
 });
 
 async function assertParticipation(consultationId: string, userId: string) {
@@ -50,6 +56,19 @@ async function assertParticipation(consultationId: string, userId: string) {
     throw new ForbiddenError('No participás de esta consulta');
   }
   return consultation;
+}
+
+/**
+ * Emite un cambio de consulta a la sala de la consulta y a las salas
+ * personales (user:{id}) del client y del vet, para que las listas se
+ * actualicen en vivo sin depender de polling.
+ */
+function emitConsultationUpdate(event: string, consultation: any) {
+  const io = getIO();
+  if (!io) return;
+  io.to(`consultation:${consultation.id}`).emit(event, consultation);
+  if (consultation.clientId) io.to(`user:${consultation.clientId}`).emit(event, consultation);
+  if (consultation.vetId) io.to(`user:${consultation.vetId}`).emit(event, consultation);
 }
 
 export async function createController(req: RequestWithUser, res: Response) {
@@ -67,17 +86,20 @@ export async function createController(req: RequestWithUser, res: Response) {
       notes: parsed.data.notes,
       vetId: parsed.data.vetId,
     });
-    try {
-      const io = getIO();
-      if (io) {
-        io.emit('consultation:new', consultation);
-      }
-    } catch {}
+    emitConsultationUpdate('consultation:new', consultation);
     if (consultation.status === 'WAITING') {
       await notifyVetsOnline(
         'consultation_new',
         'Nueva consulta en espera',
         'Un cliente está esperando atención',
+        { consultationId: consultation.id }
+      );
+    } else if (consultation.status === 'PENDING' && consultation.vetId) {
+      await notifyUser(
+        consultation.vetId,
+        'consultation_offer',
+        'Nueva consulta asignada',
+        'Un cliente te eligió para atender a su mascota',
         { consultationId: consultation.id }
       );
     }
@@ -100,12 +122,7 @@ export async function assignVetController(req: RequestWithUser, res: Response) {
       return res.status(403).json({ success: false, message: 'Solo veterinarios pueden tomar consultas' });
     }
     const consultation = await assignVet(req.params.id as string, req.user.userId);
-    try {
-      const io = getIO();
-      if (io) {
-        io.to(`consultation:${req.params.id}`).emit('consultation:updated', consultation);
-      }
-    } catch {}
+    emitConsultationUpdate('consultation:updated', consultation);
     await notifyUser(
       consultation.clientId,
       'consultation_assigned',
@@ -119,6 +136,32 @@ export async function assignVetController(req: RequestWithUser, res: Response) {
       return res.status(error.statusCode).json({ success: false, message: error.message });
     }
     console.error('Error en assignVetController:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+}
+
+export async function declineVetController(req: RequestWithUser, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'No autenticado' });
+    }
+    if (req.user.role !== 'VET' && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Solo veterinarios pueden rechazar ofertas' });
+    }
+    const consultation = await declineConsultation(req.params.id as string, req.user.userId);
+    emitConsultationUpdate('consultation:updated', consultation);
+    await notifyVetsOnline(
+      'consultation_new',
+      'Consulta disponible en la cola',
+      'Un veterinario rechazó una consulta y quedó disponible',
+      { consultationId: consultation.id }
+    );
+    return res.status(200).json({ success: true, data: consultation });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
+    console.error('Error en declineVetController:', error);
     return res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 }
@@ -311,6 +354,11 @@ export async function createPrescriptionController(req: RequestWithUser, res: Re
       consultationId: req.params.id as string,
       vetId: req.user.userId,
       content: parsed.data.content,
+      medication: parsed.data.medication,
+      dosage: parsed.data.dosage,
+      frequency: parsed.data.frequency,
+      durationDays: parsed.data.durationDays,
+      indications: parsed.data.indications,
     });
     try {
       const io = getIO();

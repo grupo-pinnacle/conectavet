@@ -51,13 +51,18 @@ export async function getConsultationById(id: string): Promise<Consultation> {
   return res.data.data;
 }
 
-export async function createConsultation(data: { petId: string; notes?: string }): Promise<Consultation> {
+export async function createConsultation(data: { petId: string; notes?: string; vetId?: string }): Promise<Consultation> {
   const res = await api.post("/api/consultations", data);
   return res.data.data;
 }
 
 export async function assignConsultation(id: string): Promise<Consultation> {
   const res = await api.patch(`/api/consultations/${id}/assign`);
+  return res.data.data;
+}
+
+export async function declineConsultation(id: string): Promise<Consultation> {
+  const res = await api.patch(`/api/consultations/${id}/decline`);
   return res.data.data;
 }
 
@@ -81,8 +86,62 @@ export async function getPrescriptions(id: string): Promise<Prescription[]> {
   return res.data.data;
 }
 
-export async function createPrescription(id: string, content: string): Promise<Prescription> {
-  const res = await api.post(`/api/consultations/${id}/prescriptions`, { content });
+export interface PrescriptionInput {
+  content: string;
+  medication?: string;
+  dosage?: string;
+  frequency?: string;
+  durationDays?: string;
+  indications?: string;
+}
+
+export async function createPrescription(id: string, data: PrescriptionInput | string): Promise<Prescription> {
+  const payload = typeof data === "string" ? { content: data } : data;
+  const res = await api.post(`/api/consultations/${id}/prescriptions`, payload);
+  return res.data.data;
+}
+
+export interface VetFilters {
+  search?: string;
+  onlineOnly?: boolean;
+  minRating?: number;
+  sortBy?: "rating" | "recent";
+}
+
+export interface VetSummary {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  specialty?: string;
+  isOnline: boolean;
+  ratingAvg: number | null;
+  ratingCount: number;
+  isFavorite: boolean;
+}
+
+export async function listVets(filters: VetFilters = {}): Promise<VetSummary[]> {
+  const params: Record<string, string> = {};
+  if (filters.search) params.search = filters.search;
+  if (filters.onlineOnly) params.online = "true";
+  if (filters.minRating && filters.minRating > 0) params.minRating = String(filters.minRating);
+  params.sortBy = filters.sortBy ?? "recent";
+  const res = await api.get("/api/users/vets", { params });
+  return res.data.data;
+}
+
+export async function getVetById(id: string) {
+  const res = await api.get(`/api/users/vets/${id}`);
+  return res.data.data;
+}
+
+export async function addFavorite(vetId: string) {
+  const res = await api.post(`/api/users/vets/${vetId}/favorite`);
+  return res.data.data;
+}
+
+export async function removeFavorite(vetId: string) {
+  const res = await api.delete(`/api/users/vets/${vetId}/favorite`);
   return res.data.data;
 }
 

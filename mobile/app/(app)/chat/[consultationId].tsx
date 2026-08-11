@@ -41,9 +41,11 @@ export default function ConsultationChatScreen() {
   const vetName = consultation?.vet?.firstName || consultation?.vet?.email || 'Veterinario';
   const petName = consultation?.pet?.name || 'Mascota';
   const isActive = consultation?.status === 'ACTIVE';
+  const isPending = consultation?.status === 'PENDING';
   const isWaiting = consultation?.status === 'WAITING';
-  const statusLabel = isActive ? 'En línea' : isWaiting ? 'En cola de espera' : 'Finalizada';
-  const statusColor = isActive ? c.success : isWaiting ? c.accent : c.inkMuted;
+  const statusLabel = isActive ? 'En línea' : isPending ? 'Esperando confirmación' : isWaiting ? 'En cola de espera' : 'Finalizada';
+  const statusColor = isActive ? c.success : isPending || isWaiting ? c.accent : c.inkMuted;
+  const canChat = isActive;
 
   const scrollToEnd = useCallback((animated = true) => {
     setTimeout(() => flatRef.current?.scrollToEnd({ animated }), 100);
@@ -51,7 +53,7 @@ export default function ConsultationChatScreen() {
 
   const onSend = async () => {
     const content = draft.trim();
-    if (!content || !isActive || send.isPending || isUploading) return;
+    if (!content || !canChat || send.isPending || isUploading) return;
     setDraft('');
     try {
       await send.mutateAsync({ content });
@@ -64,7 +66,7 @@ export default function ConsultationChatScreen() {
   };
 
   const pickAndSendImage = async () => {
-    if (!isActive || send.isPending || isUploading) return;
+    if (!canChat || send.isPending || isUploading) return;
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
@@ -177,9 +179,11 @@ export default function ConsultationChatScreen() {
             <Text style={{ fontSize: fontSizes.body, color: c.inkSoft, textAlign: 'center', lineHeight: 20 }}>
               {isActive
                 ? 'Escribí tu mensaje. El veterinario te responderá a la brevedad.'
-                : isWaiting
-                  ? 'Estás en la cola de espera. En cuanto un veterinario tome tu consulta, vas a poder escribir.'
-                  : 'Esta consulta ya fue finalizada.'}
+                : isPending
+                  ? 'El veterinario está revisando tu consulta. Cuando la acepte, van a poder chatear.'
+                  : isWaiting
+                    ? 'Estás en la cola de espera. En cuanto un veterinario tome tu consulta, vas a poder escribir.'
+                    : 'Esta consulta ya fue finalizada.'}
             </Text>
           </Card>
         </Animated.View>
@@ -200,6 +204,28 @@ export default function ConsultationChatScreen() {
           updateCellsBatchingPeriod={50}
           ListHeaderComponent={
             <View>
+              {(isPending || isWaiting) && (
+                <View
+                  style={{
+                    flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm,
+                    backgroundColor: c.accentBg, borderRadius: radius.lg,
+                    borderWidth: 1, borderColor: c.accent + '40',
+                    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginBottom: spacing.md,
+                  }}
+                >
+                  <MaterialCommunityIcons name={isPending ? 'clock-check-outline' : 'clock-outline'} size={16} color={c.accentDark} style={{ marginTop: 1 }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: fontSizes.label, fontWeight: fontWeights.bold, color: c.accentDark, lineHeight: 18 }}>
+                      {isPending ? 'Esperando confirmación del veterinario' : 'En cola de espera'}
+                    </Text>
+                    <Text style={{ fontSize: fontSizes.caption, color: c.inkSoft, lineHeight: 16, marginTop: 2 }}>
+                      {isPending
+                        ? 'El veterinario está revisando la consulta. Cuando la acepte, van a poder chatear.'
+                        : 'Se asignará un veterinario disponible en breve.'}
+                    </Text>
+                  </View>
+                </View>
+              )}
               {rxList.length > 0 && (
                 <View style={{ marginBottom: spacing.md }}>
                   {rxList.map((rx) => (
@@ -246,10 +272,10 @@ export default function ConsultationChatScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, gap: spacing.sm }}>
           <Pressable
             onPress={pickAndSendImage}
-            disabled={!isActive || send.isPending || isUploading}
+            disabled={!canChat || send.isPending || isUploading}
             style={{
               width: SEND_BTN_SIZE, height: SEND_BTN_SIZE, borderRadius: SEND_BTN_SIZE / 2,
-              backgroundColor: isActive ? c.primaryBg : c.borderLight,
+              backgroundColor: canChat ? c.primaryBg : c.borderLight,
               justifyContent: 'center', alignItems: 'center',
             }}
             accessibilityRole="button"
@@ -259,17 +285,17 @@ export default function ConsultationChatScreen() {
             {isUploading ? (
               <ActivityIndicator color={c.primary} size="small" />
             ) : (
-              <MaterialCommunityIcons name="image-plus" size={22} color={isActive ? c.primary : c.inkMuted} />
+              <MaterialCommunityIcons name="image-plus" size={22} color={canChat ? c.primary : c.inkMuted} />
             )}
           </Pressable>
           <TextInput
             value={draft}
             onChangeText={setDraft}
-            placeholder={isActive ? "Escribí tu mensaje…" : "Chat finalizado"}
+            placeholder={canChat ? "Escribí tu mensaje…" : "Chat no habilitado aún"}
             placeholderTextColor={c.inkMuted}
             multiline
             maxLength={2000}
-            editable={isActive}
+            editable={canChat}
             accessibilityLabel="Mensaje"
             style={{
               flex: 1, minHeight: SEND_BTN_SIZE, maxHeight: 120,
@@ -282,10 +308,10 @@ export default function ConsultationChatScreen() {
           />
           <Pressable
             onPress={onSend}
-            disabled={!draft.trim() || send.isPending || !isActive}
+            disabled={!draft.trim() || send.isPending || !canChat}
             style={{
               width: SEND_BTN_SIZE, height: SEND_BTN_SIZE, borderRadius: SEND_BTN_SIZE / 2,
-              backgroundColor: draft.trim() && isActive ? c.primary : c.border,
+              backgroundColor: draft.trim() && canChat ? c.primary : c.border,
               justifyContent: 'center', alignItems: 'center',
             }}
             accessibilityRole="button"

@@ -167,6 +167,7 @@ export type VetCard = z.infer<typeof vetCardSchema>;
 
 export const consultationStatusSchema = z.enum([
   'WAITING',
+  'PENDING',
   'ACTIVE',
   'COMPLETED',
   'CANCELLED',

@@ -37,14 +37,18 @@ export function disconnectSocket() {
   }
 }
 
-export function joinConsultation(consultationId: string) {
+export function joinConsultation(consultationId: string): boolean {
   if (socket?.connected) {
     socket.emit("join:consultation", consultationId);
+    return true;
   }
+  return false;
 }
 
-export function leaveConsultation(consultationId: string) {
+export function leaveConsultation(consultationId: string): boolean {
   if (socket?.connected) {
     socket.emit("leave:consultation", consultationId);
+    return true;
   }
+  return false;
 }

@@ -4,6 +4,7 @@ import { Role } from '@prisma/client';
 import {
   createController,
   assignVetController,
+  declineVetController,
   completeController,
   getByIdController,
   getMyConsultationsController,
@@ -24,6 +25,7 @@ router.get('/my-history', authenticate, getMyHistoryController);
 router.get('/vets', authenticate, getAvailableVetsController);
 router.get('/:id', authenticate, getByIdController);
 router.patch('/:id/assign', authenticate, authorize(Role.VET, Role.ADMIN), assignVetController);
+router.patch('/:id/decline', authenticate, authorize(Role.VET, Role.ADMIN), declineVetController);
 router.patch('/:id/complete', authenticate, authorize(Role.VET, Role.ADMIN), completeController);
 router.get('/:id/messages', authenticate, getMessagesController);
 router.post('/:id/messages', authenticate, sendMessageController);

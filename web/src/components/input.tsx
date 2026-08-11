@@ -5,11 +5,12 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement | HTMLTextArea
   error?: string;
   hint?: string;
   leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
   multiline?: boolean;
 }
 
 export default function Input({
-  label, error, hint, leftIcon, multiline, className = "", id, ...rest
+  label, error, hint, leftIcon, rightIcon, multiline, className = "", id, ...rest
 }: InputProps) {
   const inputId = id || label?.toLowerCase().replace(/\s+/g, "-");
 
@@ -40,6 +41,7 @@ export default function Input({
                 ? "border-danger bg-danger-bg"
                 : "border-border bg-white focus:border-teal-600 focus:outline-none",
               leftIcon ? "pl-12" : "",
+              rightIcon ? "pr-12" : "",
               className,
             ].join(" ")}
             {...(rest as any)}
@@ -55,10 +57,16 @@ export default function Input({
                 ? "border-danger bg-danger-bg"
                 : "border-border bg-white focus:border-teal-600 focus:outline-none",
               leftIcon ? "pl-12" : "",
+              rightIcon ? "pr-12" : "",
               className,
             ].join(" ")}
             {...rest}
           />
+        )}
+        {rightIcon && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+            {rightIcon}
+          </div>
         )}
       </div>
       {hint && !error && (

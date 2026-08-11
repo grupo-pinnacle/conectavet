@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
-import { FlatList, Keyboard, KeyboardAvoidingView, Platform, Pressable, TextInput, View, Text, ActivityIndicator } from 'react-native';
+import { FlatList, Image, Keyboard, KeyboardAvoidingView, Platform, Pressable, TextInput, View, Text, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
@@ -28,6 +28,7 @@ export default function ConsultationChatScreen() {
   const [draft, setDraft] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [pendingImage, setPendingImage] = useState<{ uri: string; fileName?: string; mimeType?: string } | null>(null);
   const flatRef = useRef<FlatList>(null);
 
   useEffect(() => {
@@ -53,7 +54,31 @@ export default function ConsultationChatScreen() {
 
   const onSend = async () => {
     const content = draft.trim();
-    if (!content || !canChat || send.isPending || isUploading) return;
+    const hasImage = Boolean(pendingImage);
+    if ((!content && !hasImage) || !canChat || send.isPending || isUploading) return;
+
+    const nextDraft = hasImage ? content : '';
+    if (hasImage && pendingImage) {
+      setDraft('');
+      setIsUploading(true);
+      try {
+        const uploaded = await mediaService.upload({
+          uri: pendingImage.uri,
+          name: pendingImage.fileName ?? `foto-${Date.now()}.jpg`,
+          type: pendingImage.mimeType ?? 'image/jpeg',
+        });
+        setPendingImage(null);
+        await send.mutateAsync({ content, attachmentUrl: uploaded.url });
+        scrollToEnd();
+      } catch (err) {
+        const msg = err instanceof ApiError ? err.message : 'No pudimos adjuntar la imagen.';
+        Toast.show({ type: 'error', text1: 'Error al enviar imagen', text2: msg });
+      } finally {
+        setIsUploading(false);
+      }
+      return;
+    }
+
     setDraft('');
     try {
       await send.mutateAsync({ content });
@@ -61,12 +86,12 @@ export default function ConsultationChatScreen() {
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'No pudimos enviar el mensaje.';
       Toast.show({ type: 'error', text1: 'Error al enviar', text2: msg });
-      setDraft(content);
+      setDraft(nextDraft);
     }
   };
 
-  const pickAndSendImage = async () => {
-    if (!canChat || send.isPending || isUploading) return;
+  const onPickImage = async () => {
+    if (!canChat || send.isPending || isUploading || pendingImage) return;
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
@@ -76,21 +101,10 @@ export default function ConsultationChatScreen() {
       if (result.canceled || !result.assets?.length) return;
       const asset = result.assets[0];
       if (!asset.uri) return;
-
-      setIsUploading(true);
-      const uploaded = await mediaService.upload({
-        uri: asset.uri,
-        name: asset.fileName ?? `foto-${Date.now()}.jpg`,
-        type: asset.mimeType ?? 'image/jpeg',
-      });
-      await send.mutateAsync({ content: draft.trim(), attachmentUrl: uploaded.url });
-      setDraft('');
+      setPendingImage({ uri: asset.uri, fileName: asset.fileName ?? undefined, mimeType: asset.mimeType ?? undefined });
       scrollToEnd();
-    } catch (err) {
-      const msg = err instanceof ApiError ? err.message : 'No pudimos adjuntar la imagen.';
-      Toast.show({ type: 'error', text1: 'Error al enviar imagen', text2: msg });
-    } finally {
-      setIsUploading(false);
+    } catch {
+      Toast.show({ type: 'error', text1: 'No pudimos abrir la galería' });
     }
   };
 
@@ -138,6 +152,17 @@ export default function ConsultationChatScreen() {
               <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted }}>Mascota</Text>
               <Text style={{ fontSize: fontSizes.label, fontWeight: fontWeights.semibold, color: c.ink }}>{petName}</Text>
             </View>
+          )}
+          {canChat && (
+            <Pressable
+              onPress={() => router.push(`/(app)/call/${consultationId}`)}
+              style={{ marginLeft: spacing.sm, width: 38, height: 38, borderRadius: 19, backgroundColor: c.primaryBg, justifyContent: 'center', alignItems: 'center' }}
+              accessibilityRole="button"
+              accessibilityLabel="Iniciar videollamada"
+              accessibilityHint="Abre la videollamada con el veterinario"
+            >
+              <MaterialCommunityIcons name="video" size={20} color={c.primary} />
+            </Pressable>
           )}
         </View>
       </View>
@@ -269,10 +294,32 @@ export default function ConsultationChatScreen() {
 
       {/* Input bar */}
       <View style={{ paddingBottom: keyboardVisible ? 0 : insets.bottom, backgroundColor: c.surface, borderTopColor: c.borderLight, borderTopWidth: 1 }}>
+        {pendingImage && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingTop: spacing.sm }}>
+            <View style={{ width: 44, height: 44, borderRadius: radius.lg, overflow: 'hidden', borderWidth: 1, borderColor: c.border }}>
+              <Image source={{ uri: pendingImage.uri }} style={{ width: 44, height: 44 }} accessibilityRole="image" accessibilityLabel="Imagen seleccionada" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: fontSizes.label, fontWeight: fontWeights.semibold, color: c.ink }}>Imagen lista para enviar</Text>
+              <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted }}>
+                Podés agregar un mensaje junto a la foto o enviarla sola.
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => setPendingImage(null)}
+              hitSlop={8}
+              style={{ width: 32, height: 32, borderRadius: radius.full, backgroundColor: c.borderLight, justifyContent: 'center', alignItems: 'center' }}
+              accessibilityRole="button"
+              accessibilityLabel="Quitar imagen seleccionada"
+            >
+              <MaterialCommunityIcons name="close" size={18} color={c.inkMuted} />
+            </Pressable>
+          </View>
+        )}
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, gap: spacing.sm }}>
           <Pressable
-            onPress={pickAndSendImage}
-            disabled={!canChat || send.isPending || isUploading}
+            onPress={onPickImage}
+            disabled={!canChat || send.isPending || isUploading || Boolean(pendingImage)}
             style={{
               width: SEND_BTN_SIZE, height: SEND_BTN_SIZE, borderRadius: SEND_BTN_SIZE / 2,
               backgroundColor: canChat ? c.primaryBg : c.borderLight,
@@ -280,7 +327,7 @@ export default function ConsultationChatScreen() {
             }}
             accessibilityRole="button"
             accessibilityLabel="Adjuntar imagen"
-            accessibilityHint="Elegí una imagen de tu galería para enviarla en el chat"
+            accessibilityHint="Elegí una imagen de tu galería para adjuntarla al chat"
           >
             {isUploading ? (
               <ActivityIndicator color={c.primary} size="small" />
@@ -301,23 +348,23 @@ export default function ConsultationChatScreen() {
               flex: 1, minHeight: SEND_BTN_SIZE, maxHeight: 120,
               paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
               backgroundColor: c.background, borderRadius: 22,
-              borderWidth: 1, borderColor: c.border,
+              borderWidth: 1, borderColor: pendingImage ? c.primary : c.border,
               fontSize: fontSizes.input, color: c.ink,
               lineHeight: 20,
             }}
           />
           <Pressable
             onPress={onSend}
-            disabled={!draft.trim() || send.isPending || !canChat}
+            disabled={(!draft.trim() && !pendingImage) || send.isPending || !canChat}
             style={{
               width: SEND_BTN_SIZE, height: SEND_BTN_SIZE, borderRadius: SEND_BTN_SIZE / 2,
-              backgroundColor: draft.trim() && canChat ? c.primary : c.border,
+              backgroundColor: (draft.trim() || pendingImage) && canChat ? c.primary : c.border,
               justifyContent: 'center', alignItems: 'center',
             }}
             accessibilityRole="button"
             accessibilityLabel="Enviar mensaje"
           >
-            {send.isPending ? (
+            {send.isPending || isUploading ? (
               <ActivityIndicator color={c.white} size="small" />
             ) : (
               <MaterialCommunityIcons name="send" size={18} color={c.white} />

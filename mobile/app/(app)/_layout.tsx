@@ -6,14 +6,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
 import { usePushToken } from '@/hooks/usePushToken';
 import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
-import { Avatar, Button } from '@/components/ui';
+import { Avatar } from '@/components/ui';
 
 type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
 
-const tabs: { name: string; label: string; icon: IconName; iconFocused: IconName }[] = [
+type TabConfig = { name: string; label: string; icon: IconName; iconFocused: IconName; headerShown?: boolean };
+
+const tabs: TabConfig[] = [
   { name: 'index', label: 'Inicio', icon: 'home-outline', iconFocused: 'home' },
   { name: 'pets/index', label: 'Mascotas', icon: 'paw-outline', iconFocused: 'paw' },
   { name: 'queue/index', label: 'Consultas', icon: 'stethoscope', iconFocused: 'stethoscope' },
+  { name: 'vets/index', label: 'Veterinarios', icon: 'account-search-outline', iconFocused: 'account-search', headerShown: false },
   { name: 'chat/index', label: 'Chat', icon: 'chat-processing-outline', iconFocused: 'chat-processing' },
   { name: 'history/index', label: 'Historial', icon: 'clipboard-text-outline', iconFocused: 'clipboard-text' },
 ];
@@ -29,7 +32,6 @@ function TabIcon({ icon, focused }: { icon: IconName; focused: boolean }) {
 }
 
 function HeaderRight() {
-  const { colors: c } = useTheme();
   const router = useRouter();
   const { user, logout } = useAuth();
 
@@ -99,6 +101,7 @@ export default function AppLayout() {
           options={{
             title: tab.label,
             headerTitle: tab.name === 'index' ? 'VetConnect' : tab.label,
+            headerShown: tab.headerShown !== false,
             tabBarIcon: ({ focused }) => <TabIcon icon={focused ? tab.iconFocused : tab.icon} focused={focused} />,
             tabBarAccessibilityLabel: `${tab.label} ${tab.name === 'index' ? '— pantalla principal' : ''}`,
           }}
@@ -107,7 +110,7 @@ export default function AppLayout() {
       <Tabs.Screen name="pets/[id]" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="pets/new" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="chat/[consultationId]" options={{ href: null, headerShown: false }} />
-      <Tabs.Screen name="vets/index" options={{ href: null, headerShown: false }} />
+      <Tabs.Screen name="call/[consultationId]" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="profile/index" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="profile/edit" options={{ href: null, headerShown: false }} />
     </Tabs>

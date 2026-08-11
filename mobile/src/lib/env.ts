@@ -37,6 +37,11 @@ const MOBILE_WS_URL =
   devHost && isLocalHost(devHost)
     ? `ws://${devHost}:3001`
     : (process.env.EXPO_PUBLIC_WS_URL ?? 'ws://localhost:3001');
+const MOBILE_WEB_URL =
+  devHost && isLocalHost(devHost)
+    ? `http://${devHost}:5173`
+    : (process.env.EXPO_PUBLIC_WEB_URL ?? 'http://localhost:5173');
 
 export const API_URL = Platform.OS === 'web' ? 'http://localhost:3001' : MOBILE_API_URL;
 export const WS_URL = Platform.OS === 'web' ? 'ws://localhost:3001' : MOBILE_WS_URL;
+export const WEB_URL = Platform.OS === 'web' ? 'http://localhost:5173' : MOBILE_WEB_URL;

@@ -61,6 +61,18 @@ export const consultationsService = {
     api.post<Review>(`/consultations/${consultationId}/rating`, payload),
 };
 
+export interface CallToken {
+  url: string;
+  room: string;
+  token: string;
+  expiresIn: number;
+}
+
+export const callsService = {
+  getToken: (consultationId: string) =>
+    api.post<CallToken>(`/calls/${consultationId}/token`),
+};
+
 export const usersService = {
   listVets: (params?: { search?: string; online?: boolean; minRating?: number; sortBy?: 'rating' | 'recent'; page?: number; limit?: number }) =>
     api.get<Vet[]>('/users/vets', { params }),

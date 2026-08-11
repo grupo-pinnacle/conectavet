@@ -220,7 +220,18 @@ De `FAANG_AUDIT.md` v6 y `REPORTE_SEMANA_2026-08-03.md`, son acciones manuales p
 | "Chat web instantáneo sin recargas ni polling" | Socket con salas `consultation:{id}` y `user:{id}`; en web los mensajes entran en vivo (polling solo como fallback si el socket cae); badge de mensajes reales vía socket. La lista de consultas y la conversación abierta se cachean (`chatStore`) → volver a la sección es instantáneo | Hecho. |
 | "Mensajes clavados en 'enviando'" | Optimistic confirmado por id exacto (FIFO) en web y mobile; el botón deja de mostrar "enviando" apenas llega el echo del socket (no espera al POST REST) | Hecho. |
 
-Verificación: backend `tsc` limpio + **149/149 tests jest OK**; web `tsc` + build OK (eslint 9 errores preexistentes heredados en archivos no tocados); mobile `tsc` + lint 0 errores.
+### 7.1b Ya implementado (sesión 12-Ago, ronda de QA/UX del CEO) — no volver a hacer
+
+| Pedido / bug | Implementación | Estado |
+|--------------------|----------------|--------|
+| "Edad '5a 11m' se ve mal" | `formatAge` (mobile) y ficha del paciente (web) ahora muestran "5 años y 11 meses" | Hecho. |
+| "Ver contraseña en login/register web" | Prop `rightIcon` en Input + toggle eye/eye-off en LoginPage y RegisterPage (ambos campos) | Hecho. |
+| "Sección Consultas mobile: UX horrible; vet picker como página principal; 2 formas de elegir vet" | Consultas rediseñada (cards horizontales de mascota con foto, motivo con iconos, tarjetas "Rápido" vs "Elegir yo" + chip del vet elegido con estrellas y "Cambiar"); pestaña **Veterinarios** en el tab bar + card en el home; selección de vet ya no "vuelve al inicio": vuelve a Consultas o directamente abre Consultas con el vet elegido | Hecho. |
+| "Agregar mascota es feo" | `pets/new` rediseñado: círculo de foto con color por especie, título "Conocé a tu compañero", grilla de especies con iconos y colores, sexo como tarjetas | Hecho. |
+| "Imágenes se duplican en la app y se envían solas" | El chat mobile ya NO envía al seleccionar: muestra preview + mensaje opcional y recién al tocar enviar sube y manda; el optimista/dedupe en mobile (hook) y web (`chatStore`) compara también el adjunto (dos imágenes con content vacío no se borran entre sí) | Hecho. |
+| "Faltan las llamadas" | Videollamadas LiveKit implementadas: `POST /api/calls/:id/token` (solo participantes de consulta ACTIVE, token 10 min), web con `livekit-client` (UI completa, code-split), mobile con WebView a `/call` (funciona en Expo Go), botón "Videollamada" en chats web y mobile. **Pendiente:** credenciales `LIVEKIT_URL/API_KEY/API_SECRET` en `backend/.env` + subir `LIVEKIT_URL` real (localhost:7880 no sirve de un teléfono) | Backend+UI hechos; falta config de producción. |
+
+Verificación: backend `tsc` limpio + **155/155 tests jest OK** (incl. 4 de `calls`); web `tsc` + eslint de archivos tocados + build OK (livekit-client en chunk separado, bundle principal ~139 KB gzip); mobile `tsc` + lint 0 errores.
 
 ### 7.2 Mejoras de producto sugeridas (nuevas, priorizadas)
 

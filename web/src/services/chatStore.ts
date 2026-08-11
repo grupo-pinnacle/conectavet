@@ -85,6 +85,7 @@ export function applyMessageEcho(consultationId: string, message: Message) {
       !(
         m.id.startsWith("msg-") &&
         m.content === message.content &&
+        (m.attachmentUrl ?? null) === (message.attachmentUrl ?? null) &&
         (typeof m.sender?.role === "string"
           ? m.sender.role === message.sender?.role
           : true)

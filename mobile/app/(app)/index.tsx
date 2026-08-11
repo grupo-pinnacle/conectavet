@@ -6,8 +6,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { usePets } from '@/hooks/usePets';
 import { useAuth } from '@/hooks/useAuth';
 import { PetCard } from '@/components/PetCard';
-import { Card, Button, SkeletonCard, EmptyState, Badge } from '@/components/ui';
-import { useTheme, spacing, radius, fontSizes, fontWeights, statusLabel } from '@/theme';
+import { Card, SkeletonCard, EmptyState } from '@/components/ui';
+import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
 import type { Pet } from '@/types';
 
 export default function HomeScreen() {
@@ -68,6 +68,25 @@ export default function HomeScreen() {
           </View>
         </Pressable>
       </View>
+
+      <Pressable
+        style={{ marginBottom: spacing.xl }}
+        onPress={() => router.push('/(app)/vets')}
+        accessibilityRole="button"
+        accessibilityLabel="Buscar veterinarios"
+        accessibilityHint="Explorá veterinarios por calificación y opiniones"
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: c.surface, borderRadius: radius.xl, padding: spacing.lg, borderWidth: 1, borderColor: c.border }}>
+          <View style={{ width: 44, height: 44, borderRadius: radius.full, backgroundColor: c.primaryBg, alignItems: 'center', justifyContent: 'center' }}>
+            <MaterialCommunityIcons name="account-search-outline" size={24} color={c.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: fontSizes.subtitle, fontWeight: fontWeights.bold, color: c.ink, letterSpacing: -0.3 }}>Buscar veterinarios</Text>
+            <Text style={{ fontSize: fontSizes.label, color: c.inkMuted }}>Elegí por calificación, opiniones y disponibilidad</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={24} color={c.inkMuted} />
+        </View>
+      </Pressable>
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md }}>
         <Text style={{ fontSize: fontSizes.subtitle, fontWeight: fontWeights.bold, color: c.ink, letterSpacing: -0.3 }}>Tus mascotas</Text>

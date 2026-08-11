@@ -22,6 +22,7 @@ import {
 } from "../../services/chatStore";
 import { connectSocket, joinConsultation } from "../../services/socket";
 import { MessageBubble } from "./MessageBubble";
+import CallButton from "../call/CallButton";
 import type { Consultation, Message, Prescription } from "../../types";
 
 const INITIAL_LOAD = 50;
@@ -432,6 +433,12 @@ export default function MessagesSection() {
                       ? "En cola de espera"
                       : "Finalizada"}
               </span>
+              {activeCons.status === "ACTIVE" && (
+                <CallButton
+                  consultationId={activeCons.id}
+                  peerName={activeCons.vet?.firstName || activeCons.vet?.email || "el veterinario"}
+                />
+              )}
             </div>
 
             {waitingForVet && (

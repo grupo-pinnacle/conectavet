@@ -28,6 +28,7 @@ import {
 import { connectSocket, joinConsultation } from "../../../services/socket";
 import { MessageBubble } from "../MessageBubble";
 import VetPatientProfile from "./VetPatientProfile";
+import CallButton from "../../call/CallButton";
 import { formatSex } from "../../../utils/sex";
 import type { Consultation, Message, Prescription } from "../../../types";
 
@@ -723,6 +724,12 @@ export default function VetMessagesSection() {
                   <XCircle className="h-3.5 w-3.5" />
                   Rechazar
                 </Button>
+              )}
+              {activeCons.status === "ACTIVE" && (
+                <CallButton
+                  consultationId={activeCons.id}
+                  peerName={activeCons.client?.firstName || activeCons.client?.email || "el cliente"}
+                />
               )}
               {activeCons.status === "ACTIVE" && (
                 <button

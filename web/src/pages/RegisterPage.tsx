@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Heart, Syringe } from "lucide-react";
+import { Eye, EyeOff, Heart, Syringe } from "lucide-react";
 import Logo from "../components/Logo";
 import Button from "../components/Button";
 import Input from "../components/input";
@@ -14,6 +14,8 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [confirmError, setConfirmError] = useState("");
   const [error, setError] = useState("");
@@ -155,7 +157,7 @@ export default function RegisterPage() {
               />
               <Input
                 label="Contraseña"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={password}
                 error={passwordError || undefined}
                 onChange={(e) => {
@@ -164,6 +166,16 @@ export default function RegisterPage() {
                   if (confirmPassword) setConfirmError("");
                 }}
                 placeholder="Contraseña segura"
+                rightIcon={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((s) => !s)}
+                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    className="text-slate-400 transition-colors hover:text-teal-700"
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                }
               />
               <div className="-mt-2 mb-1">
                 <ul className="space-y-1">
@@ -195,7 +207,7 @@ export default function RegisterPage() {
               </div>
               <Input
                 label="Repetir contraseña"
-                type="password"
+                type={showConfirmPassword ? "text" : "password"}
                 value={confirmPassword}
                 error={confirmError || undefined}
                 onChange={(e) => {
@@ -203,6 +215,16 @@ export default function RegisterPage() {
                   setConfirmError("");
                 }}
                 placeholder="Repetí tu contraseña"
+                rightIcon={
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((s) => !s)}
+                    aria-label={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    className="text-slate-400 transition-colors hover:text-teal-700"
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                }
               />
               <Button type="submit" loading={loading} variant="primary" size="lg">
                 {loading ? "Creando cuenta..." : "Crear cuenta"}

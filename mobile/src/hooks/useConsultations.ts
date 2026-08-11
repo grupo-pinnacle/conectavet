@@ -58,7 +58,7 @@ export function useConsultationMessages(consultationId: string | undefined, user
   const qc = useQueryClient();
   const key = ['consultations', consultationId, 'messages'] as const;
   const connectedRef = useRef(false);
-  const pendingOptimisticRef = useRef<{ id: string; content: string }[]>([]);  const [socketConnected, setSocketConnected] = useState(false);
+  const pendingOptimisticRef = useRef<{ id: string; content: string; attachmentUrl?: string | null }[]>([]);  const [socketConnected, setSocketConnected] = useState(false);
 
   const list = useQuery({
     queryKey: key,
@@ -92,11 +92,14 @@ export function useConsultationMessages(consultationId: string | undefined, user
             // Reemplaza TODOS los optimistas pendientes con el mismo contenido
             // y rol: así no quedan clavados en "enviando" ni se duplica el
             // mensaje si el echo llega antes que la respuesta REST.
+            // Para imágenes también compara el adjunto: dos imágenes tienen
+            // contenido vacío y no deben borrarse entre sí.
             const withoutOptimistic = old.filter(
               (m) =>
                 !(
                   m.id.startsWith('optimistic-') &&
                   m.content === message.content &&
+                  (m.attachmentUrl ?? null) === (message.attachmentUrl ?? null) &&
                   (typeof m.sender?.role === 'string'
                     ? m.sender.role === message.sender?.role
                     : true)
@@ -140,6 +143,7 @@ export function useConsultationMessages(consultationId: string | undefined, user
         leaveConsultation(consultationId);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- key/qc son estables; reconectar ante cambios de array rompería el socket
   }, [consultationId]);
 
   const send = useMutation({
@@ -154,6 +158,7 @@ export function useConsultationMessages(consultationId: string | undefined, user
       pendingOptimisticRef.current.push({
         id: optimisticId,
         content: payload.content ?? '',
+        attachmentUrl: payload.attachmentUrl,
       });
       qc.setQueryData<ChatMessage[]>(key, (old = []) => [
         ...old,
@@ -173,8 +178,11 @@ export function useConsultationMessages(consultationId: string | undefined, user
       // Reemplaza el optimista más antiguo que coincida con el mensaje
       // confirmado (FIFO), aunque el socket esté caído: nunca queda
       // ninguno clavado en "enviando" ni se duplica.
+      // Las imágenes coinciden también por adjunto (el contenido es vacío).
       const idx = pendingOptimisticRef.current.findIndex(
-        (p) => p.content === real.content
+        (p) =>
+          p.content === real.content &&
+          (p.attachmentUrl ?? null) === (real.attachmentUrl ?? null)
       );
       const pending = idx >= 0 ? pendingOptimisticRef.current.splice(idx, 1)[0] : null;
       qc.setQueryData<ChatMessage[]>(key, (old = []) => {

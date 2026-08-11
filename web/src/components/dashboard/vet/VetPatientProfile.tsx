@@ -89,8 +89,12 @@ export default function VetPatientProfile({ petId, petName, onClose }: Props) {
                     <p className="text-[11px] text-teal-600 font-semibold mt-0.5">Consultas</p>
                   </div>
                   <div className="rounded-xl bg-blue-50 p-4 text-center">
-                    <p className="text-2xl font-bold text-blue-700">
-                      {data.stats.ageYears > 0 ? `${data.stats.ageYears}a` : `${data.stats.ageMonths}m`}
+                    <p className={`font-bold text-blue-700 ${data.stats.ageYears > 0 && data.stats.ageMonths > 0 ? "text-sm leading-tight" : "text-2xl"}`}>
+                      {data.stats.ageYears > 0 && data.stats.ageMonths > 0
+                        ? `${data.stats.ageYears} año${data.stats.ageYears === 1 ? "" : "s"} y ${data.stats.ageMonths} mes${data.stats.ageMonths === 1 ? "" : "es"}`
+                        : data.stats.ageYears > 0
+                          ? `${data.stats.ageYears} año${data.stats.ageYears === 1 ? "" : "s"}`
+                          : `${data.stats.ageMonths} mes${data.stats.ageMonths === 1 ? "" : "es"}`}
                     </p>
                     <p className="text-[11px] text-blue-600 font-semibold mt-0.5">Edad</p>
                   </div>

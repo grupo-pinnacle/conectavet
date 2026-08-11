@@ -21,9 +21,11 @@ export function calculateAge(birthDate: string): { years: number; months: number
 
 export function formatAge(birthDate: string): string {
   const { years, months } = calculateAge(birthDate);
-  if (years === 0) return `${months} ${months === 1 ? 'mes' : 'meses'}`;
-  if (months === 0) return `${years} ${years === 1 ? 'año' : 'años'}`;
-  return `${years}a ${months}m`;
+  const parts: string[] = [];
+  if (years > 0) parts.push(`${years} ${years === 1 ? 'año' : 'años'}`);
+  if (months > 0) parts.push(`${months} ${months === 1 ? 'mes' : 'meses'}`);
+  if (parts.length === 0) return 'Menos de 1 mes';
+  return parts.join(' y ');
 }
 
 export function formatDate(iso: string | null): string {

@@ -44,7 +44,14 @@ export default function VetPickerScreen() {
   const onSelect = useCallback(
     (vet: Vet) => {
       qc.setQueryData(['queue', 'selectedVet'], vet);
-      router.back();
+      // Si llegamos desde "Nueva consulta", volvemos con el vet elegido.
+      // Si entramos directo a la pestaña Veterinarios, vamos a Consultas
+      // para arrancar la consulta con ese veterinario (nunca al inicio).
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(app)/queue');
+      }
     },
     [qc, router]
   );
@@ -59,9 +66,11 @@ export default function VetPickerScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: c.background, paddingTop: insets.top }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.md }}>
-        <Pressable onPress={() => router.back()} hitSlop={8} accessibilityRole="button" accessibilityLabel="Volver">
-          <MaterialCommunityIcons name="arrow-left" size={24} color={c.ink} />
-        </Pressable>
+        {router.canGoBack() && (
+          <Pressable onPress={() => router.back()} hitSlop={8} accessibilityRole="button" accessibilityLabel="Volver">
+            <MaterialCommunityIcons name="arrow-left" size={24} color={c.ink} />
+          </Pressable>
+        )}
         <Text style={{ fontSize: fontSizes.title, fontWeight: fontWeights.bold, color: c.ink, letterSpacing: -0.5, flex: 1 }}>
           Elegir veterinario
         </Text>

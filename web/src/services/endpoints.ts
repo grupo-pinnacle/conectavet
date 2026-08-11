@@ -149,3 +149,15 @@ export async function getPetVetCard(id: string): Promise<VetCard> {
   const res = await api.get(`/api/pets/${id}/vetcard`);
   return res.data.data;
 }
+
+export interface CallToken {
+  url: string;
+  room: string;
+  token: string;
+  expiresIn: number;
+}
+
+export async function getCallToken(consultationId: string): Promise<CallToken> {
+  const res = await api.post(`/api/calls/${consultationId}/token`);
+  return res.data.data;
+}

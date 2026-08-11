@@ -6,6 +6,7 @@ import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
 import VetDashboardPage from "./pages/VetDashboardPage";
 import LandingPage from "./pages/LandingPage";
+import CallPage from "./pages/CallPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuth } from "./hooks/useAuth";
 
@@ -57,6 +58,7 @@ function App() {
           <Route path="/" element={<RootRedirect />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/call" element={<CallPage />} />
           <Route
             path="/dashboard"
             element={

@@ -140,6 +140,12 @@ export default function RegisterPage() {
               </button>
             </div>
 
+            {role === "vet" && (
+              <p className="mb-6 -mt-2 rounded-lg bg-teal-50 p-3 text-xs leading-relaxed text-teal-800">
+                Los veterinarios son dados de alta por el equipo VetConnect. Al continuar se creará una cuenta de <strong>dueño de mascota</strong>; luego podés solicitar el alta como veterinarian.
+              </p>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-5">
               <Input
                 label="Nombre completo"

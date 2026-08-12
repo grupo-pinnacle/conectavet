@@ -95,9 +95,15 @@ export default function LoginPage() {
                   <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                     Contraseña
                   </label>
-                  <a href="#" className="text-xs font-semibold text-teal-700 hover:underline">
+                  <button
+                    type="button"
+                    className="text-xs font-semibold text-teal-700 hover:underline"
+                    onClick={() => {
+                      /* TODO: implementar recuperación de contraseña (endpoint /auth/forgot-password) */
+                    }}
+                  >
                     ¿olvidaste tu contraseña?
-                  </a>
+                  </button>
                 </div>
                 <Input
                   type={showPassword ? "text" : "password"}

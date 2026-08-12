@@ -31,6 +31,15 @@ export async function registerController(req: Request, res: Response) {
     return res.status(201).json({ success: true, data: user });
   } catch (error) {
     if (error instanceof AuthError) {
+      // Evita enumeración de cuentas: mensaje genérico (no revela que el email
+      // ya existe). NOTA: el status 409 sigue diferenciándose del 201; ocultarlo
+      // por completo requiere coordinar el flujo del front (ver PRODUCTION_DEPLOYMENT.md).
+      if (error.statusCode === 409) {
+        return res.status(409).json({
+          success: false,
+          message: 'No pudimos completar el registro con ese correo. Si ya tenés cuenta, iniciá sesión.',
+        });
+      }
       return res.status(error.statusCode).json({ success: false, message: error.message });
     }
     console.error('Error en registerController:', error);

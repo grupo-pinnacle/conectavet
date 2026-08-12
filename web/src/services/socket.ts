@@ -3,23 +3,50 @@ import { io, Socket } from "socket.io-client";
 let socket: Socket | null = null;
 
 export function connectSocket(): Promise<Socket> {
-  if (socket?.connected) return Promise.resolve(socket);
+  // Reusa la única instancia: nunca recrea (evita sockets huerfanos/fugas).
+  if (socket) {
+    if (socket.connected) return Promise.resolve(socket);
+    const sock = socket;
+    return new Promise((resolve, reject) => {
+      const onConnect = () => { cleanup(); resolve(sock); };
+      const onErr = (err: any) => { cleanup(); reject(err); };
+      const cleanup = () => {
+        sock.off("connect", onConnect);
+        sock.off("connect_error", onErr);
+      };
+      sock.on("connect", onConnect);
+      sock.on("connect_error", onErr);
+      setTimeout(() => {
+        cleanup();
+        if (sock.connected) resolve(sock);
+        else reject(new Error("Socket connection timeout"));
+      }, 5000);
+    });
+  }
 
   const token = localStorage.getItem("vetconnect_auth_token");
-
-  socket = io(window.location.origin, {
+  const sock = io(window.location.origin, {
     auth: { token },
     transports: ["websocket", "polling"],
   });
+  socket = sock;
 
   return new Promise((resolve, reject) => {
-    socket!.on("connect", () => resolve(socket!));
-    socket!.on("connect_error", (err) => {
+    const onConnect = () => { cleanup(); resolve(sock); };
+    const onErr = (err: any) => { cleanup(); reject(err); };
+    const cleanup = () => {
+      sock.off("connect", onConnect);
+      sock.off("connect_error", onErr);
+    };
+    sock.on("connect", onConnect);
+    sock.on("connect_error", (err) => {
+      // El reconector nativo de socket.io ya reintenta; no rechazamos aquí
+      // para no dejar la app en modo "ciego" si el primer handshake falla.
       console.warn("Socket connection error:", err.message);
-      reject(err);
     });
     setTimeout(() => {
-      if (socket?.connected) resolve(socket);
+      cleanup();
+      if (sock.connected) resolve(sock);
       else reject(new Error("Socket connection timeout"));
     }, 5000);
   });

@@ -124,6 +124,12 @@ export function useConsultationMessages(consultationId: string | undefined, user
         socketInstance.on('message:new', onMessage);
         socketInstance.on('consultation:updated', onConsultationUpdated);
         socketInstance.on('prescription:new', onPrescriptionNew);
+        // Reconexión: si el socket se cae en datos móviles inestables,
+        // volvemos a habilitar el polling para no congelar el chat.
+        const onDisconnect = () => setSocketConnected(false);
+        const onReconnect = () => setSocketConnected(true);
+        socketInstance.on('disconnect', onDisconnect);
+        socketInstance.on('connect', onReconnect);
       } catch {
         // Socket connection failed — polling will handle it
       }
@@ -138,6 +144,8 @@ export function useConsultationMessages(consultationId: string | undefined, user
         socketInstance.off('message:new');
         socketInstance.off('consultation:updated');
         socketInstance.off('prescription:new');
+        socketInstance.off('disconnect');
+        socketInstance.off('connect');
       }
       if (connectedRef.current) {
         leaveConsultation(consultationId);

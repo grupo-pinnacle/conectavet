@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { secureStorage } from '@/lib/secure-storage';
+import { disconnectSocket } from '@/lib/socket';
 import api from '@/lib/api';
 import type { User, AuthResponse, LoginPayload, RegisterPayload } from '@/types';
 
@@ -30,11 +31,22 @@ export const useAuthStore = create<AuthState>((set) => ({
       secureStorage.getAccessToken(),
       secureStorage.getUser<User>(),
     ]);
-    set({
-      user,
-      isAuthenticated: Boolean(token && user),
-      isHydrated: true,
-    });
+    if (!token) {
+      set({ isHydrated: true });
+      return;
+    }
+    // Validar el token contra el backend; si fue revocado/expiró (401),
+    // limpiamos el storage y dejamos la sesión cerrada.
+    try {
+      const me = await api.get<{ user: User }>('/auth/me');
+      set({ user: me.user, isAuthenticated: true, isHydrated: true });
+    } catch (e: any) {
+      if (e?.response?.status === 401) {
+        await secureStorage.clearAll();
+        set({ user: null, isAuthenticated: false });
+      }
+      set({ isHydrated: true });
+    }
   },
 
   async login(payload) {
@@ -81,6 +93,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
     } finally {
       await secureStorage.clearAll();
+      disconnectSocket();
       set({ user: null, isAuthenticated: false });
     }
   },
@@ -91,6 +104,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   handleSessionExpired() {
+    disconnectSocket();
     set({ sessionExpired: true, user: null, isAuthenticated: false });
   },
 

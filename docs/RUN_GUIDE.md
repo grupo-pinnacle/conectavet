@@ -14,6 +14,53 @@
 
 ---
 
+## ⚙️ 0. Configuración inicial (archivos `.env`)
+
+Los `.env` **no están en git** (están en `.gitignore`). La primera vez, copialos desde los `.env.example` y completá los valores:
+
+```bash
+cp backend/.env.example backend/.env
+cp web/.env.example      web/.env
+cp mobile/.env.example   mobile/.env
+```
+
+### `backend/.env` (mínimo para arrancar en local)
+
+```dotenv
+DATABASE_URL="postgresql://postgres.<REF>:PASSWORD@aws-1-<region>.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
+DIRECT_URL="postgresql://postgres.<REF>:PASSWORD@aws-1-<region>.pooler.supabase.com:5432/postgres"
+JWT_SECRET="$(openssl rand -hex 32)"
+REFRESH_TOKENS=true
+PORT=3001
+CORS_ORIGIN="http://localhost:5173,http://localhost:8081,http://192.168.0.X:8081"
+LOG_LEVEL=debug
+LIVEKIT_URL=""
+LIVEKIT_API_KEY=""
+LIVEKIT_API_SECRET=""
+```
+
+> `DATABASE_URL`/`DIRECT_URL` apuntan a tu PostgreSQL (Supabase o local). `JWT_SECRET` debe ser un valor aleatorio generado localmente. Las claves de LiveKit pueden quedar vacías si no vas a probar videollamadas.
+
+### `web/.env`
+
+```dotenv
+VITE_API_URL=http://localhost:3001
+```
+
+### `mobile/.env`
+
+```dotenv
+EXPO_PUBLIC_API_URL=http://localhost:3001
+EXPO_PUBLIC_WS_URL=ws://localhost:3001/socket.io
+EXPO_PUBLIC_LIVEKIT_URL=ws://localhost:7880
+EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME=
+EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET=
+```
+
+> En mobile, `start.ps1` reescribe `EXPO_PUBLIC_API_URL`/`EXPO_PUBLIC_WS_URL` automáticamente según la red (USB/LAN/Tunnel). Podés dejarlos vacíos y dejar que el script los configure.
+
+---
+
 ## 🚀 1. Backend (siempre primero)
 
 ```bash

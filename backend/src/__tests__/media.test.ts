@@ -65,4 +65,28 @@ describe('POST /api/media', () => {
       .attach('file', Buffer.from('x'), { filename: 'a.png', contentType: 'image/png' });
     expect(res.status).toBe(401);
   });
+
+  test('201 — la extensión se deriva del MIME, NO del nombre del cliente (previene SVG XSS)', async () => {
+    const res = await request(app)
+      .post('/api/media')
+      .set('Authorization', `Bearer ${token}`)
+      .attach('file', Buffer.from('contenido'), {
+        filename: 'virus.svg',
+        contentType: 'image/png',
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.data.url).not.toMatch(/\.svg$/);
+    expect(res.body.data.url).toMatch(/\.png$/);
+  });
+
+  test('400 — SVG rechazado (no está en los MIME permitidos)', async () => {
+    const res = await request(app)
+      .post('/api/media')
+      .set('Authorization', `Bearer ${token}`)
+      .attach('file', Buffer.from('<svg></svg>'), {
+        filename: 'x.svg',
+        contentType: 'image/svg+xml',
+      });
+    expect(res.status).toBe(400);
+  });
 });

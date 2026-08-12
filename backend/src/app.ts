@@ -13,6 +13,8 @@ import { notificationsRoutes } from './modules/notifications/index.js';
 import { UPLOADS_DIR } from './modules/media/media.service.js';
 import { prisma } from './shared/prisma.js';
 import { logger } from './shared/logger.js';
+import { authenticate, RequestWithUser } from './shared/middlewares/auth.middleware.js';
+import { join } from 'path';
 
 if (!process.env.JWT_SECRET) {
   logger.error('JWT_SECRET no está definido en las variables de entorno');
@@ -81,6 +83,8 @@ const authLimiter = rateLimit({
   message: { success: false, message: 'Demasiados intentos de login, intentá de nuevo más tarde' },
 });
 app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/refresh', authLimiter);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
@@ -89,7 +93,40 @@ app.use('/api/consultations', consultationsRoutes);
 app.use('/api/calls', callsRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/notifications', notificationsRoutes);
-app.use('/uploads', express.static(UPLOADS_DIR));
+// Archivos subidos: requieren autenticación y participación en la consulta
+// propietaria (o ser el uploader / admin). Evita exposición de PII médica.
+app.use('/uploads', authenticate, async (req: RequestWithUser, res: Response, next: NextFunction) => {
+  try {
+    const rel = (req.path || '').replace(/^\/+/, '');
+    if (!/^[\w.\-]+$/.test(rel)) {
+      return res.status(400).json({ success: false, message: 'Nombre de archivo inválido' });
+    }
+    const fileUrl = '/uploads/' + rel;
+    let allowed = false;
+    const msg = await prisma.message.findFirst({
+      where: { attachmentUrl: fileUrl },
+      select: { consultationId: true },
+    });
+    if (msg) {
+      const c = await prisma.consultation.findFirst({
+        where: { id: msg.consultationId, OR: [{ clientId: req.user!.userId }, { vetId: req.user!.userId }] },
+      });
+      allowed = !!c;
+    }
+    if (!allowed) {
+      const att = await prisma.attachment.findFirst({ where: { url: fileUrl, uploaderId: req.user!.userId } });
+      allowed = !!att || req.user!.role === 'ADMIN';
+    }
+    if (!allowed) {
+      return res.status(403).json({ success: false, message: 'No tenés acceso a este archivo' });
+    }
+    res.sendFile(join(UPLOADS_DIR, rel), { headers: { 'X-Content-Type-Options': 'nosniff' } }, (err) => {
+      if (err) res.status(404).json({ success: false, message: 'Archivo no encontrado' });
+    });
+  } catch (e) {
+    next(e);
+  }
+});
 
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ success: false, message: 'Ruta no encontrada' });

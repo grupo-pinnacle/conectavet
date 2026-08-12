@@ -52,7 +52,7 @@ export default function ConsultationsSection({ initialPetId = "" }: { initialPet
 
   const handleCreate = async () => {
     if (!selectedPetId) return;
-    if (!notes.trim()) { setError("Contanos el motivo de la consulta (mínimo 5 caracteres)"); return; }
+    if (notes.trim().length < 5) { setError("Contanos el motivo de la consulta (mínimo 5 caracteres)"); return; }
     setCreating(true);
     setError("");
     setSuccess("");

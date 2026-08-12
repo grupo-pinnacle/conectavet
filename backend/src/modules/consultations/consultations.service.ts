@@ -132,24 +132,35 @@ export async function createConsultation(data: {
 }
 
 export async function assignVet(consultationId: string, vetId: string) {
-  const consultation = await prisma.consultation.findUnique({
-    where: { id: consultationId },
+  // Claim atómico (WHERE status) para evitar la carrera TOCTOU: dos vets
+  // no pueden "tomar" la misma consulta WAITING al mismo tiempo. La oferta
+  // PENDING sólo la reclama el vet al que fue ofrecida.
+  const claimed = await prisma.consultation.updateMany({
+    where: {
+      id: consultationId,
+      OR: [
+        { status: 'WAITING' },
+        { status: 'PENDING', vetId },
+      ],
+    },
+    data: { vetId, status: 'ACTIVE', startedAt: new Date() },
   });
-  if (!consultation) throw new NotFoundError('Consulta no encontrada');
-  if (!VALID_TRANSITIONS[consultation.status].includes('ACTIVE')) {
+
+  if (claimed.count === 0) {
+    const consultation = await prisma.consultation.findUnique({ where: { id: consultationId } });
+    if (!consultation) throw new NotFoundError('Consulta no encontrada');
+    if (consultation.status === 'PENDING' && consultation.vetId !== vetId) {
+      throw new ConflictError('Esta oferta es de otro veterinario');
+    }
     throw new ConflictError(`No se puede tomar — la consulta está en estado ${consultation.status}`);
   }
-  // Una oferta PENDING solo la puede aceptar el vet al que fue ofrecida.
-  // Tomar de la cola pública (WAITING) queda abierto a cualquier vet:
-  // la decisión de atender la tomó él al hacer clic en "tomar".
-  if (consultation.status === 'PENDING' && consultation.vetId !== vetId) {
-    throw new ConflictError('Esta oferta es de otro veterinario');
-  }
-  return prisma.consultation.update({
+
+  const consultation = await prisma.consultation.findUnique({
     where: { id: consultationId },
-    data: { vetId, status: 'ACTIVE', startedAt: new Date() },
     select: consultationSnapshot,
   });
+  if (!consultation) throw new NotFoundError('Consulta no encontrada');
+  return consultation;
 }
 
 /**
@@ -309,6 +320,7 @@ export async function saveMessage(data: {
   senderId: string;
   content?: string;
   attachmentUrl?: string;
+  clientMsgId?: string;
 }) {
   const hasContent = !!data.content && data.content.trim().length > 0;
   const hasAttachment = !!data.attachmentUrl;

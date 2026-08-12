@@ -2,6 +2,7 @@ import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'ax
 import { secureStorage } from './secure-storage';
 import { ApiError, type AuthResponse } from '@/types';
 import { API_URL } from './env';
+import { getSocket } from './socket';
 
 /**
  * Axios instance for the VetConnect backend (Express + Prisma).
@@ -103,6 +104,12 @@ api.interceptors.response.use(
 
         onTokenRefreshed(authData.accessToken);
         original.headers.set('Authorization', `Bearer ${authData.accessToken}`);
+        // Refresca el token usado por Socket.IO para que la próxima reconexión
+        // (o el próximo socket) envíe el access token válido.
+        const sock = getSocket();
+        if (sock) {
+          (sock as unknown as { auth: { token?: string } }).auth = { token: authData.accessToken };
+        }
         return api(original);
       } catch {
         onTokenRefreshed(null);

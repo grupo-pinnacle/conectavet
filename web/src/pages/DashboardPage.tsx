@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import type { Socket } from "socket.io-client";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Home, PawPrint, Calendar, ClipboardList, MessageCircle, Search, User, LogOut } from "lucide-react";
@@ -45,18 +46,23 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch de contadores al montar
     refreshCounts();
     let cancelled = false;
+    let sock: Socket | null = null;
     connectSocket()
       .then((s) => {
         if (cancelled) return;
+        sock = s;
         s.on("consultation:new", refreshCounts);
         s.on("consultation:updated", refreshCounts);
         s.on("notification:new", refreshCounts);
       })
       .catch(() => {
-        // Socket opcional en dev
+        // Socket opcional: el proxy /socket.io lo habilita; si falla, el estado local sigue valiendo.
       });
     return () => {
       cancelled = true;
+      sock?.off("consultation:new", refreshCounts);
+      sock?.off("consultation:updated", refreshCounts);
+      sock?.off("notification:new", refreshCounts);
     };
   }, [refreshCounts]);
 
@@ -89,7 +95,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-surface font-sans">
+    <div className="flex min-h-screen flex-col bg-surface font-sans md:flex-row">
       <aside className="hidden w-64 flex-col border-r border-border bg-white md:flex">
         <div className="border-b border-border px-6 py-5">
           <Logo size="sm" />
@@ -158,15 +164,15 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
         <div className="mx-auto max-w-6xl px-6 py-8 md:px-10">
           {renderSection()}
         </div>
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 border-t border-border bg-white md:hidden safe-area-b">
-        <div className="flex justify-around py-2">
-          {navItems.slice(0, 5).map((item) => {
+      <nav className="fixed bottom-0 left-0 right-0 border-t border-border bg-white md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="flex justify-around overflow-x-auto py-2">
+          {navItems.map((item) => {
             const Icon = item.icon;
             return (
               <button
@@ -177,7 +183,7 @@ export default function DashboardPage() {
                 }`}
               >
                 <Icon className="w-5 h-5" />
-                <span className="text-[10px] font-semibold">{item.label}</span>
+                <span className="text-[10px] font-semibold whitespace-nowrap">{item.label}</span>
               </button>
             );
           })}

@@ -1,13 +1,29 @@
-import { useCallback, useEffect, useState } from 'react';
-import { View, Text, Pressable, ActivityIndicator } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { View, Text, Pressable, ActivityIndicator, PermissionsAndroid, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { WebView } from 'react-native-webview';
+import { WebView, type WebView as WebViewType } from 'react-native-webview';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { callsService, type CallToken } from '@/services';
 import { WEB_URL } from '@/lib/env';
 import { useTheme, spacing, fontSizes, fontWeights, radius } from '@/theme';
 import { ApiError } from '@/types';
+
+async function requestCallPermissions(): Promise<boolean> {
+  if (Platform.OS !== 'android') return true;
+  try {
+    const results = await PermissionsAndroid.requestMultiple([
+      PermissionsAndroid.PERMISSIONS.CAMERA,
+      PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+    ]);
+    return (
+      results[PermissionsAndroid.PERMISSIONS.CAMERA] === PermissionsAndroid.RESULTS.GRANTED &&
+      results[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO] === PermissionsAndroid.RESULTS.GRANTED
+    );
+  } catch {
+    return false;
+  }
+}
 
 export default function CallScreen() {
   const { consultationId } = useLocalSearchParams<{ consultationId: string }>();
@@ -16,11 +32,23 @@ export default function CallScreen() {
   const { colors: c } = useTheme();
   const [call, setCall] = useState<CallToken | null>(null);
   const [loading, setLoading] = useState(true);
+  const [perms, setPerms] = useState<boolean | null>(null);
   const [error, setError] = useState('');
+  const webRef = useRef<WebViewType>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      if (!WEB_URL) {
+        if (!cancelled) { setError('La videollamada no está configurada (falta EXPO_PUBLIC_WEB_URL).'); setLoading(false); }
+        return;
+      }
+      const granted = await requestCallPermissions();
+      if (!cancelled) setPerms(granted);
+      if (!granted) {
+        if (!cancelled) { setError('Necesitamos permiso de cámara y micrófono para la videollamada.'); setLoading(false); }
+        return;
+      }
       try {
         const data = await callsService.getToken(consultationId);
         if (!cancelled) setCall(data);
@@ -35,14 +63,19 @@ export default function CallScreen() {
     return () => { cancelled = true; };
   }, [consultationId]);
 
+  // El token NO viaja en la URL (evita que quede en logs/proxy/historial del
+  // dispositivo): la web lo recibe por postMessage tras cargar la página.
   const source = call
-    ? {
-        uri:
-          `${WEB_URL}/call?url=${encodeURIComponent(call.url)}` +
-          `&room=${encodeURIComponent(call.room)}` +
-          `&token=${encodeURIComponent(call.token)}`,
-      }
+    ? { uri: `${WEB_URL}/call?room=${encodeURIComponent(call.room)}` }
     : undefined;
+
+  const sendCallInit = useCallback(() => {
+    if (!call) return;
+    const payload = JSON.stringify({ type: 'call:init', url: call.url, token: call.token, room: call.room });
+    webRef.current?.postMessage(payload);
+    // Re-envío diferido por si el listener de la web aún no se había montado.
+    setTimeout(() => webRef.current?.postMessage(payload), 800);
+  }, [call]);
 
   const onClose = useCallback(() => router.back(), [router]);
 
@@ -78,12 +111,25 @@ export default function CallScreen() {
       ) : source ? (
         <>
           <WebView
+            ref={webRef}
             source={source}
             style={{ flex: 1, backgroundColor: '#020617' }}
             javaScriptEnabled
             domStorageEnabled
             allowsInlineMediaPlayback
             mediaPlaybackRequiresUserAction={false}
+            mediaCapturePermissionGrantType="grant"
+            onLoad={sendCallInit}
+            onMessage={(event) => {
+              try {
+                const data = JSON.parse(event.nativeEvent.data);
+                if (data?.type === 'call:ended') {
+                  onClose();
+                }
+              } catch {
+                // Ignorar mensajes no JSON de la web
+              }
+            }}
             onHttpError={(syntheticEvent) => {
               const status = syntheticEvent.nativeEvent.statusCode;
               if (status >= 400) setError('La web de videollamada no está disponible. Verificá que la web esté corriendo.');

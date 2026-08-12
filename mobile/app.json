@@ -16,7 +16,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.pinnacle.vetconnect",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "VetConnect necesita acceso a la galería para seleccionar fotos de tu mascota."
+        "NSPhotoLibraryUsageDescription": "VetConnect necesita acceso a la galería para seleccionar fotos de tu mascota.",
+        "NSCameraUsageDescription": "VetConnect necesita la cámara para la videollamada con el veterinario.",
+        "NSMicrophoneUsageDescription": "VetConnect necesita el micrófono para la videollamada con el veterinario."
       }
     },
     "android": {

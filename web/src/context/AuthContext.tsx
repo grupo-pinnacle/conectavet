@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import type { User } from "../types";
 import api from "../services/api";
 import { getMe, updateAvailability } from "../services/endpoints";
+import { disconnectSocket } from "../services/socket";
+import { clearChatStore } from "../services/chatStore";
 
 export interface AuthContextType {
   user: User | null;
@@ -23,23 +25,6 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 interface AuthProviderProps {
   children: ReactNode;
-}
-
-function parseUserFromToken(token: string): User | null {
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    const roleMap: Record<string, "owner" | "vet" | "admin"> = { CLIENT: "owner", VET: "vet", ADMIN: "admin" };
-    return {
-      id: payload.sub || payload.id || payload.userId || "",
-      name: payload.name || payload.firstName || payload.email?.split("@")[0] || "",
-      email: payload.email || "",
-      firstName: payload.firstName,
-      lastName: payload.lastName,
-      role: roleMap[payload.role] || "owner",
-    };
-  } catch {
-    return null;
-  }
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
@@ -63,19 +48,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setUser(normalizeUser(userData));
         setIsLoading(false);
       })
-      .catch(() => {
-        const parsed = parseUserFromToken(saved);
-        if (parsed) {
-          setUser(parsed);
-        } else {
+      .catch((err: any) => {
+        // No confiamos en el token si /auth/me lo rechaza (expirado/corrupto):
+        // no derivamos el usuario del payload sin verificar firma.
+        if (err?.response?.status === 401) {
           localStorage.removeItem("vetconnect_auth_token");
+          localStorage.removeItem("vetconnect_refresh_token");
+          setUser(null);
+          setToken(null);
         }
         setIsLoading(false);
       });
   }, []);
 
-  const setAuth = useCallback((accessToken: string, userData: User) => {
+  const setAuth = useCallback((accessToken: string, userData: User, refreshToken?: string) => {
     localStorage.setItem("vetconnect_auth_token", accessToken);
+    if (refreshToken) localStorage.setItem("vetconnect_refresh_token", refreshToken);
     setToken(accessToken);
     setUser(userData);
   }, []);
@@ -101,20 +89,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await api.post("/api/auth/login", { email, password });
-    const { accessToken, user: userData } = res.data.data;
-    setAuth(accessToken, normalizeUser(userData));
+    const { accessToken, refreshToken, user: userData } = res.data.data;
+    setAuth(accessToken, normalizeUser(userData), refreshToken);
   }, [setAuth]);
 
   const register = useCallback(async (name: string, email: string, password: string, role: string) => {
     const [firstName, ...rest] = name.trim().split(" ");
     const roleMap: Record<string, string> = { owner: "CLIENT", vet: "VET" };
     const res = await api.post("/api/auth/register", { firstName, lastName: rest.join(" ") || undefined, email, password, role: roleMap[role] || role });
-    const { accessToken, user: userData } = res.data.data;
-    setAuth(accessToken, normalizeUser(userData));
+    const { accessToken, refreshToken, user: userData } = res.data.data;
+    setAuth(accessToken, normalizeUser(userData), refreshToken);
   }, [setAuth]);
 
   const logout = useCallback(() => {
     localStorage.removeItem("vetconnect_auth_token");
+    localStorage.removeItem("vetconnect_refresh_token");
+    disconnectSocket();
+    clearChatStore();
     setToken(null);
     setUser(null);
   }, []);

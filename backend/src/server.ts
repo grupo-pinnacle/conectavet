@@ -28,6 +28,5 @@ process.on('uncaughtException', (err) => {
   gracefulShutdown('uncaughtException');
 });
 process.on('unhandledRejection', (reason: any) => {
-  logger.error('Promesa rechazada no manejada', { reason: reason?.message || reason });
-  process.exit(1);
+  logger.error('Promesa rechazada no manejada (no se detiene el proceso)', { reason: reason?.message || reason });
 });

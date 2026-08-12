@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { View, FlatList, RefreshControl, Platform } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +15,11 @@ export default function PetsListScreen() {
   const { colors: c } = useTheme();
   const { list } = usePets();
   const pets = list.data ?? [];
+
+  const handlePress = useCallback(
+    (id: string) => router.push(`/(app)/pets/${id}`),
+    [router]
+  );
 
   if (list.isLoading) {
     return (
@@ -61,7 +67,7 @@ export default function PetsListScreen() {
         contentContainerStyle={{ paddingTop: spacing.lg, paddingHorizontal: spacing.lg, paddingBottom: insets.bottom + spacing.lg }}
         ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
         refreshControl={<RefreshControl refreshing={list.isFetching} onRefresh={list.refetch} tintColor={c.primary} />}
-        renderItem={({ item }) => <PetCard pet={item} onPress={() => router.push(`/(app)/pets/${item.id}`)} />}
+        renderItem={({ item }) => <PetCard pet={item} onPress={() => handlePress(item.id)} />}
         initialNumToRender={8}
         maxToRenderPerBatch={8}
         windowSize={7}

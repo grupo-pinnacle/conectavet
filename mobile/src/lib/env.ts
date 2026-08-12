@@ -40,7 +40,10 @@ const MOBILE_WS_URL =
 const MOBILE_WEB_URL =
   devHost && isLocalHost(devHost)
     ? `http://${devHost}:5173`
-    : (process.env.EXPO_PUBLIC_WEB_URL ?? 'http://localhost:5173');
+    : (process.env.EXPO_PUBLIC_WEB_URL || '');
+if (!MOBILE_WEB_URL) {
+  console.error('[env] EXPO_PUBLIC_WEB_URL no está definida. Las videollamadas no funcionarán en producción (no apuntan a localhost).');
+}
 
 export const API_URL = Platform.OS === 'web' ? 'http://localhost:3001' : MOBILE_API_URL;
 export const WS_URL = Platform.OS === 'web' ? 'ws://localhost:3001' : MOBILE_WS_URL;

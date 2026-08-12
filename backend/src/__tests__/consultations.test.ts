@@ -233,6 +233,28 @@ describe('PATCH /api/consultations/:id/assign', () => {
       .set('Authorization', `Bearer ${clientToken}`);
     expect(res.status).toBe(403);
   });
+
+  test('409 — dos vets no toman la misma consulta WAITING (el primero gana, el claim es atómico)', async () => {
+    const vet2 = await prisma.user.create({
+      data: { email: `${prefix}-vet-concurrent-${uniqueId}@test.com`, password: 'hash', role: 'VET' },
+    });
+    const vet2Token = jwt.sign(
+      { userId: vet2.id, email: vet2.email, role: 'VET' as Role },
+      process.env.JWT_SECRET as string,
+      { expiresIn: '7d' }
+    );
+    const [first, second] = await Promise.all([
+      request(app).patch(`/api/consultations/${c.id}/assign`).set('Authorization', `Bearer ${vetToken}`),
+      request(app).patch(`/api/consultations/${c.id}/assign`).set('Authorization', `Bearer ${vet2Token}`),
+    ]);
+    const statuses = [first.status, second.status].sort();
+    expect(statuses).toEqual([200, 409]);
+    const detail = await request(app)
+      .get(`/api/consultations/${c.id}`)
+      .set('Authorization', `Bearer ${clientToken}`);
+    expect(detail.body.data.vetId).not.toBeNull();
+    await prisma.user.delete({ where: { id: vet2.id } });
+  });
 });
 
 describe('PATCH /api/consultations/:id/decline', () => {

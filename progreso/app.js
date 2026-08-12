@@ -13,7 +13,7 @@ const HOY = new Date('2026-08-12');
 const diasTotales = Math.round((FECHAS.demo - FECHAS.inicio) / 86400000);
 const diasVividos = Math.round((HOY - FECHAS.inicio) / 86400000);
 const diasRestantes = Math.round((FECHAS.demo - HOY) / 86400000);
-const pctCamino = Math.max(0, Math.min(100, Math.round((diasVividos / diasTotales) * 10) / 10));
+const pctCamino = Math.max(0, Math.min(100, Math.round((diasVividos / diasTotales) * 1000) / 10));
 
 const STORAGE = {
   get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
@@ -305,27 +305,95 @@ function renderStory() {
   }
 }
 
-function renderLessons() {
-  const filters = $('lesson-filters');
-  filters.innerHTML = ['todo', 'exito', 'error', 'leccion'].map((f) =>
-    `<button data-f="${f}" class="${f === 'todo' ? 'active' : ''}">${f === 'todo' ? 'Todas' : f === 'exito' ? 'Éxitos' : f === 'error' ? 'Errores' : 'Lecciones'}</button>`).join('');
-  filters.addEventListener('click', (ev) => {
-    const b = ev.target.closest('button'); if (!b) return;
-    sndClick();
-    filters.querySelectorAll('button').forEach((x) => x.classList.toggle('active', x === b));
-    paintLessons(b.dataset.f);
-  });
-  paintLessons('todo');
+let deckState = { filter: 'todo', order: [], i: 0, flipped: false, out: false, done: false };
+
+function deckList() {
+  return deckState.filter === 'todo' ? DATA.lecciones : DATA.lecciones.filter((l) => l.tipo === deckState.filter);
 }
 
-function paintLessons(f) {
-  const list = f === 'todo' ? DATA.lecciones : DATA.lecciones.filter((l) => l.tipo === f);
-  $('lessons').innerHTML = list.map((l, i) => `
-    <div class="lesson tipo-${l.tipo} reveal" style="transition-delay:${Math.min(i, 5) * 50}ms">
-      <div class="l-head"><span class="l-emoji">${l.emoji}</span><h3>${esc(l.titulo)}</h3><span class="l-tag ${l.tipo}">${l.tipo}</span></div>
-      <p>${l.texto}</p>
-      ${l.commit ? `<div class="l-commit">${esc(l.commit)}</div>` : ''}
-    </div>`).join('');
+function renderDeckFilters() {
+  const f = $('deck-filters');
+  f.innerHTML = ['todo', 'exito', 'error', 'leccion'].map((x) =>
+    `<button data-f="${x}" class="${x === deckState.filter ? 'active' : ''}">${x === 'todo' ? 'Todas' : x === 'exito' ? 'Éxitos' : x === 'error' ? 'Errores' : 'Lecciones'}</button>`).join('');
+  f.addEventListener('click', (ev) => {
+    const b = ev.target.closest('button'); if (!b) return;
+    sndClick();
+    deckState.filter = b.dataset.f;
+    deckState.order = DataShuffle(deckList().length);
+    deckState.i = 0; deckState.flipped = false; deckState.out = false; deckState.done = false;
+    renderDeckFilters();
+    renderDeck();
+  });
+}
+
+function DataShuffle(n) {
+  const a = Array.from({ length: n }, (_, i) => i);
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function renderDeck() {
+  const list = deckList();
+  if (!deckState.order.length && !deckState.done) deckState.order = DataShuffle(list.length);
+  if (deckState.done) {
+    $('deck').innerHTML = `<div class="deck-done">
+      <div class="big">🗃️</div>
+      <h3>Cajón vaciado</h3>
+      <p>Sacaste las ${list.length} cartas. Ahora el cajón solo tiene polvo y un rubber duck sin usar.<br>Ojo: el cajón del <b>.env</b> que se filtró a git no se vacía con un botón — eso lleva <i>filter-repo</i>.</p>
+      <button class="sim-start" id="deck-restart">Reabrir el cajón</button>
+    </div>`;
+    $('deck').querySelector('#deck-restart').addEventListener('click', () => { sndClick(); deckState = { filter: deckState.filter, order: DataShuffle(list.length), i: 0, flipped: false, out: false, done: false }; renderDeckFilters(); renderDeck(); });
+    return;
+  }
+  const n = deckState.order.length;
+  const idx = deckState.order[deckState.i];
+  const c = list[idx];
+  const stack = Math.min(4, n - deckState.i);
+  const cards = [];
+  for (let k = 0; k < stack; k++) {
+    const ci = list[deckState.order[deckState.i + k]];
+    const isTop = k === 0;
+    cards.push(`<div class="dcard ${isTop && deckState.flipped ? 'flipped' : ''} ${isTop && deckState.out ? 'out' : ''}" data-k="${k}" style="z-index:${20 - k};transform:translateY(${k * 14}px) scale(${1 - k * 0.035});${isTop ? 'cursor:pointer' : ''}">
+      <div class="dc-side dc-front">
+        <div class="dc-top"><span class="dc-emoji">${ci.emoji}</span><span class="dc-tag ${ci.tipo}">${ci.tipo === 'exito' ? 'vieron en el sprint' : ci.tipo === 'error' ? 'la cicatriz' : 'la iluminación'}</span></div>
+        <div class="dc-title">${esc(ci.titulo)}</div>
+        ${k === 0 ? '<div class="dc-hint">☝ tocá la carta para leer la anécdota completa</div>' : '<div style="opacity:0">·</div>'}
+      </div>
+      <div class="dc-side dc-back">
+        <div class="dc-emoji-big">${ci.emoji}</div>
+        <div style="overflow:auto;max-height:190px;padding-right:4px;color:#b9c5e6;font-size:13.5px;line-height:1.65">${ci.texto}</div>
+        ${ci.commit ? `<div style="margin-top:10px;font-size:11.5px;color:var(--muted);font-family:monospace">${esc(ci.commit)}</div>` : ''}
+        ${k === 0 ? '<div class="dc-hint">👈 tocá para dar vuelta la carta</div>' : ''}
+      </div>
+    </div>`);
+  }
+  $('deck').innerHTML = cards.join('');
+  $('deck-info').textContent = `Carta ${deckState.i + 1} de ${n} · quedan ${n - deckState.i}`;
+  $('deck-actions').innerHTML = `
+    <button class="da-flip" id="da-flip">🔄 Dar vuelta</button>
+    <button class="da-next" id="da-next">✔ Aprendida — sacar del cajón</button>`;
+  $('deck-actions').querySelector('#da-flip').addEventListener('click', () => { sndClick(); deckState.flipped = !deckState.flipped; renderDeck(); });
+  $('deck-actions').querySelector('#da-next').addEventListener('click', () => {
+    if (deckState.flipped) sndWin(); else sndClick();
+    deckState.flipped = false;
+    deckState.out = true;
+    addXp(3);
+    renderDeck();
+    setTimeout(() => {
+      deckState.i++;
+      deckState.out = false;
+      deckState.flipped = false;
+      if (deckState.i >= n) deckState.done = true;
+      renderDeck();
+    }, 420);
+  });
+  $('deck').querySelectorAll('.dcard').forEach((d) => {
+    if (Number(d.dataset.k) !== 0) return;
+    d.addEventListener('click', () => { sndClick(); deckState.flipped = !deckState.flipped; renderDeck(); });
+  });
 }
 
 function renderSprints() {
@@ -343,13 +411,27 @@ function renderSprints() {
 
 function renderTeam() {
   $('team').innerHTML = DATA.equipo.map((m) => `
-    <div class="member reveal">
-      <div class="avatar">${m.avatar}</div>
-      <h3>${esc(m.nombre)}</h3>
-      <div class="role">${esc(m.rol)}</div>
-      <ul>${m.aportes.map((a) => `<li>${esc(a)}</li>`).join('')}</ul>
-      <div class="quote">"${esc(m.cita)}"</div>
+    <div class="flip-scene reveal" tabindex="0">
+      <div class="flip-card">
+        <div class="flip-face front">
+          <div class="avatar">${m.avatar}</div>
+          <h3>${esc(m.nombre)}</h3>
+          <div class="role">${esc(m.rol)}</div>
+          <div class="flip-hint">↻ tocá para ver el expediente</div>
+        </div>
+        <div class="flip-face back">
+          <h3 style="color:var(--gold)">${esc(m.nombre)}</h3>
+          <ul style="list-style:none;text-align:left;margin:10px 0;font-size:12.5px;color:#b9c5e6">${m.aportes.map((a) => `<li style="padding:3px 0 3px 18px;position:relative">▹ ${esc(a)}</li>`).join('')}</ul>
+          <div class="quote" style="font-size:11.5px">"${esc(m.cita)}"</div>
+          <div class="flip-hint">↻ volver</div>
+        </div>
+      </div>
     </div>`).join('');
+  $('team').querySelectorAll('.flip-scene').forEach((s) => {
+    const flip = () => { sndClick(); s.classList.toggle('flipped'); };
+    s.addEventListener('click', flip);
+    s.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } });
+  });
 }
 
 function renderPlats() {
@@ -359,18 +441,39 @@ function renderPlats() {
       <span class="status">${esc(p.status)}</span>
       <ul>${p.features.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>
     </div>`).join('');
-  $('frentes').innerHTML = DATA.frentes.map((f) => `
-    <div class="frente reveal">
-      <div class="frente-head"><h3>${f.icon} ${esc(f.nombre)}</h3><span class="pct">${f.pct}%</span></div>
-      <div class="bar ${f.tone}"><span data-pct="${f.pct}"></span></div>
-      <div class="note">${esc(f.nota)}</div>
-    </div>`).join('');
-  $('audits').innerHTML = DATA.auditorias.map((a) => `
-    <div class="audit reveal">
-      <h3>${esc(a.nombre)}</h3>
-      <div class="score"><b>${esc(a.score)}</b> · ${esc(a.nota)}</div>
-      <div class="bar"><span data-pct="${parseInt(a.score) * 10}"></span></div>
-    </div>`).join('');
+  const gauge = (pct, tone, ic, name, note) => {
+    const r = 42, c = 2 * Math.PI * r, off = c * (1 - pct / 100);
+    const col = tone === 'yellow' ? 'var(--gold)' : tone === 'blue' ? 'var(--blue)' : 'var(--green)';
+    return `<div class="gauge reveal">
+      <svg width="104" height="104" viewBox="0 0 104 104">
+        <circle cx="52" cy="52" r="${r}" fill="none" stroke="#1b2347" stroke-width="9"/>
+        <circle class="g-fill" cx="52" cy="52" r="${r}" fill="none" stroke="${col}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c}" data-off="${off}"/>
+      </svg>
+      <div class="g-val">${pct}%</div>
+      <div class="g-foot"><b>${ic} ${esc(name)}</b><br><span>${esc(note)}</span></div>
+    </div>`;
+  };
+  $('frentes').innerHTML = DATA.frentes.map((f) => gauge(f.pct, f.tone, f.icon, f.nombre, f.nota)).join('');
+  const items = DATA.auditorias.map((a) => ({ n: a.nombre.split(' ')[0], v: parseInt(a.score) }));
+  const N = items.length, R = 118, cx = 150, cy = 150;
+  const ang = (i) => (Math.PI * 2 * i) / N - Math.PI / 2;
+  const pt = (i, rad) => [cx + Math.cos(ang(i)) * rad, cy + Math.sin(ang(i)) * rad];
+  const poly = (scale) => items.map((it, i) => { const [x, y] = pt(i, R * scale * (it.v / 10)); return x.toFixed(1) + ',' + y.toFixed(1); }).join(' ');
+  let grid = '';
+  [0.34, 0.67, 1].forEach((s) => { grid += `<polygon points="${poly(s)}" fill="none" stroke="#2a3565" stroke-width="1"/>`; });
+  const axes = items.map((it, i) => { const [x, y] = pt(i, R); const [lx, ly] = pt(i, R + 16); return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#2a3565" stroke-width="1"/><text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" fill="#8fa0c9" font-size="11" font-weight="700" text-anchor="middle">${esc(it.n)}</text>`; }).join('');
+  $('audits').innerHTML = `<div class="audit reveal" style="grid-column:1/-1">
+    <h3 style="margin-bottom:4px">📡 Radar de madurez FAANG</h3>
+    <div class="radar-wrap">
+      <div id="radar-host"><svg width="300" height="300" viewBox="0 0 300 300">${grid}${axes}<polygon class="radar-poly" points="${poly(0)}" fill="rgba(88,204,2,.22)" stroke="var(--green)" stroke-width="2.5"/></svg></div>
+      <div class="radar-legend">${DATA.auditorias.map((a) => `<div><b>${esc(a.score)}</b> — ${esc(a.nombre)}<br><span style="font-weight:600">${esc(a.nota)}</span></div>`).join('')}</div>
+    </div>
+  </div>`;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.querySelectorAll('.g-fill').forEach((c) => { c.style.strokeDashoffset = c.dataset.off; });
+    const rp = document.querySelector('.radar-poly');
+    if (rp) rp.setAttribute('points', poly(1));
+  }));
   $('pending').innerHTML = DATA.pendientes.map((g) => `
     <div class="pending-card reveal">
       <h3>${g.icon} ${esc(g.titulo)}</h3>
@@ -378,11 +481,23 @@ function renderPlats() {
     </div>`).join('');
 }
 
+const LEVELS = [
+  'Pasante de README', 'Junior del wireframe', 'Dev del sprint 1', 'Héroe del scaffold', 'Guardián del schema',
+  'Señor de las migraciones', 'Maestro del socket', 'Cazador de duplicados', 'Senior de la cola', 'Veterano del MVP',
+  'Arquitecto del ADR', 'Mago del cache', 'Guardián de los tests', 'Oficial de la cola atómica', 'Comandante del deploy',
+  'Señor del 100%', 'Leyenda del 2GB', 'Embajador de producción', 'Cronista del proyecto', 'Guardián del 31-oct'
+];
+
 function renderHero() {
   $('hero-kicker').textContent = `actualizado el ${H.fecha} · commit ${H.commit} · ${H.commitMsg}`;
   $('hero-title').innerHTML = `De cero a <span class="grad">videollamada veterinaria</span> en ${diasTotales} días`;
   $('hero-sub').textContent = 'La historia real de VetConnect: seis personas, un tablero, dos auditorías, tres sobresaltos y una presentación que todavía no se escribió. Esto es lo que vivimos, lo que falló, y lo que nos falta para el 100%.';
   $('hero-days').innerHTML = `<b>${diasRestantes} días</b> separan al equipo de la presentación final del 5 de septiembre`;
+  const P = computeProgress();
+  const lv = Math.max(1, Math.min(20, Math.floor(P.pct / 5) + 1));
+  const emoji = lv >= 18 ? '👑' : lv >= 13 ? '🚀' : lv >= 9 ? '🛡️' : lv >= 5 ? '🔧' : '🌱';
+  const chip = $('level-chip');
+  if (chip) chip.innerHTML = `<span class="lv">${emoji} Nivel <b>${lv}</b></span><span class="lv-title">${LEVELS[lv - 1]}</span>`;
 }
 
 let _storyKeysBound = false;
@@ -478,16 +593,18 @@ function renderGame() {
 const SIMS = [
   { id: 'queue', emoji: '🎰', nombre: 'La cola atómica', desc: 'Sos el handler del backend con dos veterinarios online (B8). Asigná consultas con updateMany atómico antes de que el otro handler las tome — si ambos asignan la misma, es una RACE.' },
   { id: 'dedup', emoji: '📸', nombre: 'Dedup del chat', desc: 'Viví la ronda del 12-ago (M11): el optimista recibe mensajes y las imágenes se duplican. Decidí rápido qué es nuevo y qué es duplicado.' },
-  { id: 'pending', emoji: '🥼', nombre: 'El flujo PENDING', desc: 'Sos el veterinario: la oferta llega y el sistema espera tu decisión. Aceptá o rechazá con criterio clínico — y descubrí qué protege el sistema.' }
+  { id: 'swipe', emoji: '🃏', nombre: 'Triage en cartas', desc: 'Sos Dra. Vidal (vet.demo · test1234). Cada oferta es una carta en tu mano: arrastrala a la derecha para ACTIVE o a la izquierda para devolverla a la cola. Emergencia siempre; gato de tu especialidad también.' },
+  { id: 'socket', emoji: '🛰️', nombre: 'Sobrevive al socket', desc: 'El chat del cliente corre sobre Socket.io (rey M10). Cuando se cae, tocá activar el polling de respaldo antes de que el chat se congele. Arcade de reflejos.' },
+  { id: 'terminal', emoji: '🖥️', nombre: 'La terminal, tu 6º', desc: 'Cada incendio real del repo pide un comando: npm test, prisma migrate, openssl, git commit, el build. Escribilo exacto y apagá el fuego.' }
 ];
 
 function simUI(g) {
   if (!simMode) {
-    g.innerHTML = `<div class="game-card"><div class="sim-area">${SIMS.map((s, i) => `
+    g.innerHTML = `<div class="game-card"><div class="sim-area">${SIMS.map((s) => `
       <div class="queue-card" data-s="${s.id}" style="cursor:pointer;grid-template-columns:56px 1fr auto">
         <div style="font-size:34px;text-align:center">${s.emoji}</div>
         <div><div class="q-info">${s.nombre}</div><div class="q-wait" style="margin-top:4px">${s.desc}</div></div>
-        <button class="qt-btn" data-s="${s.id}">Jugar</button>
+        <button class="qt-btn">Jugar</button>
       </div>`).join('')}</div></div>`;
     g.querySelectorAll('[data-s]').forEach((b) => b.addEventListener('click', () => {
       sndClick();
@@ -498,7 +615,9 @@ function simUI(g) {
   }
   if (simMode === 'queue') simQueueUI(g);
   else if (simMode === 'dedup') simDedupUI(g);
-  else simPendingUI(g);
+  else if (simMode === 'swipe') simSwipeUI(g);
+  else if (simMode === 'socket') simSocketUI(g);
+  else if (simMode === 'terminal') simTerminalUI(g);
 }
 
 function simBack(g, title) {
@@ -517,7 +636,12 @@ function simEnd(g, r) {
     <button class="sim-start" data-back style="margin-top:18px">Volver a los simuladores</button>
     <button class="sim-start" data-retry style="margin-top:12px;background:var(--blue);color:#00314d;box-shadow:0 0 26px rgba(76,195,255,.35)">Reintentar</button>
   </div></div>`;
-  g.querySelector('[data-retry]').addEventListener('click', () => { sndClick(); clearSim(); if (r.reset) r.reset(); simUI(g); });
+  g.querySelector('[data-retry]').addEventListener('click', () => {
+    sndClick();
+    clearSim();
+    simQ = null; simD = null; simP = null; simW = null; simS = null; simT = null;
+    simUI(g);
+  });
   simBack(g, document.title);
   clearSim();
 }
@@ -661,7 +785,7 @@ function simDedupUI(g) {
     </div></div>`;
     g.querySelector('.sim-start').addEventListener('click', () => {
       sndClick();
-      simD = { vidas: 3, pts: 0, i: 0, hist: [], done: false, plan: null };
+      simD = { vidas: 3, pts: 0, i: 0, done: false, plan: null, fb: null };
       simD.plan = buildPlan();
       simDedupUI(g);
     });
@@ -682,9 +806,10 @@ function simDedupUI(g) {
     return;
   }
   const item = simD.plan[simD.i];
-  const bubbles = simD.hist.map((m) => `
-    <div class="bubble ${m.mine ? 'mine' : ''} ${item === m ? 'dup-marker' : ''}">
-      ${m.img ? '<div class="b-tag">📷 imagen</div>' : ''}${m.c || ''}
+  const hist = simD.plan.slice(0, simD.i);
+  const bubbles = hist.map((m) => `
+    <div class="bubble mine">
+      ${m.img ? '<div class="b-tag">📷 imagen</div>' : ''}${m.c || '(foto)'}
     </div>`).join('');
   g.innerHTML = `<div class="game-card">
     <div class="sim-hud">
@@ -739,6 +864,9 @@ function buildPlan() {
 }
 
 let simP = null;
+let simW = null;
+let simS = null;
+let simT = null;
 const OFERTAS = [
   { nombre: 'Valentina', mascota: 'Milo', especie: 'perro', motivo: 'Dolor agudo al caminar', urgencia: 'alta', espera: 12 },
   { nombre: 'Sol', mascota: 'Nube', especie: 'gato', motivo: 'Vacunas anuales', urgencia: 'baja', espera: 6 },
@@ -752,76 +880,214 @@ const OFERTAS = [
   { nombre: 'Rocío', mascota: 'Kiara', especie: 'gato', motivo: 'Chequeo post-castración', urgencia: 'baja', espera: 21 }
 ];
 
-function simPendingUI(g) {
-  if (!simP) {
+function simSwipeUI(g) {
+  if (!simW) {
     g.innerHTML = `<div class="game-card"><div class="sim-area">
-      <p class="sim-empty">🥼 Sos <b>Dra. Vidal, especialista en gatos</b>. Con el flujo PENDING (pedido del CEO, 11-ago), cada oferta espera TU decisión: Aceptar → ACTIVE, o Rechazar → vuelve a la cola para otro vet.<br><br>Tu criterio: <b>la emergencia se acepta siempre</b>; <b>gatos de tu especialidad</b> también conviene atenderlos (salvo lo trivial); el resto puede esperar a otro colega. Cada decisión tiene una consecuencia real.</p>
-      <button class="sim-start">Atender ofertas</button>
+      <p class="sim-empty">🥼 Sos <b>Dra. Vidal, especialista en gatos</b> (vet.demo en el backend real, password <code>test1234</code>). Con el flujo PENDING cada oferta llega como una carta en tu mano: <b>arrastrala a la derecha para ACTIVE</b> o a la izquierda para devolverla a la cola.<br><br>Regla de triage: <b>emergencia → aceptás siempre</b>; <b>gato de tu especialidad → aceptás</b> (salvo corte de pelo); el resto puede esperar a otro colega. Si la rechazás mal, el cliente espera 40 min más.</p>
+      <button class="sim-start">Repartir cartas</button>
     </div></div>`;
     g.querySelector('.sim-start').addEventListener('click', () => {
       sndClick();
-      simP = { i: 0, ok: 0, done: false, fb: null };
-      simPendingUI(g);
+      simW = { i: 0, ok: 0, done: false, fb: null, dx: 0, dragging: false };
+      simSwipeUI(g);
     });
     return;
   }
-  if (simP.done) {
-    const pctOK = Math.round((simP.ok / OFERTAS.length) * 100);
+  if (simW.done) {
+    const pctOK = Math.round((simW.ok / OFERTAS.length) * 100);
     simEnd(g, {
       emoji: pctOK >= 90 ? '🏆' : pctOK >= 70 ? '🌟' : '💀',
       title: pctOK >= 90 ? 'Criterio clínico de oro' : pctOK >= 70 ? 'Buen ojo de triage' : 'El triage necesita práctica',
-      score: '🩺 ' + simP.ok + '/' + OFERTAS.length + ' decisiones acertadas (' + pctOK + '%)',
-      lesson: 'El PENDING le devolvió la autonomía al veterinario, pero el sistema protege al cliente: toda oferta rechazada vuelve a la cola como WAITING y cualquier vet online puede tomarla. Nadie queda varado.',
+      score: '🩺 ' + simW.ok + '/' + OFERTAS.length + ' aciertos (' + pctOK + '%)',
+      lesson: 'El PENDING le devolvió la autonomía al veterinario, pero el sistema protege al cliente: toda oferta rechazada vuelve a la cola como WAITING. Nadie queda varado — salvo que la rechazes mal.',
       reset: null
     });
     return;
   }
-  const o = OFERTAS[simP.i];
+  const o = OFERTAS[simW.i];
   const correcto = o.urgencia === 'alta' || (o.especie === 'gato' && o.motivo !== 'Nudos en el pelo');
-  const dec = (d) => {
-    const right = (d === 'acc') === correcto;
-    simP.fb = { ok: right, t: '' };
-    if (right) {
-      simP.ok++;
-      simP.fb.t = d === 'acc'
-        ? '✓ Aceptaste: la consulta pasó a ACTIVE y el chat se abrió. ' + o.nombre + ' y ' + o.mascota + ' quedaron en buenas manos.'
-        : '✓ Rechazaste con criterio: la oferta volvió a la cola (WAITING) y otro colegam online la puede tomar. Cola despejada.';
-      sndWin();
-    } else {
-      simP.fb.t = d === 'acc'
-        ? '✗ La aceptaste, pero esto no te correspondía: la oferta era triviale para tu especialidad y un colega libre estaba disponible. Tu hora de agenda vale oro.'
-        : '✗ La rechazaste: ' + (o.urgencia === 'alta' ? 'era una EMERGENCIA. El cliente volvió a la cola y esperó ' + o.espera + ' min más.' : 'era un gato de TU especialidad que estaba esperando ' + o.espera + ' min. El sistema le ofreció la consulta a otro vet, pero sos vos la experta.');
-      sndLose();
-    }
-    simPendingUI(g);
+  const decide = (acc) => {
+    if (simW.fb) return;
+    const right = acc === correcto;
+    if (right) { simW.ok++; sndWin(); } else sndLose();
+    simW.fb = right
+      ? (acc ? '✓ ACTIVE: el chat con ' + o.nombre + ' se abrió. ' + o.mascota + ' en buenas patas.' : '✓ Bien rechazada: volvió a WAITING para otro vet online.')
+      : (acc ? '✗ Aceptaste lo que no te tocaba: la agenda vale oro, había un colega libre.' : '✗ Rechazaste ' + (o.urgencia === 'alta' ? 'una EMERGENCIA: ' + o.nombre + ' esperó ' + o.espera + ' min más.' : 'un gato tuyo que esperaba ' + o.espera + ' min.'));
+    simSwipeUI(g);
   };
+  const back = (j) => (simW.i + j < OFERTAS.length) ? `<div class="swipe-card back-${j}"></div>` : '';
   g.innerHTML = `<div class="game-card">
     <div class="sim-hud">
-      <span class="hud-item">🩺 Oferta ${simP.i + 1}/${OFERTAS.length}</span>
-      <span class="hud-item">🎯 <span class="pts">${simP.ok} acertadas</span></span>
+      <span class="hud-item">🩺 carta ${simW.i + 1}/${OFERTAS.length}</span>
+      <span class="hud-item">🎯 <span class="pts">${simW.ok} aciertos</span></span>
       <span class="hud-item">🐱 tu especialidad: gatos</span>
     </div>
-    <div class="offer-card">
-      <div class="o-top"><h4>${esc(o.nombre)} · ${esc(o.mascota)}</h4><span class="q-id">esperando ${o.espera} min</span></div>
-      <div class="o-meta">Especie: ${esc(o.especie)} · cliente desde la cola</div>
-      <div class="o-reason"><b>Motivo:</b> ${esc(o.motivo)}</div>
-      ${simP.fb ? `<div class="offer-fb ${simP.fb.ok ? 'ok' : 'bad'}">${simP.fb.t}</div>` : `
-        <div class="offer-btns">
-          <button class="acc" data-d="acc">✔ Aceptar (ACTIVE)</button>
-          <button class="rej" data-d="rej">✖ Rechazar → cola</button>
-        </div>`}
+    <div class="swipe-area">
+      ${back(2)}${back(1)}
+      <div class="swipe-card" id="top">
+        <span class="swipe-verdict verdict-acc">ACTIVE ⚡</span>
+        <span class="swipe-verdict verdict-rej">→ COLA</span>
+        <div class="o-top"><h4>${esc(o.nombre)} · ${esc(o.mascota)}</h4><span class="q-id">esperando ${o.espera} min</span></div>
+        <div class="o-meta">Especie: ${esc(o.especie)} · cliente desde la cola</div>
+        <div class="o-reason"><b>Motivo:</b> ${esc(o.motivo)}</div>
+        ${simW.fb ? `<div class="offer-fb ${simW.fb.indexOf('✓') === 0 ? 'ok' : 'bad'}">${simW.fb}</div>` : ''}
+      </div>
     </div>
-    ${simP.fb ? `<button class="sim-start" data-next style="margin-top:16px">${simP.i + 1 === OFERTAS.length ? 'Ver resultado' : 'Siguiente oferta'}</button>` : ''}
+    ${simW.fb
+      ? `<button class="sim-start" data-next style="margin-top:14px">${simW.i + 1 === OFERTAS.length ? 'Ver resultado' : 'Siguiente carta'}</button>`
+      : `<div class="offer-btns" style="margin-top:14px"><button class="acc" data-sw="1">✔ Arrastrar a ACTIVE</button><button class="rej" data-sw="0">✖ A la cola</button></div>`}
   </div>`;
-  g.querySelectorAll('[data-d]').forEach((b) => b.addEventListener('click', () => dec(b.dataset.d)));
+  const top = g.querySelector('#top');
+  const setDx = (dx) => { simW.dx = dx; top.style.transform = 'translateX(' + dx + 'px) rotate(' + (dx / 14) + 'deg)'; top.classList.toggle('drag-acc', dx > 40); top.classList.toggle('drag-rej', dx < -40); };
+  const down = (e) => { simW.dragging = true; simW.x0 = e.clientX; top.setPointerCapture(e.pointerId); };
+  const move = (e) => { if (!simW.dragging) return; setDx(e.clientX - simW.x0); };
+  const up = () => {
+    if (!simW.dragging) return;
+    simW.dragging = false;
+    if (simW.dx > 110) { top.classList.add('leaving-r'); setTimeout(() => decide(true), 260); }
+    else if (simW.dx < -110) { top.classList.add('leaving-l'); setTimeout(() => decide(false), 260); }
+    else { top.style.transform = ''; top.classList.remove('drag-acc', 'drag-rej'); }
+  };
+  top.addEventListener('pointerdown', down);
+  top.addEventListener('pointermove', move);
+  top.addEventListener('pointerup', up);
+  top.addEventListener('pointercancel', up);
+  g.querySelectorAll('[data-sw]').forEach((b) => b.addEventListener('click', () => { sndClick(); decide(b.dataset.sw === '1'); }));
   const nx = g.querySelector('[data-next]');
   if (nx) nx.addEventListener('click', () => {
     sndClick();
-    simP.i++;
-    simP.fb = null;
-    if (simP.i >= OFERTAS.length) simP.done = true;
-    simPendingUI(g);
+    simW.i++;
+    simW.fb = null;
+    if (simW.i >= OFERTAS.length) simW.done = true;
+    simSwipeUI(g);
   });
+}
+
+const INCIDENTS = [
+  { t: 'La suite del backend se rompió en CI', err: '✗ FAIL backend/src/__tests__/consultations.test.ts · 155 expected, 0 passed', cmd: 'npm test', out: ['> vetconnect-backend@ test', '✓ 155 passed · 0 failed · 2.4s'], hint: 'corré la suite del backend' },
+  { t: 'El schema cambió y Prisma se queja', err: 'Error: Prisma schema was changed - please run prisma migrate dev', cmd: 'npx prisma migrate dev', out: ['Applying migration 20260813000000_rating_favorites_profiles', '✓ Migration applied'], hint: 'aplicá la migración' },
+  { t: 'El secret de JWT es de cartón (FAANG 4/10)', err: 'WARN JWT_SECRET=dev-secret-placeholder', cmd: 'openssl rand -base64 48', out: ['> THVlZG9jU2VjcmV0QmFzZTY0...'], hint: 'generá un secret real de 48 bytes' },
+  { t: '18 errores de lint en web/src', err: '✗ eslint . --max-warnings 0 · 18 problems', cmd: 'npm run lint', out: ['✓ 0 errors · 0 warnings'], hint: 'pasá el linter' },
+  { t: 'Adelantar el trabajo al repo', err: 'On branch main · 36 files changed, +1297 −221', cmd: 'git commit -m "fix: race en la cola"', out: ['[main 1c73b87] fix: race en la cola', ' 36 files changed'], hint: 'commiteá con un mensaje claro' },
+  { t: 'Build final antes de deploy', err: "✗ error TS2304: cannot find module './CallRoom'", cmd: 'npm run build', out: ['> vite build', '✓ built in 2.1s · main chunk 139KB gzip'], hint: 'corré el build de producción' }
+];
+
+function simTerminalUI(g) {
+  if (!simT) {
+    g.innerHTML = `<div class="game-card"><div class="term-frame">
+      <div class="term-bar"><span class="tb tb-r"></span><span class="tb tb-y"></span><span class="tb tb-g"></span><span class="tb-title">vetconnect@ops: ~/conectavet</span></div>
+      <div class="term-body"><p>Este es tu 6º integrante: la terminal. Cada incidente real del proyecto pide un comando. Escribilo exacto (o suficientemente cerca). Si te equivocás 2 veces seguidas, perdés un corazón.</p></div>
+    </div><button class="sim-start">Abrir terminal</button></div>`;
+    g.querySelector('.sim-start').addEventListener('click', () => { sndClick(); simT = { i: 0, pts: 0, vidas: 3, fails: 0, done: false, log: '' }; simTerminalUI(g); });
+    return;
+  }
+  if (simT.done) {
+    simEnd(g, {
+      emoji: simT.pts >= 60 ? '🏆' : simT.pts >= 30 ? '🌟' : '💀',
+      title: simT.pts >= 60 ? 'Operador de consola' : simT.pts >= 30 ? 'Aprendiz de shell' : 'Pantalla azul de la vida',
+      score: '⭐ ' + simT.pts + ' pts · ❤️ ' + simT.vidas,
+      lesson: 'El 6º integrante del equipo es la terminal: npm test, prisma migrate, openssl para secrets, git commit, el build. No es magia, es cache — y disciplina.',
+      reset: null
+    });
+    return;
+  }
+  const inc = INCIDENTS[simT.i];
+  const norm = (s) => s.toLowerCase().replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim();
+  const run = () => {
+    const val = norm(g.querySelector('#term-in').value);
+    const exp = norm(inc.cmd);
+    const ok = inc.cmd.startsWith('git commit') ? /^git commit -m .+/.test(val) : (val === exp || val.startsWith(exp + ' '));
+    if (ok) {
+      simT.pts += 10; simT.fails = 0; sndWin();
+      simT.log = '<span class="term-ok">' + inc.out.join('\n') + '</span>';
+    } else {
+      simT.fails++; sndLose();
+      if (simT.fails >= 2) { simT.vidas--; simT.fails = 0; }
+      simT.log = '<span class="term-err">command not found: ' + esc(g.querySelector('#term-in').value) + ' (pista: ' + inc.hint + ')</span>';
+    }
+    simT.i++;
+    if (simT.i >= INCIDENTS.length || simT.vidas <= 0) simT.done = true;
+    simTerminalUI(g);
+  };
+  g.innerHTML = `<div class="game-card"><div class="term-frame">
+    <div class="term-bar"><span class="tb tb-r"></span><span class="tb tb-y"></span><span class="tb tb-g"></span><span class="tb-title">vetconnect@ops: ~/conectavet</span></div>
+    <div class="term-body">
+      <p><b style="color:var(--text)">Incidente ${simT.i + 1}/${INCIDENTS.length}:</b> ${esc(inc.t)}</p>
+      <p class="term-err">${esc(inc.err)}</p>
+      ${simT.log}
+      <p><span class="t-prompt">vetconnect@ops:~$</span> <input id="term-in" class="term-input" placeholder="escribí el comando..." autocomplete="off"/></p>
+    </div>
+  </div>
+  <div class="sim-hud" style="margin-top:14px"><span class="hud-item">❤️ ${simT.vidas}</span><span class="hud-item">⭐ ${simT.pts}</span><span class="hud-item">pista: ${esc(inc.hint)}</span></div>
+  <button class="sim-start" data-run style="margin-top:12px">Ejecutar ⏎</button>
+  </div>`;
+  const inp = g.querySelector('#term-in');
+  inp.focus();
+  g.querySelector('[data-run]').addEventListener('click', run);
+  inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') run(); });
+}
+
+function simSocketUI(g) {
+  if (!simS) {
+    g.innerHTML = `<div class="game-card"><div class="sim-area">
+      <p class="sim-empty">🛰️ Sos el cliente. El chat del médico vive sobre <b>Socket.io</b>; si el socket se cae, el <b>polling de respaldo</b> (rey M10: un chat que se congela cuando el socket muere) tiene que entrar solo. Cuando diga <b>"socket disconnected"</b>: tocá <b>activar polling</b> antes de que se llene la barra de congelamiento. Si llega a 0 → el chat muere y perdés una vida.</p>
+      <button class="sim-start">Abrir la app</button>
+    </div></div>`;
+    g.querySelector('.sim-start').addEventListener('click', () => {
+      sndClick();
+      simS = { vidas: 3, pts: 0, t: 30, mode: 'ok', freeze: 0, done: false, msg: 'socket conectado · canal estable', cls: 'ok', pause: 0, next: 4 };
+      simSocketUI(g);
+    });
+    return;
+  }
+  if (simS.done) {
+    if (simS.timer) { clearInterval(simS.timer); simS.timer = null; }
+    simEnd(g, {
+      emoji: simS.pts >= 220 ? '🏆' : simS.pts >= 120 ? '🌟' : '💀',
+      title: simS.pts >= 220 ? 'Canal imbatible' : simS.pts >= 120 ? 'Chat estable' : 'El chat se congeló',
+      score: '⭐ ' + simS.pts + ' pts · ❤️ ' + simS.vidas + ' vidas',
+      lesson: 'Lección M10: un chat adulto tiene DOS planes de vida. El socket cae en cualquier red real; el polling de respaldo tiene que activarse SOLO al desconectarse, no a mano. Tu código escucha disconnect, no espera a que lo toquen.',
+      reset: null
+    });
+    return;
+  }
+  const tick = () => {
+    if (simS.done) return;
+    simS.t -= 0.2;
+    if (simS.pause > 0) simS.pause -= 0.2;
+    if (simS.mode === 'dead') {
+      simS.freeze += 0.16;
+      if (simS.freeze >= 3) { simS.vidas--; simS.freeze = 0; simS.mode = 'ok'; simS.pause = 2; simS.msg = '❄️ chat congelado 3s — perdiste una vida'; simS.cls = 'dead'; }
+    } else if (simS.mode === 'ok' && simS.pause <= 0) {
+      simS.next -= 0.2;
+      if (simS.next <= 0) { simS.mode = 'dead'; simS.freeze = 0; simS.msg = '⚠️ socket disconnected — polling inactivo'; simS.cls = 'warn'; simS.next = 3 + Math.random() * 3; }
+    } else if (simS.mode === 'poll' && simS.pause <= 0) {
+      simS.next -= 0.2;
+      if (simS.next <= 0) { simS.mode = 'ok'; simS.msg = '🛰️ socket reconnected — volvé al canal'; simS.cls = 'ok'; simS.next = 4 + Math.random() * 3; }
+    }
+    if (simS.t <= 0) simS.done = true;
+    simSocketUI(g);
+  };
+  const toggle = () => {
+    if (simS.mode === 'dead') { simS.mode = 'poll'; simS.freeze = 0; simS.pts += 10; simS.msg = '🔄 polling activado — el chat respira'; simS.cls = 'poll'; simS.next = 3 + Math.random() * 2; sndWin(); }
+    else if (simS.mode === 'poll') { simS.mode = 'ok'; simS.pts += 5; simS.msg = '🛰️ volviste al socket (bonus)'; simS.cls = 'ok'; simS.next = 4 + Math.random() * 3; sndWin(); }
+    simSocketUI(g);
+  };
+  g.innerHTML = `<div class="game-card">
+    <div class="sim-hud"><span class="hud-item">❤️ <span class="live">${simS.vidas}</span></span><span class="hud-item">⭐ <span class="pts">${simS.pts}</span></span><span class="hud-item">⏱ ${Math.ceil(simS.t)}s</span></div>
+    <div class="socket-scene">
+      <div class="socket-line">
+        <div class="seg ${simS.mode === 'ok' ? 'sock' : simS.mode === 'poll' ? 'poll' : 'dead'}">${simS.mode === 'ok' ? 'SOCKET' : simS.mode === 'poll' ? 'POLLING' : 'DEAD'}</div>
+      </div>
+      <div class="freeze-bar"><span style="transform:scaleX(${simS.mode === 'dead' ? simS.freeze / 3 : 0})"></span></div>
+      <div class="socket-badge ${simS.cls}">${simS.msg}</div>
+      <button class="socket-btn" data-tg ${simS.mode === 'ok' ? 'disabled' : ''}>${simS.mode === 'dead' ? '🔄 Activar polling' : '🛰️ Volver al socket'}</button>
+    </div>
+  </div>`;
+  g.querySelector('[data-tg]').addEventListener('click', toggle);
+  if (simS.timer) clearInterval(simS.timer);
+  simS.timer = setInterval(tick, 200);
+  simTimers.push(simS.timer);
 }
 
 function quizUI(g, questions, key) {
@@ -928,16 +1194,28 @@ function renderCtf() {
 
   if (openReto) { renderChallenge(openReto); return; }
 
-  $('ctf').innerHTML = `<div class="ctf-list">${DATA.ctf.map((r) => {
-    const got = ctfDone.includes(r.id);
-    return `<div class="ctf-card ${got ? 'done' : ''}" data-id="${r.id}">
-      <div class="ctf-num">${String(r.id).padStart(2, '0')}</div>
-      <div><h3>${esc(r.titulo)}</h3><p>${esc(r.area)} · ${got ? 'resuelto' : 'pendiente'}</p></div>
-      <div style="text-align:right">
-        <div class="ctf-lvl ${r.lvl}">${r.lvl === 'facil' ? 'fácil' : r.lvl}</div>
-        ${got ? '<div class="flag-got" style="margin-top:6px">✅ flag</div>' : ''}
-      </div>
-    </div>`;}).join('')}</div>`;
+  const logLines = ctfDone.length
+    ? DATA.ctf.filter((r) => ctfDone.includes(r.id)).map((r) => `<span class="ctf-log-ok">[+] flag ${String(r.id).padStart(2, '0')} → ${esc(r.flag)}</span>`).join('')
+    : '<span class="ctf-log-idle">[ ] ninguna flag todavía — la sala te espera</span>';
+  $('ctf').innerHTML = `<div class="ctf-frame">
+    <div class="ctf-term-bar"><span class="tb tb-r"></span><span class="tb tb-y"></span><span class="tb tb-g"></span><span class="tb-title">root@vetconnect-ctf: ~/reto</span></div>
+    <div class="ctf-term-body">
+      <p class="ctf-prompt">root@vetconnect-ctf:~$ ls -la retos/</p>
+      <div class="ctf-list">${DATA.ctf.map((r) => {
+        const got = ctfDone.includes(r.id);
+        return `<div class="ctf-card ${got ? 'done' : ''}" data-id="${r.id}">
+          <div class="ctf-num">${String(r.id).padStart(2, '0')}</div>
+          <div><h3>${esc(r.titulo)}</h3><p>${esc(r.area)} · ${got ? 'resuelto' : 'pendiente'}</p></div>
+          <div style="text-align:right">
+            <div class="ctf-lvl ${r.lvl}">${r.lvl === 'facil' ? 'fácil' : r.lvl}</div>
+            ${got ? '<div class="flag-got" style="margin-top:6px">✅ flag</div>' : ''}
+          </div>
+        </div>`;}).join('')}</div>
+      <p class="ctf-prompt">root@vetconnect-ctf:~$ cat log/flags.txt</p>
+      <div class="ctf-log">${logLines}</div>
+      <p class="ctf-cursor">root@vetconnect-ctf:~$ <span class="blink">█</span></p>
+    </div>
+  </div>`;
   $('ctf').querySelectorAll('.ctf-card').forEach((c) => c.addEventListener('click', () => {
     sndClick();
     openReto = Number(c.dataset.id);
@@ -949,18 +1227,23 @@ function renderCtf() {
 function renderChallenge(id) {
   const r = DATA.ctf.find((x) => x.id === id);
   const got = ctfDone.includes(id);
-  $('ctf').innerHTML = `<div class="game-card challenge">
-    <div class="challenge-head">
-      <span class="ctf-lvl ${r.lvl}">${r.lvl === 'facil' ? 'fácil' : r.lvl}</span>
-      <span class="challenge-area">${r.area} · reto ${String(r.id).padStart(2, '0')}</span>
-      <h3>${esc(r.titulo)}</h3>
+  $('ctf').innerHTML = `<div class="ctf-frame">
+    <div class="ctf-term-bar"><span class="tb tb-r"></span><span class="tb tb-y"></span><span class="tb tb-g"></span><span class="tb-title">root@vetconnect-ctf: ~/reto/${String(r.id).padStart(2, '0')}</span></div>
+    <div class="ctf-term-body">
+      <p class="ctf-prompt">root@vetconnect-ctf:~$ cat reto_${String(r.id).padStart(2, '0')}.txt</p>
+      <div class="challenge-head">
+        <span class="ctf-lvl ${r.lvl}">${r.lvl === 'facil' ? 'fácil' : r.lvl}</span>
+        <span class="challenge-area">${r.area} · reto ${String(r.id).padStart(2, '0')}</span>
+        <h3>${esc(r.titulo)}</h3>
+      </div>
+      <div class="challenge-scenario">${r.escenario}</div>
+      ${r.codigo ? `<div class="challenge-pre">${r.codigo.split('\n').map((l) => esc(l)).join('<br>')}</div>` : ''}
+      <p class="ctf-prompt">root@vetconnect-ctf:~$ ./resolver --reto ${String(r.id).padStart(2, '0')}</p>
+      <div class="challenge-q">${esc(r.q)}</div>
+      <div class="quiz-opts">${r.o.map((o, i) => `<button class="quiz-opt" data-i="${i}" ${got ? 'disabled' : ''}>${esc(o)}</button>`).join('')}</div>
+      ${got ? '<div class="flag-box"><pre>🏁 ' + r.flag + '</pre><div class="flag-congrats">Ya la resolviste. La sala lo recuerda.</div></div>' : '<div class="quiz-fb" id="ch-fb"></div>'}
+      <button class="quiz-next" id="ch-back" style="margin-top:16px">← Volver a la sala</button>
     </div>
-    <div class="challenge-scenario">${r.escenario}</div>
-    ${r.codigo ? `<div class="challenge-pre">${r.codigo.split('\n').map((l) => esc(l)).join('<br>')}</div>` : ''}
-    <div class="challenge-q">${esc(r.q)}</div>
-    <div class="quiz-opts">${r.o.map((o, i) => `<button class="quiz-opt" data-i="${i}" ${got ? 'disabled' : ''}>${esc(o)}</button>`).join('')}</div>
-    ${got ? '<div class="flag-box"><pre>🏁 ' + r.flag + '</pre><div class="flag-congrats">Ya la resolviste. La sala lo recuerda.</div></div>' : '<div class="quiz-fb" id="ch-fb"></div>'}
-    <button class="quiz-next" id="ch-back" style="margin-top:16px">← Volver a la sala</button>
   </div>`;
 
   const back = $('ch-back');
@@ -1003,7 +1286,8 @@ function mountReveals() {
   renderStats();
   renderBar();
   renderStory();
-  renderLessons();
+  renderDeckFilters();
+  renderDeck();
   renderSprints();
   renderTeam();
   renderPlats();
@@ -1011,5 +1295,4 @@ function mountReveals() {
   renderGame();
   renderCtf();
   mountReveals();
-  document.querySelectorAll('#estado .bar span, .frentes .bar span').forEach((b) => { setTimeout(() => { b.style.width = b.dataset.pct + '%'; }, 300); });
 })();

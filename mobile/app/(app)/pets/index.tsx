@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { View, Text, FlatList, RefreshControl, Platform, Pressable } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { usePets } from '@/hooks/usePets';
 import { PetCard } from '@/components/PetCard';
@@ -19,7 +19,8 @@ export default function PetsListScreen() {
   const { colors: c } = useTheme();
   const { list } = usePets();
   const pets = list.data ?? [];
-  const [view, setView] = useState<Section>('pets');
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const [view, setView] = useState<Section>(params.tab === 'history' ? 'history' : 'pets');
 
   const handlePress = useCallback(
     (pet: Pet) => router.push(`/(app)/pets/${pet.id}`),

@@ -18,6 +18,9 @@ export default function HomeScreen() {
   const { list } = usePets();
   const pets = list.data ?? [];
 
+  const hour = new Date().getHours();
+  const saludo = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
+
   const onPetPress = useCallback((pet: Pet) => {
     router.push(`/(app)/pets/${pet.id}`);
   }, [router]);
@@ -29,7 +32,7 @@ export default function HomeScreen() {
     >
       <View style={{ marginBottom: spacing.xxl }}>
         <Text style={{ fontSize: fontSizes.title, fontWeight: fontWeights.bold, color: c.ink, letterSpacing: -0.5 }}>
-          Hola, {user?.firstName}
+          {saludo}, {user?.firstName}
         </Text>
         <Text style={{ fontSize: fontSizes.body, color: c.inkMuted, marginTop: spacing.xs }}>
           ¿Qué necesitás hacer hoy por tus mascotas?
@@ -83,6 +86,25 @@ export default function HomeScreen() {
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: fontSizes.subtitle, fontWeight: fontWeights.bold, color: c.ink, letterSpacing: -0.3 }}>Buscar veterinarios</Text>
             <Text style={{ fontSize: fontSizes.label, color: c.inkMuted }}>Elegí por calificación, opiniones y disponibilidad</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={24} color={c.inkMuted} />
+        </View>
+      </Pressable>
+
+      <Pressable
+        style={{ marginBottom: spacing.xl }}
+        onPress={() => router.push('/(app)/pets?tab=history')}
+        accessibilityRole="button"
+        accessibilityLabel="Historial clínico"
+        accessibilityHint="Revisá consultas, recetas y opiniones de tus mascotas"
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: c.surface, borderRadius: radius.xl, padding: spacing.lg, borderWidth: 1, borderColor: c.border }}>
+          <View style={{ width: 44, height: 44, borderRadius: radius.full, backgroundColor: c.accentBg, alignItems: 'center', justifyContent: 'center' }}>
+            <MaterialCommunityIcons name="clipboard-text-outline" size={24} color={c.accentDark} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: fontSizes.subtitle, fontWeight: fontWeights.bold, color: c.ink, letterSpacing: -0.3 }}>Historial clínico</Text>
+            <Text style={{ fontSize: fontSizes.label, color: c.inkMuted }}>Consultas, recetas y opiniones</Text>
           </View>
           <MaterialCommunityIcons name="chevron-right" size={24} color={c.inkMuted} />
         </View>

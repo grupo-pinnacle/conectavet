@@ -20,18 +20,17 @@ interface Review {
   client?: { firstName?: string | null; lastName?: string | null };
 }
 
-function Stars({ value, size = "h-4 w-4" }: { value: number | null; size?: string }) {
+function Stars({ value, size = "h-3.5 w-3.5" }: { value: number | null; size?: string }) {
   if (value == null) {
     return <span className="text-xs text-slate-400">Sin calificaciones</span>;
   }
+  const rounded = Math.round(value);
   return (
-    <span className="inline-flex items-center gap-0.5" aria-label={`Calificación ${value} de 5`}>
-      {[1, 2, 3, 4, 5].map((i) => (
+    <span className="inline-flex items-center gap-px" aria-label={`Calificación ${value} de 10`}>
+      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
         <Star
           key={i}
-          className={`${size} ${
-            i <= Math.round(value) ? "fill-amber-400 text-amber-400" : "text-slate-300"
-          }`}
+          className={`${size} ${i <= rounded ? "fill-amber-400 text-amber-400" : "text-slate-300"}`}
         />
       ))}
     </span>
@@ -205,9 +204,9 @@ export default function DirectorySection() {
               aria-label="Calificación mínima"
             >
               <option value={0}>Cualquier calificación</option>
-              <option value={4}>4+ estrellas</option>
-              <option value={4.5}>4.5+ estrellas</option>
-              <option value={5}>5 estrellas</option>
+              <option value={8}>8+ estrellas</option>
+              <option value={9}>9+ estrellas</option>
+              <option value={10}>10 estrellas</option>
             </select>
             <select
               value={sortBy}

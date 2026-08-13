@@ -5,9 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { Home, PawPrint, Calendar, ClipboardList, MessageCircle, Search, User, LogOut } from "lucide-react";
 import Logo from "../components/Logo";
 import HomeSection from "../components/dashboard/HomeSection";
-import PetsSection from "../components/dashboard/PetsSection";
+import PetsHistorySection from "../components/dashboard/PetsHistorySection";
 import ConsultationsSection from "../components/dashboard/ConsultationsSection";
-import HistorySection from "../components/dashboard/HistorySection";
 import MessagesSection from "../components/dashboard/MessagesSection";
 import DirectorySection from "../components/dashboard/DirectorySection";
 import ProfileSection from "../components/dashboard/ProfileSection";
@@ -19,7 +18,6 @@ const navItems = [
   { label: "Inicio", icon: Home, key: "home" },
   { label: "Mascotas", icon: PawPrint, key: "pets" },
   { label: "Consultas", icon: Calendar, key: "consultations" },
-  { label: "Historial", icon: ClipboardList, key: "history" },
   { label: "Mensajes", icon: MessageCircle, key: "messages" },
   { label: "Buscar vet", icon: Search, key: "directory" },
   { label: "Perfil", icon: User, key: "profile" },
@@ -82,9 +80,8 @@ export default function DashboardPage() {
   const renderSection = () => {
     switch (activeTab) {
       case "home": return <HomeSection onNavigate={setActiveTab} />;
-      case "pets": return <PetsSection onAgendarCita={handleAgendarCita} />;
+      case "pets": return <PetsHistorySection onAgendarCita={handleAgendarCita} />;
       case "consultations": return <ConsultationsSection initialPetId={pendingPetId} />;
-      case "history": return <HistorySection />;
       case "messages": return <MessagesSection />;
       case "directory": return <DirectorySection />;
       case "profile": return <ProfileSection />;

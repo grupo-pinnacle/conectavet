@@ -558,7 +558,7 @@ export default function VetMessagesSection() {
                         {c.pet?.name || "Mascota"}
                       </p>
                       {c.pet?.sex ? (
-                        <span className="shrink-0 flex items-center gap-0.5 text-[11px] font-semibold text-slate-500">
+                        <span className="shrink-0 flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 whitespace-nowrap">
                           {String(c.pet.sex).toLowerCase() === "male" ? <Mars className="h-3 w-3 text-blue-600" /> : <Venus className="h-3 w-3 text-pink-600" />}
                           {formatSex(c.pet.sex)}
                         </span>
@@ -679,7 +679,7 @@ export default function VetMessagesSection() {
                         : "Disponible para tomar"}
                   </p>
                   {activeCons.pet?.sex && (
-                    <span className="flex items-center gap-1 text-xs font-semibold text-slate-600">
+                    <span className="flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600 whitespace-nowrap">
                       {String(activeCons.pet.sex).toLowerCase() === "male" ? <Mars className="h-3 w-3 text-blue-600" /> : <Venus className="h-3 w-3 text-pink-600" />}
                       {formatSex(activeCons.pet.sex)}
                     </span>

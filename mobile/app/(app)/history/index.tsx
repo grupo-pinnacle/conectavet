@@ -14,6 +14,8 @@ import type { Consultation } from '@/types';
 type Grouped = { pet: Consultation['pet']; consultations: Consultation[] };
 type RatingTarget = { consultationId: string; vetName: string } | null;
 
+export const options = { title: "Historial clínico" };
+
 export default function HistoryScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -24,6 +26,8 @@ export default function HistoryScreen() {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const rate = useRateConsultation();
+  const commentValid = comment.trim().length >= 10;
+  const canSubmit = rating > 0 && commentValid && !rate.isPending;
 
   const grouped: Grouped[] = useMemo(
     () => Object.values(
@@ -209,11 +213,11 @@ export default function HistoryScreen() {
               variant="primary"
               size="sm"
               loading={rate.isPending}
-              disabled={rating === 0}
+              disabled={!canSubmit}
               onPress={() => {
-                if (!ratingTarget) return;
+                if (!ratingTarget || !canSubmit) return;
                 rate.mutate(
-                  { consultationId: ratingTarget.consultationId, payload: { rating, comment: comment.trim() || undefined } },
+                  { consultationId: ratingTarget.consultationId, payload: { rating, comment: comment.trim() } },
                   {
                     onSuccess: () => {
                       setRatingTarget(null);
@@ -235,11 +239,11 @@ export default function HistoryScreen() {
           <Text style={{ fontSize: fontSizes.body, color: c.inkMuted, textAlign: 'center' }}>
             ¿Cómo fue la atención de esta consulta?
           </Text>
-          <RatingStars value={rating} onChange={setRating} size={36} />
+          <RatingStars value={rating} onChange={setRating} size={28} />
           <TextInput
             value={comment}
             onChangeText={setComment}
-            placeholder="Contanos cómo fue (opcional)…"
+            placeholder="¿Por qué le das esa calificación? (obligatorio, mín. 10 caracteres)"
             placeholderTextColor={c.inkMuted}
             multiline
             maxLength={500}
@@ -247,7 +251,7 @@ export default function HistoryScreen() {
               backgroundColor: c.surface,
               borderRadius: radius.lg,
               borderWidth: 1.5,
-              borderColor: c.border,
+              borderColor: comment.length > 0 && !commentValid ? c.danger : c.border,
               padding: spacing.md,
               minHeight: 90,
               fontSize: fontSizes.body,
@@ -256,6 +260,11 @@ export default function HistoryScreen() {
             }}
             accessibilityLabel="Comentario sobre la consulta"
           />
+          {comment.length > 0 && !commentValid && (
+            <Text style={{ fontSize: fontSizes.label, color: c.danger, textAlign: 'center' }}>
+              Tu opinión debe tener al menos 10 caracteres ({comment.trim().length}/10).
+            </Text>
+          )}
           {rate.isError && (
             <Text style={{ fontSize: fontSizes.label, color: c.danger, textAlign: 'center' }}>
               {(rate.error as any)?.message ?? 'No pudimos guardar tu calificación. Intentá de nuevo.'}

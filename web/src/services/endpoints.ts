@@ -6,6 +6,17 @@ export async function getMe(): Promise<User> {
   return res.data.data;
 }
 
+export interface UpdateProfilePayload {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+}
+
+export async function updateProfile(data: UpdateProfilePayload): Promise<User> {
+  const res = await api.patch("/api/users/me", data);
+  return res.data.data;
+}
+
 export async function updateAvailability(isOnline: boolean): Promise<User> {
   const res = await api.patch("/api/users/me/availability", { isOnline });
   return res.data.data;
@@ -159,5 +170,15 @@ export interface CallToken {
 
 export async function getCallToken(consultationId: string): Promise<CallToken> {
   const res = await api.post(`/api/calls/${consultationId}/token`);
+  return res.data.data;
+}
+
+export interface RateConsultationPayload {
+  rating: number;
+  comment: string;
+}
+
+export async function rateConsultation(consultationId: string, payload: RateConsultationPayload): Promise<Review> {
+  const res = await api.post(`/api/consultations/${consultationId}/rating`, payload);
   return res.data.data;
 }

@@ -386,8 +386,8 @@ export async function createPrescriptionController(req: RequestWithUser, res: Re
 }
 
 const reviewSchema = z.object({
-  rating: z.coerce.number({ message: 'rating debe ser un número' }).int().min(1, 'La calificación mínima es 1').max(5, 'La calificación máxima es 5'),
-  comment: z.string().trim().max(500, 'El comentario no puede superar los 500 caracteres').optional(),
+  rating: z.coerce.number({ message: 'rating debe ser un número' }).int().min(1, 'La calificación mínima es 1').max(10, 'La calificación máxima es 10'),
+  comment: z.string().trim().min(10, 'Cuéntanos un poco más: tu opinión debe tener al menos 10 caracteres').max(500, 'El comentario no puede superar los 500 caracteres'),
 });
 
 export async function createReviewController(req: RequestWithUser, res: Response) {

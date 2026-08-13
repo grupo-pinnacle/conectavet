@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,15 +22,19 @@ export default function QueueScreen() {
   const createConsultation = useCreateConsultation();
   const [selectedPetId, setSelectedPetId] = useState<string | null>(petId ?? null);
   const [reason, setReason] = useState('');
-  const [vetMode, setVetMode] = useState<'quick' | 'chosen'>('quick');
   const [submitting, setSubmitting] = useState(false);
   const pets = list.data ?? [];
+  const scrollRef = useRef<ScrollView>(null);
 
   const { data: selectedVet } = useQuery<Vet | undefined>({
     queryKey: ['queue', 'selectedVet'],
     queryFn: () => qc.getQueryData<Vet>(['queue', 'selectedVet']),
     initialData: () => qc.getQueryData<Vet>(['queue', 'selectedVet']),
   });
+
+  // Si ya venís con un veterinario elegido (desde Veterinarios), arrancamos en
+  // "Elegir yo"; si no, la opción por defecto es "Rápido".
+  const [vetMode, setVetMode] = useState<'quick' | 'chosen'>(selectedVet ? 'chosen' : 'quick');
 
   const hasChosenVet = vetMode === 'chosen' && Boolean(selectedVet);
 
@@ -74,7 +78,7 @@ export default function QueueScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={{ paddingTop: insets.top + spacing.lg, paddingHorizontal: spacing.lg, paddingBottom: insets.bottom + spacing.huge }} keyboardShouldPersistTaps="handled">
+    <ScrollView ref={scrollRef} contentContainerStyle={{ paddingTop: insets.top + spacing.lg, paddingHorizontal: spacing.lg, paddingBottom: insets.bottom + spacing.huge }} keyboardShouldPersistTaps="handled">
       <Text style={{ fontSize: fontSizes.title, fontWeight: fontWeights.bold, color: c.ink, letterSpacing: -0.5 }}>
         Nueva consulta
       </Text>
@@ -147,6 +151,7 @@ export default function QueueScreen() {
             <TextInput
               value={reason}
               onChangeText={setReason}
+              onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50)}
               placeholder="Ej: vomita hace 2 días, no quiere comer…"
               placeholderTextColor={c.inkMuted}
               multiline

@@ -4,9 +4,26 @@ import { API_CONFIG } from "../constants/api";
 const api = axios.create({
   baseURL: API_CONFIG.BASE_URL,
   timeout: API_CONFIG.TIMEOUT,
-  // El JWT viaja en cookie HttpOnly (la setea el backend en /login, /register y
-  // /refresh). No lo exponemos a JS ni lo enviamos en el header Authorization.
+  // El refresh token vive en cookie HttpOnly (la setea el backend en /login,
+  // /register y /refresh) y el access token viaja en el header Authorization
+  // (lo guardamos en memoria tras login/refresh). Esto permite autenticar
+  // peticiones directas (ej. carga de imágenes subidas) aunque el cookie sea
+  // cross-origin y no viaje en <img>/fetch.
   withCredentials: true,
+});
+
+// Access token en memoria: se asigna tras login/register/refresh y se adjunta
+// a toda petición. Evita depender del cookie para recursos cross-origin.
+let accessToken: string | null = null;
+export function setApiToken(token: string | null) {
+  accessToken = token;
+}
+
+api.interceptors.request.use((config) => {
+  if (accessToken) {
+    config.headers.set("Authorization", `Bearer ${accessToken}`);
+  }
+  return config;
 });
 
 // ── Refresh de access token ante un 401 ─────────────────────────────────────
@@ -65,6 +82,7 @@ api.interceptors.response.use(
 
         const accessToken: string = data.data.accessToken;
 
+        setApiToken(accessToken);
         onTokenRefreshed(accessToken);
         original.headers.set("Authorization", `Bearer ${accessToken}`);
         return api(original);

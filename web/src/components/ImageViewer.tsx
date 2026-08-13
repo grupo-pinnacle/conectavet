@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from "react";
 import { X } from "lucide-react";
+import AuthImage from "./AuthImage";
 
 interface ImageViewerProps {
   src: string;
@@ -40,10 +41,9 @@ export default function ImageViewer({ src, alt, onClose }: ImageViewerProps) {
       >
         <X className="h-5 w-5" />
       </button>
-      <img
+      <AuthImage
         src={src}
         alt={alt || "Imagen adjunta"}
-        onClick={(e) => e.stopPropagation()}
         className="max-h-full max-w-full rounded-xl object-contain shadow-2xl animate-in zoom-in-95 duration-200"
       />
     </div>

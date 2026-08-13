@@ -1,8 +1,8 @@
-import { Image, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
-import { API_URL } from '@/lib/env';
+import { AuthImage } from './AuthImage';
 import type { ChatMessage } from '@/types';
 
 interface ChatBubbleProps {
@@ -99,8 +99,8 @@ export function ChatBubble({ message, isOwn = false, senderName = 'Veterinario' 
             }}
           >
             {message.attachmentUrl ? (
-              <Image
-                source={{ uri: `${API_URL}${message.attachmentUrl}` }}
+              <AuthImage
+                uri={message.attachmentUrl!}
                 style={{
                   width: 220,
                   aspectRatio: 4 / 3,

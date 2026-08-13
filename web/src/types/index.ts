@@ -48,6 +48,15 @@ export interface Consultation {
   vet?: User;
   messages?: Message[];
   prescriptions?: Prescription[];
+  review?: Review;
+}
+
+export interface Review {
+  id: string;
+  rating: number;
+  comment?: string;
+  createdAt?: string;
+  client?: User;
 }
 
 export interface Message {

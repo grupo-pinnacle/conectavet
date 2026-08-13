@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
-import { getMyConsultations } from "../../services/endpoints";
-import type { Consultation, Prescription } from "../../types";
-import { ClipboardList, Clock, Pill } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { getMyConsultations, rateConsultation } from "../../services/endpoints";
+import type { Consultation, Prescription, Review } from "../../types";
+import { ClipboardList, Clock, Pill, Star, X } from "lucide-react";
+import StarRatingInput from "./StarRatingInput";
+import Button from "../Button";
 
 export default function HistorySection() {
   const [completed, setCompleted] = useState<Consultation[]>([]);
@@ -9,24 +11,60 @@ export default function HistorySection() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const fetch = async () => {
-      try {
-        const data = await getMyConsultations();
-        const done = data.filter((c) => c.status === "COMPLETED");
-        setCompleted(done);
-        // Las recetas vienen incluidas en cada consulta (evita N+1).
-        const byCons: Record<string, Prescription[]> = {};
-        done.forEach((c) => { byCons[c.id] = c.prescriptions ?? []; });
-        setPrescriptionsByCons(byCons);
-      } catch {
-        setError("No se pudo cargar el historial");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetch();
+  // Modal de calificación
+  const [rateTarget, setRateTarget] = useState<Consultation | null>(null);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [rateError, setRateError] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      const data = await getMyConsultations();
+      const done = data.filter((c) => c.status === "COMPLETED");
+      setCompleted(done);
+      const byCons: Record<string, Prescription[]> = {};
+      done.forEach((c) => { byCons[c.id] = c.prescriptions ?? []; });
+      setPrescriptionsByCons(byCons);
+    } catch {
+      setError("No se pudo cargar el historial");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const openRate = (c: Consultation) => {
+    setRateTarget(c);
+    setRating(0);
+    setComment("");
+    setRateError("");
+  };
+
+  const submitRate = async () => {
+    if (!rateTarget) return;
+    if (rating === 0 || comment.trim().length < 10) {
+      setRateError("Calificá con al menos 1 estrella y escribí tu opinión (mínimo 10 caracteres).");
+      return;
+    }
+    setSubmitting(true);
+    setRateError("");
+    try {
+      const review: Review = await rateConsultation(rateTarget.id, { rating, comment: comment.trim() });
+      setCompleted((prev) => prev.map((c) => (c.id === rateTarget.id ? { ...c, review } : c)));
+      setRateTarget(null);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message
+        || (err as { message?: string })?.message
+        || "No pudimos guardar tu calificación.";
+      setRateError(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -131,8 +169,95 @@ export default function HistorySection() {
                   })}
                 </div>
               )}
+
+              {/* Calificación del dueño */}
+              {c.review ? (
+                <div className="mt-3 flex items-start gap-2 rounded-lg bg-amber-50 p-3">
+                  <Star className="mt-0.5 h-4 w-4 shrink-0 fill-amber-400 text-amber-400" />
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-amber-700">Tu calificación</p>
+                    <p className="mt-1 text-sm font-semibold text-ink">{c.review.rating}/10</p>
+                    {c.review.comment && <p className="mt-1 text-sm text-ink whitespace-pre-wrap">{c.review.comment}</p>}
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => openRate(c)}
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-700 transition-colors hover:bg-teal-100"
+                >
+                  <Star className="h-4 w-4" /> Calificar consulta
+                </button>
+              )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Modal de calificación */}
+      {rateTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-8"
+          onClick={() => setRateTarget(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-ink">Calificá a {rateTarget.vet?.firstName || "el veterinario"}</h3>
+                <p className="text-xs text-slate-500">Tu opinión es obligatoria (mínimo 10 caracteres).</p>
+              </div>
+              <button
+                onClick={() => setRateTarget(null)}
+                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                aria-label="Cerrar"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <StarRatingInput value={rating} onChange={setRating} />
+              <p className="mt-1 text-center text-xs text-slate-500">{rating}/10</p>
+            </div>
+
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={4}
+              maxLength={500}
+              placeholder="¿Por qué le das esa calificación? (obligatorio, mín. 10 caracteres)"
+              className={`w-full resize-none rounded-lg border bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 ${
+                comment.length > 0 && comment.trim().length < 10
+                  ? "border-red-300 focus:ring-red-200"
+                  : "border-border focus:ring-teal-200"
+              }`}
+            />
+            {comment.length > 0 && comment.trim().length < 10 && (
+              <p className="mt-1 text-xs font-semibold text-red-600">
+                Faltan {10 - comment.trim().length} caracteres más.
+              </p>
+            )}
+
+            {rateError && <p className="mt-3 text-sm font-semibold text-red-600">{rateError}</p>}
+
+            <div className="mt-5 flex gap-3">
+              <Button variant="outline" fullWidth={false} className="flex-1" onClick={() => setRateTarget(null)}>
+                Cancelar
+              </Button>
+              <Button
+                variant="primary"
+                fullWidth={false}
+                className="flex-1"
+                loading={submitting}
+                disabled={rating === 0 || comment.trim().length < 10}
+                onClick={submitRate}
+              >
+                Enviar calificación
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

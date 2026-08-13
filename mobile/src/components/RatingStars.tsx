@@ -9,11 +9,11 @@ interface RatingStarsProps {
   disabled?: boolean;
 }
 
-export function RatingStars({ value, onChange, size = 22, disabled = false }: RatingStarsProps) {
+export function RatingStars({ value, onChange, size = 20, disabled = false }: RatingStarsProps) {
   const { colors: c } = useTheme();
   return (
-    <View style={{ flexDirection: 'row', gap: spacing.xs, justifyContent: 'center' }}>
-      {[1, 2, 3, 4, 5].map((star) => {
+    <View style={{ flexDirection: 'row', gap: spacing.xs, justifyContent: 'center', flexWrap: 'wrap' }}>
+      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => {
         const filled = star <= Math.round(value);
         const content = (
           <MaterialCommunityIcons
@@ -29,9 +29,9 @@ export function RatingStars({ value, onChange, size = 22, disabled = false }: Ra
           <Pressable
             key={star}
             onPress={() => onChange?.(star)}
-            hitSlop={6}
+            hitSlop={4}
             accessibilityRole="button"
-            accessibilityLabel={`${star} ${star === 1 ? 'estrella' : 'estrellas'}`}
+            accessibilityLabel={`${star} ${star === 1 ? 'estrella' : 'estrellas'} de 10`}
           >
             {content}
           </Pressable>

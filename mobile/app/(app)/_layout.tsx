@@ -18,7 +18,6 @@ const tabs: TabConfig[] = [
   { name: 'queue/index', label: 'Consultas', icon: 'stethoscope', iconFocused: 'stethoscope' },
   { name: 'vets/index', label: 'Veterinarios', icon: 'account-search-outline', iconFocused: 'account-search', headerShown: false },
   { name: 'chat/index', label: 'Chat', icon: 'chat-processing-outline', iconFocused: 'chat-processing' },
-  { name: 'history/index', label: 'Historial', icon: 'clipboard-text-outline', iconFocused: 'clipboard-text' },
 ];
 
 function TabIcon({ icon, focused }: { icon: IconName; focused: boolean }) {
@@ -109,8 +108,9 @@ export default function AppLayout() {
       ))}
       <Tabs.Screen name="pets/[id]" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="pets/new" options={{ href: null, headerShown: false }} />
-      <Tabs.Screen name="chat/[consultationId]" options={{ href: null, headerShown: false }} />
-      <Tabs.Screen name="call/[consultationId]" options={{ href: null, headerShown: false }} />
+      <Tabs.Screen name="chat/[consultationId]" options={{ href: null, headerShown: false, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="call/[consultationId]" options={{ href: null, headerShown: false, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="history/index" options={{ href: null }} />
       <Tabs.Screen name="profile/index" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="profile/edit" options={{ href: null, headerShown: false }} />
     </Tabs>

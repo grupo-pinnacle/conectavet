@@ -44,14 +44,10 @@ export default function VetPickerScreen() {
   const onSelect = useCallback(
     (vet: Vet) => {
       qc.setQueryData(['queue', 'selectedVet'], vet);
-      // Si llegamos desde "Nueva consulta", volvemos con el vet elegido.
-      // Si entramos directo a la pestaña Veterinarios, vamos a Consultas
-      // para arrancar la consulta con ese veterinario (nunca al inicio).
-      if (router.canGoBack()) {
-        router.back();
-      } else {
-        router.replace('/(app)/queue');
-      }
+      // Volvemos siempre a Consultas con el veterinario seleccionado
+      // (nunca al inicio), tanto si entramos desde "Nueva consulta" como
+      // desde la pestaña Veterinarios.
+      router.replace('/(app)/queue');
     },
     [qc, router]
   );
@@ -108,7 +104,7 @@ export default function VetPickerScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md }}>
           <Text style={{ fontSize: fontSizes.body, color: c.ink, fontWeight: fontWeights.medium }}>Calificación</Text>
           <View style={{ flexDirection: 'row', gap: spacing.xs, marginLeft: 'auto' }}>
-            {[0, 4, 4.5].map((r) => {
+            {[0, 8, 9].map((r) => {
               const selected = minRating === r;
               return (
                 <Pressable
@@ -188,10 +184,10 @@ export default function VetPickerScreen() {
           renderItem={({ item }) => {
             const name = [item.firstName, item.lastName].filter(Boolean).join(' ') || 'Veterinario';
             const isFav = Boolean(item.isFavorite);
+            const rating = typeof item.ratingAvg === 'number' && item.ratingCount ? item.ratingAvg : null;
             return (
-              <Pressable
-                onPress={() => onSelect(item)}
-                style={({ pressed }) => ({
+              <View
+                style={{
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: spacing.md,
@@ -199,49 +195,75 @@ export default function VetPickerScreen() {
                   borderRadius: radius.xl,
                   borderWidth: 1.5,
                   borderColor: c.border,
-                  backgroundColor: pressed ? c.borderLight : c.surface,
-                  opacity: item.isOnline ? 1 : 0.8,
-                })}
-                accessibilityRole="button"
-                accessibilityLabel={`Elegir a ${name}`}
-                accessibilityHint={item.isOnline ? undefined : 'No está disponible ahora, pero puede aceptar tu consulta cuando se conecte'}
+                  backgroundColor: c.surface,
+                  opacity: item.isOnline ? 1 : 0.85,
+                }}
               >
-                <View style={{ width: 44, height: 44, borderRadius: radius.full, backgroundColor: item.isOnline ? c.primaryBg : c.borderLight, alignItems: 'center', justifyContent: 'center' }}>
-                  <MaterialCommunityIcons name="stethoscope" size={22} color={item.isOnline ? c.primary : c.inkMuted} />
+                <View style={{ position: 'relative' }}>
+                  <View style={{ width: 48, height: 48, borderRadius: radius.full, backgroundColor: item.isOnline ? c.primaryBg : c.borderLight, alignItems: 'center', justifyContent: 'center' }}>
+                    <MaterialCommunityIcons name="stethoscope" size={24} color={item.isOnline ? c.primary : c.inkMuted} />
+                  </View>
+                  <View
+                    style={{
+                      position: 'absolute',
+                      right: -1,
+                      bottom: -1,
+                      width: 14,
+                      height: 14,
+                      borderRadius: 7,
+                      borderWidth: 2.5,
+                      borderColor: c.surface,
+                      backgroundColor: item.isOnline ? c.success : c.inkMuted,
+                    }}
+                  />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: fontSizes.subtitle, fontWeight: fontWeights.bold, color: c.ink }} numberOfLines={1}>{name}</Text>
                   <Text style={{ fontSize: fontSizes.label, color: c.inkMuted }} numberOfLines={1}>
                     {item.specialty || item.email}
                   </Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 2 }}>
-                    {typeof item.ratingAvg === 'number' && item.ratingCount ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 3 }}>
+                    {rating !== null ? (
                       <>
-                        <MaterialCommunityIcons name="star" size={12} color={c.accent} />
+                        <MaterialCommunityIcons name="star" size={13} color={c.accent} />
                         <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted }}>
-                          {item.ratingAvg.toFixed(1)} ({item.ratingCount})
+                          {rating.toFixed(1)} ({item.ratingCount})
                         </Text>
                       </>
                     ) : (
                       <Text style={{ fontSize: fontSizes.caption, color: c.inkSoft }}>Sin calificaciones</Text>
                     )}
+                    <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted }}>
+                      · {item.isOnline ? 'Disponible' : 'Ausente'}
+                    </Text>
                   </View>
                 </View>
-                <Pressable
-                  onPress={() => onToggleFavorite(item)}
-                  hitSlop={10}
-                  style={{ padding: spacing.xs }}
-                  accessibilityRole="button"
-                  accessibilityLabel={isFav ? `Quitar a ${name} de favoritos` : `Agregar a ${name} a favoritos`}
-                  accessibilityState={{ selected: isFav }}
-                >
-                  <MaterialCommunityIcons
-                    name={isFav ? 'heart' : 'heart-outline'}
-                    size={22}
-                    color={isFav ? c.danger : c.inkMuted}
-                  />
-                </Pressable>
-              </Pressable>
+                <View style={{ alignItems: 'center', gap: spacing.sm }}>
+                  <Pressable
+                    onPress={() => onToggleFavorite(item)}
+                    hitSlop={10}
+                    style={{ padding: spacing.xs }}
+                    accessibilityRole="button"
+                    accessibilityLabel={isFav ? `Quitar a ${name} de favoritos` : `Agregar a ${name} a favoritos`}
+                    accessibilityState={{ selected: isFav }}
+                  >
+                    <MaterialCommunityIcons
+                      name={isFav ? 'heart' : 'heart-outline'}
+                      size={22}
+                      color={isFav ? c.danger : c.inkMuted}
+                    />
+                  </Pressable>
+                  <Pressable
+                    onPress={() => onSelect(item)}
+                    style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full, backgroundColor: c.primary }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Elegir a ${name}`}
+                    accessibilityHint={item.isOnline ? undefined : 'No está disponible ahora, pero puede aceptar tu consulta cuando se conecte'}
+                  >
+                    <Text style={{ color: c.white, fontSize: fontSizes.label, fontWeight: fontWeights.bold }}>Elegir</Text>
+                  </Pressable>
+                </View>
+              </View>
             );
           }}
         />

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, useMemo, memo } from 'react';
-import { FlatList, Image, Keyboard, KeyboardAvoidingView, Platform, Pressable, TextInput, View, Text, ActivityIndicator } from 'react-native';
+import { FlatList, Image, KeyboardAvoidingView, Platform, Pressable, TextInput, View, Text, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
@@ -112,16 +112,9 @@ export default function ConsultationChatScreen() {
   const { data: consultation } = useConsultation(consultationId);
   const { data: prescriptions } = useConsultationPrescriptions(consultationId);
   const [draft, setDraft] = useState('');
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [pendingImage, setPendingImage] = useState<{ uri: string; fileName?: string; mimeType?: string } | null>(null);
   const flatRef = useRef<FlatList>(null);
-
-  useEffect(() => {
-    const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
-    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
-    return () => { show.remove(); hide.remove(); };
-  }, []);
 
   const messages = list.data ?? [];
   const rxList = prescriptions ?? [];
@@ -328,8 +321,8 @@ export default function ConsultationChatScreen() {
         />
       )}
 
-      {/* Input bar */}
-      <View style={{ paddingBottom: keyboardVisible ? 0 : insets.bottom, backgroundColor: c.surface, borderTopColor: c.borderLight, borderTopWidth: 1 }}>
+      {/* Input bar — estilo WhatsApp (estable frente al teclado) */}
+      <View style={{ backgroundColor: c.surface, borderTopColor: c.borderLight, borderTopWidth: 1, paddingBottom: insets.bottom }}>
         {pendingImage && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingTop: spacing.sm }}>
             <View style={{ width: 44, height: 44, borderRadius: radius.lg, overflow: 'hidden', borderWidth: 1, borderColor: c.border }}>
@@ -371,24 +364,39 @@ export default function ConsultationChatScreen() {
               <MaterialCommunityIcons name="image-plus" size={22} color={canChat ? c.primary : c.inkMuted} />
             )}
           </Pressable>
-          <TextInput
-            value={draft}
-            onChangeText={setDraft}
-            placeholder={canChat ? "Escribí tu mensaje…" : "Chat no habilitado aún"}
-            placeholderTextColor={c.inkMuted}
-            multiline
-            maxLength={2000}
-            editable={canChat}
-            accessibilityLabel="Mensaje"
+          <View
             style={{
-              flex: 1, minHeight: SEND_BTN_SIZE, maxHeight: 120,
-              paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
-              backgroundColor: c.background, borderRadius: 22,
-              borderWidth: 1, borderColor: pendingImage ? c.primary : c.border,
-              fontSize: fontSizes.input, color: c.ink,
-              lineHeight: 20,
+              flex: 1,
+              flexDirection: 'row',
+              alignItems: 'flex-end',
+              backgroundColor: c.background,
+              borderRadius: 22,
+              borderWidth: 1,
+              borderColor: pendingImage ? c.primary : c.border,
+              paddingHorizontal: spacing.md,
+              paddingVertical: spacing.xs,
+              minHeight: SEND_BTN_SIZE,
             }}
-          />
+          >
+            <TextInput
+              value={draft}
+              onChangeText={setDraft}
+              placeholder={canChat ? "Escribí tu mensaje…" : "Chat no habilitado aún"}
+              placeholderTextColor={c.inkMuted}
+              multiline
+              maxLength={2000}
+              editable={canChat}
+              accessibilityLabel="Mensaje"
+              style={{
+                flex: 1,
+                maxHeight: 100,
+                paddingVertical: spacing.sm,
+                fontSize: fontSizes.input,
+                color: c.ink,
+                lineHeight: 20,
+              }}
+            />
+          </View>
           <Pressable
             onPress={onSend}
             disabled={(!draft.trim() && !pendingImage) || send.isPending || !canChat}

@@ -772,11 +772,11 @@ describe('POST /api/consultations/:id/rating', () => {
     await request(app)
       .post(`/api/consultations/${c.id}/rating`)
       .set('Authorization', `Bearer ${clientToken}`)
-      .send({ rating: 4 });
+      .send({ rating: 4, comment: 'Muy buena la atención recibida' });
     const res = await request(app)
       .post(`/api/consultations/${c.id}/rating`)
       .set('Authorization', `Bearer ${clientToken}`)
-      .send({ rating: 3 });
+      .send({ rating: 3, comment: 'Segunda opinión de prueba' });
     expect(res.status).toBe(409);
   });
 
@@ -788,7 +788,7 @@ describe('POST /api/consultations/:id/rating', () => {
     const res = await request(app)
       .post(`/api/consultations/${c.id}/rating`)
       .set('Authorization', `Bearer ${clientToken}`)
-      .send({ rating: 5 });
+      .send({ rating: 5, comment: 'Opinión obligatoria de prueba' });
     expect(res.status).toBe(409);
   });
 
@@ -801,7 +801,7 @@ describe('POST /api/consultations/:id/rating', () => {
     const res = await request(app)
       .post(`/api/consultations/${c.id}/rating`)
       .set('Authorization', `Bearer ${strangerToken}`)
-      .send({ rating: 5 });
+      .send({ rating: 5, comment: 'Opinión obligatoria de prueba' });
     expect(res.status).toBe(403);
     await prisma.user.delete({ where: { id: stranger.id } });
   });
@@ -811,7 +811,16 @@ describe('POST /api/consultations/:id/rating', () => {
     const res = await request(app)
       .post(`/api/consultations/${c.id}/rating`)
       .set('Authorization', `Bearer ${clientToken}`)
-      .send({ rating: 7 });
+      .send({ rating: 11, comment: 'Opinión obligatoria de prueba' });
+    expect(res.status).toBe(400);
+  });
+
+  test('400 — comentario obligatorio (mínimo 10 caracteres)', async () => {
+    const c = await makeCompletedConsultation();
+    const res = await request(app)
+      .post(`/api/consultations/${c.id}/rating`)
+      .set('Authorization', `Bearer ${clientToken}`)
+      .send({ rating: 8, comment: 'corto' });
     expect(res.status).toBe(400);
   });
 });

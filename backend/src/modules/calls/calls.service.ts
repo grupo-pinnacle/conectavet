@@ -35,27 +35,34 @@ export async function createCallToken(params: { consultationId: string; userId: 
   }
 
   const room = `consultation-${consultation.id}`;
-  const token = new AccessToken(livekitKey, livekitSecret, {
-    identity: userId,
-    name: name || userId,
-    ttl: `${CALL_TTL_SECONDS}`,
-    metadata: JSON.stringify({
-      consultationId,
-      role: consultation.vetId === userId ? 'VET' : 'CLIENT',
-    }),
-  });
-  token.addGrant({
-    roomJoin: true,
-    room,
-    canPublish: true,
-    canSubscribe: true,
-    canPublishData: true,
-  });
+  let jwt: string;
+  try {
+    const token = new AccessToken(livekitKey, livekitSecret, {
+      identity: userId,
+      name: name || userId,
+      ttl: CALL_TTL_SECONDS,
+      metadata: JSON.stringify({
+        consultationId,
+        role: consultation.vetId === userId ? 'VET' : 'CLIENT',
+      }),
+    });
+    token.addGrant({
+      roomJoin: true,
+      room,
+      canPublish: true,
+      canSubscribe: true,
+      canPublishData: true,
+    });
+    jwt = await token.toJwt();
+  } catch (err) {
+    logger.error('Error generando el token de LiveKit', { message: (err as Error)?.message });
+    throw new AppError('No pudimos iniciar la videollamada. Reintentá más tarde.', 503);
+  }
 
   return {
     url: livekitUrl,
     room,
-    token: await token.toJwt(),
+    token: jwt,
     expiresIn: CALL_TTL_SECONDS,
   };
 }

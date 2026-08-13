@@ -77,7 +77,11 @@ export default function CallScreen() {
     setTimeout(() => webRef.current?.postMessage(payload), 800);
   }, [call]);
 
-  const onClose = useCallback(() => router.back(), [router]);
+  // Vuelve siempre al chat de la consulta (nunca al inicio), tanto al cerrar
+  // la llamada como al tocar "Volver" tras un error.
+  const onClose = useCallback(() => {
+    router.replace(`/(app)/chat/${consultationId}`);
+  }, [router, consultationId]);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#020617', paddingTop: insets.top }}>

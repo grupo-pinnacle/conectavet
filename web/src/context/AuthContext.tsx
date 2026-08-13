@@ -1,8 +1,8 @@
 import { createContext, useState, useCallback, useEffect } from "react";
 import type { ReactNode } from "react";
 import type { User } from "../types";
-import api from "../services/api";
-import { getMe, updateAvailability } from "../services/endpoints";
+import api, { setApiToken } from "../services/api";
+import { getMe, updateAvailability, updateProfile } from "../services/endpoints";
 import { disconnectSocket } from "../services/socket";
 import { clearChatStore } from "../services/chatStore";
 
@@ -12,6 +12,7 @@ export interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string, role: string) => Promise<void>;
   logout: () => void;
+  updateProfile: (data: import("../services/endpoints").UpdateProfilePayload) => Promise<void>;
   setOnline: (isOnline: boolean) => Promise<void>;
   isOnline: boolean;
   onlineLoading: boolean;
@@ -76,7 +77,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await api.post("/api/auth/login", { email, password });
-    const { user: userData } = res.data.data;
+    const { user: userData, accessToken } = res.data.data;
+    setApiToken(accessToken ?? null);
     setAuth(normalizeUser(userData));
   }, [setAuth]);
 
@@ -84,17 +86,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const [firstName, ...rest] = name.trim().split(" ");
     const roleMap: Record<string, string> = { owner: "CLIENT", vet: "VET" };
     const res = await api.post("/api/auth/register", { firstName, lastName: rest.join(" ") || undefined, email, password, role: roleMap[role] || role });
-    const { user: userData } = res.data.data;
+    const { user: userData, accessToken } = res.data.data;
+    setApiToken(accessToken ?? null);
     setAuth(normalizeUser(userData));
   }, [setAuth]);
 
   const logout = useCallback(async () => {
     // El backend invalida el tokenVersion y limpia las cookies HttpOnly.
+    setApiToken(null);
     await api.post("/api/auth/logout").catch(() => {});
     disconnectSocket();
     clearChatStore();
     setToken(null);
     setUser(null);
+  }, []);
+
+  const updateProfile = useCallback(async (data: import("../services/endpoints").UpdateProfilePayload) => {
+    const updated = await updateProfile(data);
+    setUser((prev) => (prev ? { ...prev, ...normalizeUser(updated) } : prev));
   }, []);
 
   const setOnline = useCallback(async (value: boolean) => {
@@ -128,6 +137,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         login,
         register,
         logout,
+        updateProfile,
         setOnline,
         isOnline,
         onlineLoading,

@@ -2,6 +2,7 @@ import { memo, useState } from "react";
 import { ZoomIn, ImageOff } from "lucide-react";
 import type { Message } from "../../types";
 import ImageViewer from "../ImageViewer";
+import AuthImage from "../AuthImage";
 
 function formatTime(iso: string) {
   const d = new Date(iso);
@@ -70,11 +71,9 @@ export const MessageBubble = memo(function MessageBubble({ message, isOwn, sende
                 className="group relative mb-1.5 block max-h-64 w-full max-w-[240px] cursor-zoom-in overflow-hidden rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/50"
                 aria-label="Ver imagen en tamaño completo"
               >
-                <img
+                <AuthImage
                   src={message.attachmentUrl!}
                   alt="Imagen adjunta"
-                  loading="lazy"
-                  onError={() => setImageError(true)}
                   className="block max-h-64 w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
                 />
                 <span className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors duration-200 group-hover:bg-black/30">

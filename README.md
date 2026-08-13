@@ -126,7 +126,7 @@ No es necesario instalar PostgreSQL local — la base de datos corre en **Supaba
 
 ## Setup local
 
-> **Importante:** los archivos `.env` ya vienen commiteados con las credenciales del equipo (Supabase, JWT, IPs). **No hace falta crearlos a mano.** Cada carpeta tiene su `requirements.txt` con las dependencias y los comandos exactos.
+> **Importante:** este proyecto **no versiona archivos `.env` con secretos**. Cada carpeta incluye un `.env.example` (plantilla sin valores sensibles). Copialo a `.env` y completá tus propios valores. **Nunca uses en producción credenciales de ejemplo ni las de otra persona, y no commitees tus `.env`.**
 
 ### 1. Clonar e instalar dependencias
 
@@ -152,17 +152,17 @@ npm start                  # usa start.ps1: configura IP/ADB y abre Expo
 
 > **¿Olvidaste qué instalar?** Cada carpeta tiene un checklist: `backend/requirements.txt` y `mobile/requirements.txt`. El comando es siempre el mismo: `npm install` (instala todo lo listado automáticamente).
 
-### 2. Variables de entorno (ya commiteadas)
+### 2. Variables de entorno (usá tu propia copia)
 
-Los `.env` reales ya están en el repo — los demás no necesitan pedirlos:
+Cada carpeta tiene un `.env.example` con la plantilla de variables necesarias. Para arrancar:
 
-| Archivo | Contenido |
-|---------|-----------|
-| `backend/.env` | `DATABASE_URL` + `DIRECT_URL` (Supabase pooler), `JWT_SECRET`, `PORT=3001`, `CORS_ORIGIN` |
-| `mobile/.env` | `EXPO_PUBLIC_API_URL` + `EXPO_PUBLIC_WS_URL` (IP local `192.168.0.8`) |
-| `web/.env` | `VITE_API_URL` |
+```bash
+cp backend/.env.example backend/.env
+cp web/.env.example web/.env
+cp mobile/.env.example mobile/.env
+```
 
-> ⚠️ **Seguridad:** si el repo alguna vez se hace público, rotá el password de Supabase (Dashboard → Database → Reset password) y el `JWT_SECRET`. Los `.env.example` son las plantillas sin valores.
+Completá los valores con **tus propias credenciales** (base de datos, secretos de sesión, URLs de API). Los `.env` ya están en `.gitignore`, así que no se suben al repo. Antes de cualquier deploy, generá secrets propios; si alguna credencial llegó a exponerse, rotala de inmediato en el proveedor.
 
 ### 3. Verificar instalación
 

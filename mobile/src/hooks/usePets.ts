@@ -36,14 +36,6 @@ export function usePets() {
   return { list, create, update, remove };
 }
 
-export function usePet(id: string | undefined) {
-  return useQuery({
-    queryKey: ['pets', id],
-    queryFn: async () => (await petsService.getById(id!)) as Pet,
-    enabled: Boolean(id),
-  });
-}
-
 export function useVetCard(id: string | undefined) {
   return useQuery({
     queryKey: ['pets', id, 'vetcard'],

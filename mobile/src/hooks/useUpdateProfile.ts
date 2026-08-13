@@ -5,13 +5,13 @@ import type { UpdateProfilePayload, User } from '@/types';
 
 export function useUpdateProfile() {
   const qc = useQueryClient();
-  const store = useAuthStore();
+  const updateUser = useAuthStore((s) => s.updateUser);
 
   return useMutation({
     mutationFn: (payload: UpdateProfilePayload) => usersService.updateMe(payload),
     onSuccess: async (res) => {
       const updated = res as unknown as User;
-      await store.updateUser(updated);
+      await updateUser(updated);
       qc.invalidateQueries({ queryKey: ['vets'] });
     },
   });

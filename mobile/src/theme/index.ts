@@ -101,20 +101,6 @@ export const speciesLabel: Record<string, string> = {
   DOG: 'Perro', CAT: 'Gato', BIRD: 'Ave', REPTILE: 'Reptil', RODENT: 'Roedor', OTHER: 'Otra',
 };
 
-// ─── Status Helpers ──────────────────────────────────────────────────────────
-
-export const statusColors: Record<string, keyof ColorScheme> = {
-  WAITING: 'accent', PENDING: 'accent', ACTIVE: 'primary', COMPLETED: 'inkMuted', CANCELLED: 'danger',
-};
-
-export const statusLabel: Record<string, string> = {
-  WAITING: 'En espera', PENDING: 'Por confirmar', ACTIVE: 'En consulta', COMPLETED: 'Completada', CANCELLED: 'Cancelada',
-};
-
-export const statusBgColors: Record<string, keyof ColorScheme> = {
-  WAITING: 'accentBg', PENDING: 'accentBg', ACTIVE: 'primaryBg', COMPLETED: 'borderLight', CANCELLED: 'dangerBg',
-};
-
 // ─── Theme Context (re-exported) ─────────────────────────────────────────────
 
 export type { ThemeContextValue } from './ThemeProvider';

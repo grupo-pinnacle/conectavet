@@ -10,25 +10,35 @@ import { useAuthStore } from '@/stores/authStore';
  * `/login` with a toast when the API layer detected an unrecoverable 401.
  */
 export function useAuth() {
-  const store = useAuthStore();
+  const isHydrated = useAuthStore((s) => s.isHydrated);
+  const hydrate = useAuthStore((s) => s.hydrate);
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isLoading = useAuthStore((s) => s.isLoading);
+  const sessionExpired = useAuthStore((s) => s.sessionExpired);
+  const login = useAuthStore((s) => s.login);
+  const register = useAuthStore((s) => s.register);
+  const logout = useAuthStore((s) => s.logout);
+  const updateUser = useAuthStore((s) => s.updateUser);
+  const clearSessionExpired = useAuthStore((s) => s.clearSessionExpired);
 
   useEffect(() => {
-    if (!store.isHydrated) {
-      store.hydrate();
+    if (!isHydrated) {
+      hydrate();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {
-    user: store.user,
-    isAuthenticated: store.isAuthenticated,
-    isLoading: store.isLoading,
-    isHydrated: store.isHydrated,
-    sessionExpired: store.sessionExpired,
-    login: store.login,
-    register: store.register,
-    logout: store.logout,
-    updateUser: store.updateUser,
-    clearSessionExpired: store.clearSessionExpired,
+    user,
+    isAuthenticated,
+    isLoading,
+    isHydrated,
+    sessionExpired,
+    login,
+    register,
+    logout,
+    updateUser,
+    clearSessionExpired,
   };
 }

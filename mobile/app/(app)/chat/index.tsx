@@ -14,12 +14,14 @@ export default function ChatListScreen() {
   const insets = useSafeAreaInsets();
   const { colors: c } = useTheme();
   const { data, isFetching, refetch, isLoading, isError, error } = useConsultationHistory({ limit: 50 });
-  const consultations = (data ?? []).filter(
-    (c: Consultation) => c.status !== 'WAITING'
-  );
+  const consultations = (data ?? []);
 
-  const activeConsultations = consultations.filter(c => c.status === 'ACTIVE' || c.status === 'PENDING');
-  const pastConsultations = consultations.filter(c => c.status !== 'ACTIVE' && c.status !== 'PENDING');
+  const activeConsultations = consultations.filter(
+    (c) => c.status === 'ACTIVE' || c.status === 'PENDING' || c.status === 'WAITING'
+  );
+  const pastConsultations = consultations.filter(
+    (c) => c.status === 'COMPLETED' || c.status === 'CANCELLED'
+  );
 
   if (isLoading) {
     return (
@@ -79,13 +81,15 @@ export default function ChatListScreen() {
             <View style={{ gap: spacing.sm }}>
               {section.data.map((item: Consultation) => {
                 const isActive = item.status === 'ACTIVE';
+                const isWaiting = item.status === 'WAITING';
                 const isPending = item.status === 'PENDING';
+                const isOpen = isActive || isWaiting || isPending;
                 const isCompleted = item.status === 'COMPLETED';
-                const iconName = isActive ? 'chat-processing' : isPending ? 'clock-outline' : isCompleted ? 'check-circle-outline' : 'close-circle-outline';
-                const iconColor = isActive ? c.primary : isPending ? c.accentDark : isCompleted ? c.success : c.inkMuted;
-                const label = isActive ? 'En curso' : isPending ? 'Por confirmar' : isCompleted ? 'Completada' : 'Cancelada';
-                const bgColor = isActive ? c.primaryBg : isPending ? c.accentBg : isCompleted ? c.successBg : c.dangerBg;
-                const textColor = isActive ? c.primary : isPending ? c.accentDark : isCompleted ? c.successDark : c.dangerDark;
+                const iconName = isActive ? 'chat-processing' : isWaiting ? 'timer-sand' : isPending ? 'clock-outline' : isCompleted ? 'check-circle-outline' : 'close-circle-outline';
+                const iconColor = isActive ? c.primary : isWaiting ? c.accentDark : isPending ? c.accentDark : isCompleted ? c.success : c.inkMuted;
+                const label = isActive ? 'En curso' : isWaiting ? 'En espera' : isPending ? 'Por confirmar' : isCompleted ? 'Completada' : 'Cancelada';
+                const bgColor = isActive ? c.primaryBg : isWaiting ? c.accentBg : isPending ? c.accentBg : isCompleted ? c.successBg : c.dangerBg;
+                const textColor = isActive ? c.primary : isWaiting ? c.accentDark : isPending ? c.accentDark : isCompleted ? c.successDark : c.dangerDark;
                 const petDisplay = item.pet?.name || 'Mascota';
                 const vetDisplay = item.vet?.firstName || item.vet?.email;
 
@@ -95,7 +99,7 @@ export default function ChatListScreen() {
                     onPress={() => router.push(`/(app)/chat/${item.id}`)}
                     accessibilityRole="button"
                     accessibilityLabel={`Chat${vetDisplay ? ` con ${vetDisplay}` : ''}, ${petDisplay}`}
-                    style={{ opacity: isActive || isPending ? 1 : 0.7 }}
+                    style={{ opacity: isOpen ? 1 : 0.7 }}
                   >
                     <View style={{
                       flexDirection: 'row', borderRadius: radius.xl,
@@ -105,17 +109,17 @@ export default function ChatListScreen() {
                         android: { elevation: isActive ? 3 : 1 },
                       }),
                     }}>
-                      {/* Active / pending consultations get a colored left border */}
-                      {(isActive || isPending) && (
+                      {/* Active / waiting / pending consultations get a colored left border */}
+                      {isOpen && (
                         <View style={{ width: 4, backgroundColor: isActive ? c.primary : c.accent, borderTopLeftRadius: radius.xl, borderBottomLeftRadius: radius.xl }} />
                       )}
-                      <View style={{ flex: 1, padding: spacing.lg, paddingLeft: isActive || isPending ? spacing.md : spacing.lg }}>
+                      <View style={{ flex: 1, padding: spacing.lg, paddingLeft: isOpen ? spacing.md : spacing.lg }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 }}>
                             {/* Avatar circle */}
                             <View style={{
                               width: 40, height: 40, borderRadius: 20,
-                              backgroundColor: isActive ? c.primaryBg : isPending ? c.accentBg : c.borderLight,
+                              backgroundColor: isActive ? c.primaryBg : isOpen ? c.accentBg : c.borderLight,
                               justifyContent: 'center', alignItems: 'center',
                             }}>
                               <MaterialCommunityIcons

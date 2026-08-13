@@ -25,8 +25,13 @@ export function connectSocket(): Promise<Socket> {
   }
 
   const token = localStorage.getItem("vetconnect_auth_token");
-  const sock = io(window.location.origin, {
+  // En dev Vite proxya /socket.io al backend. En prod se puede apuntar el
+  // socket directo al backend con VITE_SOCKET_URL (p.ej. https://api.tu dominio).
+  const SOCKET_URL =
+    (import.meta.env.VITE_SOCKET_URL as string | undefined) || window.location.origin;
+  const sock = io(SOCKET_URL, {
     auth: { token },
+    path: "/socket.io",
     transports: ["websocket", "polling"],
   });
   socket = sock;

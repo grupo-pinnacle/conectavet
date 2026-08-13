@@ -8,6 +8,7 @@ import { usePets } from '@/hooks/usePets';
 import { PetCard } from '@/components/PetCard';
 import { Button, SkeletonCard, EmptyState } from '@/components/ui';
 import { useTheme, spacing } from '@/theme';
+import type { Pet } from '@/types';
 
 export default function PetsListScreen() {
   const router = useRouter();
@@ -17,7 +18,7 @@ export default function PetsListScreen() {
   const pets = list.data ?? [];
 
   const handlePress = useCallback(
-    (id: string) => router.push(`/(app)/pets/${id}`),
+    (pet: Pet) => router.push(`/(app)/pets/${pet.id}`),
     [router]
   );
 
@@ -67,7 +68,7 @@ export default function PetsListScreen() {
         contentContainerStyle={{ paddingTop: spacing.lg, paddingHorizontal: spacing.lg, paddingBottom: insets.bottom + spacing.lg }}
         ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
         refreshControl={<RefreshControl refreshing={list.isFetching} onRefresh={list.refetch} tintColor={c.primary} />}
-        renderItem={({ item }) => <PetCard pet={item} onPress={() => handlePress(item.id)} />}
+        renderItem={({ item }) => <PetCard pet={item} onPress={handlePress} />}
         initialNumToRender={8}
         maxToRenderPerBatch={8}
         windowSize={7}

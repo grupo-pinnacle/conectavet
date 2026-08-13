@@ -44,7 +44,7 @@ export default function Input({
               rightIcon ? "pr-12" : "",
               className,
             ].join(" ")}
-            {...(rest as any)}
+            {...rest}
           />
         ) : (
           <input

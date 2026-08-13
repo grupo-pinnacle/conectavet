@@ -257,7 +257,7 @@ export async function getConsultationsByUser(
   const [data, total] = await Promise.all([
     prisma.consultation.findMany({
       where,
-      select: consultationSnapshot,
+      select: { ...consultationSnapshot, prescriptions: true },
       orderBy: { createdAt: 'desc' },
       skip,
       take: cappedLimit,
@@ -283,7 +283,7 @@ export async function getConsultationHistory(
   const [data, total] = await Promise.all([
     prisma.consultation.findMany({
       where,
-      select: consultationSnapshot,
+      select: { ...consultationSnapshot, prescriptions: true },
       orderBy: { createdAt: 'desc' },
       skip,
       take: cappedLimit,

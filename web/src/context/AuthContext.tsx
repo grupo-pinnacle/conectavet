@@ -48,10 +48,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setUser(normalizeUser(userData));
         setIsLoading(false);
       })
-      .catch((err: any) => {
+      .catch((err: unknown) => {
         // No confiamos en el token si /auth/me lo rechaza (expirado/corrupto):
         // no derivamos el usuario del payload sin verificar firma.
-        if (err?.response?.status === 401) {
+        const status = (err as { response?: { status?: number } } | null)?.response?.status;
+        if (status === 401) {
           localStorage.removeItem("vetconnect_auth_token");
           localStorage.removeItem("vetconnect_refresh_token");
           setUser(null);
@@ -68,22 +69,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(userData);
   }, []);
 
-  function normalizeUser(u: any): User {
-    const roleMap: Record<string, "owner" | "vet" | "admin"> = { 
-        CLIENT: "owner", 
-        VET: "vet", 
-        ADMIN: "admin" 
+  function normalizeUser(u: unknown): User {
+    const user = u as Partial<User> & { phone?: string };
+    const roleMap: Record<string, "owner" | "vet" | "admin"> = {
+        CLIENT: "owner",
+        VET: "vet",
+        ADMIN: "admin",
     };
-    
+
     return {
-      id: u.id,
-      name: u.name || [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email,
-      email: u.email,
-      // Si u.phone tiene valor, se incluye. Si no, se omite completamente del objeto
-      ...(u.phone ? { phone: u.phone } : {}),
-      isOnline: typeof u.isOnline === "boolean" ? u.isOnline : false,
-      // Se añade 'as string' para evitar errores en modo strict
-      role: roleMap[u.role as string] || "owner",
+      id: user.id ?? "",
+      name: user.name || [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "",
+      email: user.email || "",
+      // Si user.phone tiene valor, se incluye. Si no, se omite completamente del objeto
+      ...(user.phone ? { phone: user.phone } : {}),
+      isOnline: typeof user.isOnline === "boolean" ? user.isOnline : false,
+      role: roleMap[user.role as string] || "owner",
     };
   }
 

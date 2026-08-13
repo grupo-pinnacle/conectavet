@@ -50,8 +50,10 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await register(name, email, password, role);
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || "Error al crear la cuenta. Intentá de nuevo.";
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } }; message?: string } | null)?.response?.data?.message
+        || (err as { message?: string } | null)?.message
+        || "Error al crear la cuenta. Intentá de nuevo.";
       console.error("Register error:", err);
       setError(msg);
       setLoading(false);

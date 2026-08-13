@@ -9,7 +9,7 @@ export function connectSocket(): Promise<Socket> {
     const sock = socket;
     return new Promise((resolve, reject) => {
       const onConnect = () => { cleanup(); resolve(sock); };
-      const onErr = (err: any) => { cleanup(); reject(err); };
+      const onErr = (err: Error) => { cleanup(); reject(err); };
       const cleanup = () => {
         sock.off("connect", onConnect);
         sock.off("connect_error", onErr);
@@ -33,7 +33,7 @@ export function connectSocket(): Promise<Socket> {
 
   return new Promise((resolve, reject) => {
     const onConnect = () => { cleanup(); resolve(sock); };
-    const onErr = (err: any) => { cleanup(); reject(err); };
+    const onErr = (err: Error) => { cleanup(); reject(err); };
     const cleanup = () => {
       sock.off("connect", onConnect);
       sock.off("connect_error", onErr);

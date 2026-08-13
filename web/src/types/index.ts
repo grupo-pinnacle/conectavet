@@ -47,6 +47,7 @@ export interface Consultation {
   client?: User;
   vet?: User;
   messages?: Message[];
+  prescriptions?: Prescription[];
 }
 
 export interface Message {

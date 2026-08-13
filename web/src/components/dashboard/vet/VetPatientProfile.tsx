@@ -29,8 +29,10 @@ export default function VetPatientProfile({ petId, petName, onClose }: Props) {
     try {
       const res = await getPetVetCard(petId);
       setData(res);
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || "No se pudo cargar el perfil del paciente";
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } }; message?: string } | null)?.response?.data?.message
+        || (err as { message?: string } | null)?.message
+        || "No se pudo cargar el perfil del paciente";
       console.error("[VetPatientProfile] Error fetching vetcard:", err);
       setError(msg);
     } finally {

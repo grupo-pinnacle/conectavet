@@ -25,8 +25,9 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Error al iniciar sesión. Verificá tus datos.");
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } } | null)?.response?.data?.message;
+      setError(msg || "Error al iniciar sesión. Verificá tus datos.");
       setLoading(false);
       return;
     }

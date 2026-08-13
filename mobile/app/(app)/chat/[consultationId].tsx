@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo, memo } from 'react';
 import { FlatList, Image, Keyboard, KeyboardAvoidingView, Platform, Pressable, TextInput, View, Text, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,15 +12,101 @@ import { useConsultationMessages, useConsultation, useConsultationPrescriptions 
 import { useAuth } from '@/hooks/useAuth';
 import { mediaService } from '@/services';
 import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
-import { ApiError } from '@/types';
+import * as Theme from '@/theme';
+import { ApiError, type Prescription } from '@/types';
 
 const SEND_BTN_SIZE = 44;
+
+const ChatListHeader = memo(function ChatListHeader({
+  isPending,
+  isWaiting,
+  rxList,
+  notes,
+  colors,
+  spacing,
+  fontSizes,
+  radius,
+}: {
+  isPending: boolean;
+  isWaiting: boolean;
+  rxList: Prescription[];
+  notes?: string | null;
+  colors: ReturnType<typeof useTheme>['colors'];
+  spacing: typeof Theme.spacing;
+  fontSizes: typeof Theme.fontSizes;
+  radius: typeof Theme.radius;
+}) {
+  const c = colors;
+  return (
+    <View>
+      {(isPending || isWaiting) && (
+        <View
+          style={{
+            flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm,
+            backgroundColor: c.accentBg, borderRadius: radius.lg,
+            borderWidth: 1, borderColor: c.accent + '40',
+            paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginBottom: spacing.md,
+          }}
+        >
+          <MaterialCommunityIcons name={isPending ? 'clock-check-outline' : 'clock-outline'} size={16} color={c.accentDark} style={{ marginTop: 1 }} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: fontSizes.label, fontWeight: fontWeights.bold, color: c.accentDark, lineHeight: 18 }}>
+              {isPending ? 'Esperando confirmación del veterinario' : 'En cola de espera'}
+            </Text>
+            <Text style={{ fontSize: fontSizes.caption, color: c.inkSoft, lineHeight: 16, marginTop: 2 }}>
+              {isPending
+                ? 'El veterinario está revisando la consulta. Cuando la acepte, van a poder chatear.'
+                : 'Se asignará un veterinario disponible en breve.'}
+            </Text>
+          </View>
+        </View>
+      )}
+      {rxList.length > 0 && (
+        <View style={{ marginBottom: spacing.md }}>
+          {rxList.map((rx) => (
+            <View
+              key={rx.id}
+              style={{
+                backgroundColor: c.primaryBg,
+                borderRadius: radius.lg,
+                borderWidth: 1,
+                borderColor: c.primary + '30',
+                padding: spacing.md,
+                marginBottom: spacing.sm,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm }}>
+                <MaterialCommunityIcons name="pill" size={16} color={c.primary} />
+                <Text style={{ fontSize: fontSizes.caption, fontWeight: fontWeights.bold, color: c.primary, textTransform: 'uppercase', flex: 1 }}>
+                  Receta de {rx.vet?.firstName || 'tu veterinario'}
+                </Text>
+                <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted }}>
+                  {new Date(rx.createdAt).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
+                </Text>
+              </View>
+              <Text style={{ fontSize: fontSizes.body, color: c.ink, lineHeight: 20 }}>{rx.content}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+      {notes ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: c.primaryBg, borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginBottom: spacing.md }}>
+          <MaterialCommunityIcons name="information" size={14} color={c.primary} />
+          <Text style={{ fontSize: fontSizes.caption, color: c.primary, lineHeight: 16, flex: 1 }} numberOfLines={2}>
+            Motivo: {notes}
+          </Text>
+        </View>
+      ) : null}
+    </View>
+  );
+});
 
 export default function ConsultationChatScreen() {
   const { consultationId } = useLocalSearchParams<{ consultationId: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { colors: c } = useTheme();
+  const theme = useTheme();
+  const { colors: c } = theme;
   const { user } = useAuth();
   const { list, send } = useConsultationMessages(consultationId, user?.id);
   const { data: consultation } = useConsultation(consultationId);
@@ -228,66 +314,16 @@ export default function ConsultationChatScreen() {
           removeClippedSubviews={Platform.OS === 'android'}
           updateCellsBatchingPeriod={50}
           ListHeaderComponent={
-            <View>
-              {(isPending || isWaiting) && (
-                <View
-                  style={{
-                    flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm,
-                    backgroundColor: c.accentBg, borderRadius: radius.lg,
-                    borderWidth: 1, borderColor: c.accent + '40',
-                    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginBottom: spacing.md,
-                  }}
-                >
-                  <MaterialCommunityIcons name={isPending ? 'clock-check-outline' : 'clock-outline'} size={16} color={c.accentDark} style={{ marginTop: 1 }} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: fontSizes.label, fontWeight: fontWeights.bold, color: c.accentDark, lineHeight: 18 }}>
-                      {isPending ? 'Esperando confirmación del veterinario' : 'En cola de espera'}
-                    </Text>
-                    <Text style={{ fontSize: fontSizes.caption, color: c.inkSoft, lineHeight: 16, marginTop: 2 }}>
-                      {isPending
-                        ? 'El veterinario está revisando la consulta. Cuando la acepte, van a poder chatear.'
-                        : 'Se asignará un veterinario disponible en breve.'}
-                    </Text>
-                  </View>
-                </View>
-              )}
-              {rxList.length > 0 && (
-                <View style={{ marginBottom: spacing.md }}>
-                  {rxList.map((rx) => (
-                    <View
-                      key={rx.id}
-                      style={{
-                        backgroundColor: c.primaryBg,
-                        borderRadius: radius.lg,
-                        borderWidth: 1,
-                        borderColor: c.primary + '30',
-                        padding: spacing.md,
-                        marginBottom: spacing.sm,
-                      }}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm }}>
-                        <MaterialCommunityIcons name="pill" size={16} color={c.primary} />
-                        <Text style={{ fontSize: fontSizes.caption, fontWeight: fontWeights.bold, color: c.primary, textTransform: 'uppercase', flex: 1 }}>
-                          Receta de {rx.vet?.firstName || 'tu veterinario'}
-                        </Text>
-                        <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted }}>
-                          {new Date(rx.createdAt).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
-                        </Text>
-                      </View>
-                      <Text style={{ fontSize: fontSizes.body, color: c.ink, lineHeight: 20 }}>{rx.content}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-              {consultation?.notes ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: c.primaryBg, borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginBottom: spacing.md }}>
-                  <MaterialCommunityIcons name="information" size={14} color={c.primary} />
-                  <Text style={{ fontSize: fontSizes.caption, color: c.primary, lineHeight: 16, flex: 1 }} numberOfLines={2}>
-                    Motivo: {consultation.notes}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
+            <ChatListHeader
+              isPending={isPending}
+              isWaiting={isWaiting}
+              rxList={rxList}
+              notes={consultation?.notes}
+              colors={c}
+              spacing={spacing}
+              fontSizes={fontSizes}
+              radius={radius}
+            />
           }
         />
       )}

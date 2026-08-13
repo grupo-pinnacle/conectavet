@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getMyConsultations, getPrescriptions } from "../../services/endpoints";
+import { getMyConsultations } from "../../services/endpoints";
 import type { Consultation, Prescription } from "../../types";
 import { ClipboardList, Clock, Pill } from "lucide-react";
 
@@ -15,13 +15,9 @@ export default function HistorySection() {
         const data = await getMyConsultations();
         const done = data.filter((c) => c.status === "COMPLETED");
         setCompleted(done);
-        const lists = await Promise.all(
-          done.map((c) =>
-            getPrescriptions(c.id).catch(() => [] as Prescription[])
-          )
-        );
+        // Las recetas vienen incluidas en cada consulta (evita N+1).
         const byCons: Record<string, Prescription[]> = {};
-        done.forEach((c, i) => { byCons[c.id] = lists[i] || []; });
+        done.forEach((c) => { byCons[c.id] = c.prescriptions ?? []; });
         setPrescriptionsByCons(byCons);
       } catch {
         setError("No se pudo cargar el historial");

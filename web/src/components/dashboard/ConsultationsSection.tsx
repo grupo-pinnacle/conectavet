@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createConsultation, getMyPets, getMyConsultations } from "../../services/endpoints";
+import { onDataChanged } from "../../services/realtime";
 import type { Pet } from "../../types";
 import { Calendar, PawPrint, Clock, CheckCircle } from "lucide-react";
 import Button from "../Button";
@@ -22,33 +23,38 @@ export default function ConsultationsSection({ initialPetId = "" }: { initialPet
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  useEffect(() => {
-    const fetch = async () => {
-      try {
-        const [petsData, consData] = await Promise.all([
-          getMyPets(),
-          getMyConsultations(),
-        ]);
-        setPets(petsData);
-        setActiveConsultations(
-          consData
-            .filter((c) => c.status !== "COMPLETED")
-            .map((c) => ({
-              id: c.id,
-              petId: c.petId,
-              status: c.status,
-              petName: c.pet?.name || "Mascota",
-              createdAt: c.createdAt,
-            }))
-        );
-      } catch {
-        setError("Error al cargar datos");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetch();
+  const loadData = useCallback(async () => {
+    try {
+      const [petsData, consData] = await Promise.all([
+        getMyPets(),
+        getMyConsultations(),
+      ]);
+      setPets(petsData);
+      setActiveConsultations(
+        consData
+          .filter((c) => c.status !== "COMPLETED")
+          .map((c) => ({
+            id: c.id,
+            petId: c.petId,
+            status: c.status,
+            petName: c.pet?.name || "Mascota",
+            createdAt: c.createdAt,
+          }))
+      );
+    } catch {
+      setError("Error al cargar datos");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Refresca la lista cuando el dashboard recibe un evento de socket
+  // (consulta nueva/actualizada/notificación) sin necesidad de polling.
+  useEffect(() => onDataChanged(loadData), [loadData]);
 
   const handleCreate = async () => {
     if (!selectedPetId) return;

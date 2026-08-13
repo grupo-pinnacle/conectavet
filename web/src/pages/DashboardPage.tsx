@@ -13,6 +13,7 @@ import DirectorySection from "../components/dashboard/DirectorySection";
 import ProfileSection from "../components/dashboard/ProfileSection";
 import { getMyConsultations } from "../services/endpoints";
 import { connectSocket } from "../services/socket";
+import { notifyDataChanged } from "../services/realtime";
 
 const navItems = [
   { label: "Inicio", icon: Home, key: "home" },
@@ -37,6 +38,8 @@ export default function DashboardPage() {
       const cons = await getMyConsultations();
       setPendingCount(cons.filter((c) => c.status === "PENDING" || c.status === "WAITING").length);
       setActiveCount(cons.filter((c) => c.status === "ACTIVE").length);
+      // Avisa a las secciones (ej. "Tus consultas") que refresquen su lista.
+      notifyDataChanged();
     } catch {
       // ignore
     }

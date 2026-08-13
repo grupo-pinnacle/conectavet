@@ -10,8 +10,8 @@ import { Platform } from 'react-native';
  *   fall back to `localStorage`. This is acceptable for development only.
  *
  * Used to persist:
- *   - `accessToken`  (JWT, 15 min TTL)
- *   - `refreshToken` (rotativo, 7 días TTL) — see INTEGRATION.md for the
+ *   - `accessToken`  (JWT, 7 días TTL)
+ *   - `refreshToken` (rotativo, 30 días TTL) — see INTEGRATION.md for the
  *     mobile-specific deviation from the web's httpOnly-cookie scheme.
  *   - `userId`       (for fast hydration on cold start)
  */

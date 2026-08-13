@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Image, type ImageStyle } from 'react-native';
+import { type ImageStyle } from 'react-native';
+import { Image as ExpoImage, type ImageContentFit } from 'expo-image';
 import { secureStorage } from '@/lib/secure-storage';
 import { API_URL } from '@/lib/env';
 
@@ -10,57 +11,55 @@ interface AuthImageProps {
   accessibilityLabel?: string;
 }
 
-const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-
-function bytesToBase64(bytes: Uint8Array): string {
-  let result = '';
-  for (let i = 0; i < bytes.length; i += 3) {
-    const b0 = bytes[i];
-    const b1 = i + 1 < bytes.length ? bytes[i + 1] : 0;
-    const b2 = i + 2 < bytes.length ? bytes[i + 2] : 0;
-    result += B64[b0 >> 2];
-    result += B64[((b0 & 3) << 4) | (b1 >> 4)];
-    result += i + 1 < bytes.length ? B64[((b1 & 15) << 2) | (b2 >> 6)] : '=';
-    result += i + 2 < bytes.length ? B64[b2 & 63] : '=';
-  }
-  return result;
-}
+const CONTENT_FIT: Record<NonNullable<AuthImageProps['resizeMode']>, ImageContentFit> = {
+  cover: 'cover',
+  contain: 'contain',
+  stretch: 'fill',
+  repeat: 'cover',
+  center: 'contain',
+};
 
 /**
- * Descarga una imagen protegida (/uploads/...) adjuntando el Bearer token
- * (el componente <Image> nativo no puede enviar headers ni la cookie de
- * auth), la convierte a data URI y la muestra. Evita el 401 que se veía en
- * el chat al enviar una foto.
+ * Muestra una imagen protegida (/uploads/...) adjuntando el Bearer token.
+ * Usa expo-image, que cachea en disco y decodifica fuera del hilo de JS:
+ * evita el OOM y el bloqueo de UI que causaba el decode base64 en memoria
+ * (crash en dispositivos de 2GB de RAM con varias fotos en el chat).
  */
 export function AuthImage({ uri, style, resizeMode = 'cover', accessibilityLabel }: AuthImageProps) {
-  const [dataUri, setDataUri] = useState<string | null>(null);
+  const isExternal = uri.startsWith('http');
+  const full = isExternal ? uri : `${API_URL}${uri}`;
+  const [headers, setHeaders] = useState<Record<string, string> | undefined>(undefined);
 
   useEffect(() => {
     let active = true;
-    const full = uri.startsWith('http') ? uri : `${API_URL}${uri}`;
-    (async () => {
-      try {
-        const token = await secureStorage.getAccessToken();
-        const res = await fetch(full, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        if (!res.ok) return;
-        const buf = await res.arrayBuffer();
-        const mime = res.headers.get('content-type') || 'image/jpeg';
-        if (active) {
-          setDataUri(`data:${mime};base64,${bytesToBase64(new Uint8Array(buf))}`);
-        }
-      } catch {
-        /* ignora: la imagen simplemente no se muestra */
-      }
-    })();
+    // Solo adjuntamos el Bearer a las imágenes propias del backend (/uploads).
+    // Las URLs externas (p.ej. CDN) no lo necesitan ni deben recibir el token.
+    if (isExternal) {
+      setHeaders(undefined);
+      return;
+    }
+    secureStorage
+      .getAccessToken()
+      .then((token) => {
+        if (active) setHeaders(token ? { Authorization: `Bearer ${token}` } : undefined);
+      })
+      .catch(() => {
+        if (active) setHeaders(undefined);
+      });
     return () => {
       active = false;
     };
-  }, [uri]);
+  }, [uri, isExternal]);
 
-  if (!dataUri) return null;
-  return <Image source={{ uri: dataUri }} style={style} resizeMode={resizeMode} accessibilityLabel={accessibilityLabel} />;
+  return (
+    <ExpoImage
+      source={headers ? { uri: full, headers } : { uri: full }}
+      style={style}
+      contentFit={CONTENT_FIT[resizeMode]}
+      cachePolicy="disk"
+      accessibilityLabel={accessibilityLabel}
+    />
+  );
 }
 
 export default AuthImage;

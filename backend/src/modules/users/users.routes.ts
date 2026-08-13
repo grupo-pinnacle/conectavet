@@ -9,6 +9,7 @@ import {
   addFavoriteController,
   removeFavoriteController,
   listFavoritesController,
+  createUserController,
 } from './users.controller';
 import {
   authenticate,
@@ -33,6 +34,12 @@ router.get(
   adminOnlyController
 );
 router.get('/vets', authenticate, listVetsController);
+router.post(
+  '/admin/users',
+  authenticate,
+  authorize(Role.ADMIN),
+  createUserController
+);
 router.get('/favorites', authenticate, listFavoritesController);
 router.post('/vets/:id/favorite', authenticate, addFavoriteController);
 router.delete('/vets/:id/favorite', authenticate, removeFavoriteController);

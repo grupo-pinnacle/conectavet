@@ -126,8 +126,13 @@ export function useConsultationMessages(consultationId: string | undefined, user
         socketInstance.on('prescription:new', onPrescriptionNew);
         // Reconexión: si el socket se cae en datos móviles inestables,
         // volvemos a habilitar el polling para no congelar el chat.
+        // Al re-conectar, socket.io tira todas las rooms: hay que re-entrar
+        // a la sala de la consulta o los mensajes/recetas dejan de llegar.
         const onDisconnect = () => setSocketConnected(false);
-        const onReconnect = () => setSocketConnected(true);
+        const onReconnect = () => {
+          setSocketConnected(true);
+          joinConsultation(consultationId);
+        };
         socketInstance.on('disconnect', onDisconnect);
         socketInstance.on('connect', onReconnect);
       } catch {

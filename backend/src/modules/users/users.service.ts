@@ -1,7 +1,8 @@
 import { prisma } from '../../shared/prisma';
 import { getCached, setCache, clearCache } from '../../shared/cache';
-import { NotFoundError } from '../../shared/errors';
+import { NotFoundError, ConflictError } from '../../shared/errors';
 import { Prisma } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 export async function getUserById(userId: string) {
   const user = await prisma.user.findUnique({
@@ -12,6 +13,43 @@ export async function getUserById(userId: string) {
     return null;
   }
 
+  const { password, ...userWithoutPassword } = user;
+  return userWithoutPassword;
+}
+
+const SALT_ROUNDS = 12;
+
+/**
+ * Alta de usuario por un ADMIN (vets, clientes o admins). Nunca se expone
+ * vía el registro público, que solo crea CLIENT. Valida unicidad de email
+ * y hashea la password con el mismo costo que el registro.
+ */
+export async function createUser(data: {
+  email: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  role: 'CLIENT' | 'VET' | 'ADMIN';
+  specialty?: string;
+}) {
+  const existing = await prisma.user.findUnique({ where: { email: data.email } });
+  if (existing) {
+    throw new ConflictError('Este email ya está registrado');
+  }
+  const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
+  const user = await prisma.user.create({
+    data: {
+      email: data.email,
+      password: hashedPassword,
+      role: data.role,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      phone: data.phone,
+      // La matrícula/especialidad solo aplica a veterinarios.
+      specialty: data.role === 'VET' ? data.specialty || null : null,
+    },
+  });
   const { password, ...userWithoutPassword } = user;
   return userWithoutPassword;
 }

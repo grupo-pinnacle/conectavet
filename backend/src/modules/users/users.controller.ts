@@ -10,6 +10,7 @@ import {
   addFavorite,
   removeFavorite,
   listFavorites,
+  createUser,
 } from './users.service';
 import { assignNextPendingVet } from '../consultations/consultations.service';
 import { getIO } from '../consultations/chat.gateway';
@@ -20,6 +21,33 @@ import { parsePagination } from '../../shared/utils';
 const availabilitySchema = z.object({
   isOnline: z.boolean({ message: 'isOnline debe ser un booleano' }),
 });
+
+const createUserSchema = z.object({
+  email: z.string().email('Email inválido'),
+  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
+  firstName: z.string().max(50).optional(),
+  lastName: z.string().max(50).optional(),
+  phone: z.string().max(20).optional(),
+  role: z.enum(['CLIENT', 'VET', 'ADMIN']),
+  specialty: z.string().max(100).optional(),
+});
+
+export async function createUserController(req: RequestWithUser, res: Response) {
+  try {
+    const parsed = createUserSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, message: parsed.error.issues[0].message });
+    }
+    const user = await createUser(parsed.data);
+    return res.status(201).json({ success: true, data: user });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
+    console.error('Error en createUserController:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+}
 
 const updateProfileSchema = z.object({
   firstName: z.string().trim().min(1, 'El nombre no puede estar vacío').max(100).optional(),

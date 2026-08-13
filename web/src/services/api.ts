@@ -1,22 +1,12 @@
 import axios, { type InternalAxiosRequestConfig } from "axios";
 import { API_CONFIG } from "../constants/api";
 
-const TOKEN_KEY = "vetconnect_auth_token";
-const REFRESH_KEY = "vetconnect_refresh_token";
-
 const api = axios.create({
   baseURL: API_CONFIG.BASE_URL,
   timeout: API_CONFIG.TIMEOUT,
-});
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem(TOKEN_KEY);
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-
-  return config;
+  // El JWT viaja en cookie HttpOnly (la setea el backend en /login, /register y
+  // /refresh). No lo exponemos a JS ni lo enviamos en el header Authorization.
+  withCredentials: true,
 });
 
 // ── Refresh de access token ante un 401 ─────────────────────────────────────
@@ -66,27 +56,20 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const refreshToken = localStorage.getItem(REFRESH_KEY);
-        if (!refreshToken) throw new Error("No refresh token");
-
+        // El refresh token vive en cookie HttpOnly; el backend lo lee de ahí.
         const { data } = await axios.post(
           `${API_CONFIG.BASE_URL}/api/auth/refresh`,
-          { refreshToken },
-          { headers: { "Content-Type": "application/json" } }
+          {},
+          { withCredentials: true, headers: { "Content-Type": "application/json" } }
         );
 
         const accessToken: string = data.data.accessToken;
-        const newRefresh: string | undefined = data.data.refreshToken;
-        localStorage.setItem(TOKEN_KEY, accessToken);
-        if (newRefresh) localStorage.setItem(REFRESH_KEY, newRefresh);
 
         onTokenRefreshed(accessToken);
         original.headers.set("Authorization", `Bearer ${accessToken}`);
         return api(original);
       } catch {
         onTokenRefreshed(null);
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(REFRESH_KEY);
         if (!window.location.pathname.startsWith("/login")) {
           window.location.href = "/login";
         }

@@ -37,35 +37,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const isOnline = !!user?.isOnline;
 
   useEffect(() => {
-    const saved = localStorage.getItem("vetconnect_auth_token");
-    if (!saved) {
-      setIsLoading(false);
-      return;
-    }
-    setToken(saved);
+    // El JWT vive en cookie HttpOnly (seteada por el backend). Hidratamos
+    // llamando a /auth/me, que usa la cookie; si no hay sesión devuelve 401.
     getMe()
       .then((userData) => {
         setUser(normalizeUser(userData));
         setIsLoading(false);
       })
-      .catch((err: unknown) => {
-        // No confiamos en el token si /auth/me lo rechaza (expirado/corrupto):
-        // no derivamos el usuario del payload sin verificar firma.
-        const status = (err as { response?: { status?: number } } | null)?.response?.status;
-        if (status === 401) {
-          localStorage.removeItem("vetconnect_auth_token");
-          localStorage.removeItem("vetconnect_refresh_token");
-          setUser(null);
-          setToken(null);
-        }
+      .catch(() => {
+        setUser(null);
+        setToken(null);
         setIsLoading(false);
       });
   }, []);
 
-  const setAuth = useCallback((accessToken: string, userData: User, refreshToken?: string) => {
-    localStorage.setItem("vetconnect_auth_token", accessToken);
-    if (refreshToken) localStorage.setItem("vetconnect_refresh_token", refreshToken);
-    setToken(accessToken);
+  const setAuth = useCallback((userData: User) => {
     setUser(userData);
   }, []);
 
@@ -90,21 +76,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await api.post("/api/auth/login", { email, password });
-    const { accessToken, refreshToken, user: userData } = res.data.data;
-    setAuth(accessToken, normalizeUser(userData), refreshToken);
+    const { user: userData } = res.data.data;
+    setAuth(normalizeUser(userData));
   }, [setAuth]);
 
   const register = useCallback(async (name: string, email: string, password: string, role: string) => {
     const [firstName, ...rest] = name.trim().split(" ");
     const roleMap: Record<string, string> = { owner: "CLIENT", vet: "VET" };
     const res = await api.post("/api/auth/register", { firstName, lastName: rest.join(" ") || undefined, email, password, role: roleMap[role] || role });
-    const { accessToken, refreshToken, user: userData } = res.data.data;
-    setAuth(accessToken, normalizeUser(userData), refreshToken);
+    const { user: userData } = res.data.data;
+    setAuth(normalizeUser(userData));
   }, [setAuth]);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem("vetconnect_auth_token");
-    localStorage.removeItem("vetconnect_refresh_token");
+  const logout = useCallback(async () => {
+    // El backend invalida el tokenVersion y limpia las cookies HttpOnly.
+    await api.post("/api/auth/logout").catch(() => {});
     disconnectSocket();
     clearChatStore();
     setToken(null);
@@ -132,7 +118,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser((prev) => (prev ? { ...prev, isOnline } : prev));
   }, []);
 
-  const isAuthenticated = !!token && !!user;
+  const isAuthenticated = !!user;
 
   return (
     <AuthContext.Provider

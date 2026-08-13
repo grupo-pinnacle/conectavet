@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
+import { setAuthCookies, clearAuthCookies, getRefreshTokenFromCookie } from '../../shared/auth-cookies';
 import { register, login, logout, refreshAccessToken, AuthError } from './auth.service';
 
 const registerSchema = z.object({
@@ -28,6 +29,7 @@ export async function registerController(req: Request, res: Response) {
       });
     }
     const user = await register(parsed.data);
+    setAuthCookies(res, user.accessToken, user.refreshToken);
     return res.status(201).json({ success: true, data: user });
   } catch (error) {
     if (error instanceof AuthError) {
@@ -53,6 +55,7 @@ export async function logoutController(req: RequestWithUser, res: Response) {
       return res.status(401).json({ success: false, message: 'No autenticado' });
     }
     await logout(req.user.userId);
+    clearAuthCookies(res);
     return res.status(200).json({ success: true, message: 'Sesión cerrada' });
   } catch (error) {
     console.error('Error en logoutController:', error);
@@ -61,16 +64,20 @@ export async function logoutController(req: RequestWithUser, res: Response) {
 }
 
 const refreshSchema = z.object({
-  refreshToken: z.string().min(1, 'refreshToken es requerido'),
+  refreshToken: z.string().min(1, 'refreshToken es requerido').optional(),
 });
 
 export async function refreshController(req: Request, res: Response) {
   try {
-    const parsed = refreshSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ success: false, message: parsed.error.issues[0].message });
+    const bodyToken = refreshSchema.safeParse(req.body).success
+      ? (req.body.refreshToken as string | undefined)
+      : undefined;
+    const refreshToken = bodyToken || getRefreshTokenFromCookie(req);
+    if (!refreshToken) {
+      return res.status(400).json({ success: false, message: 'refreshToken es requerido' });
     }
-    const result = await refreshAccessToken(parsed.data.refreshToken);
+    const result = await refreshAccessToken(refreshToken);
+    setAuthCookies(res, result.accessToken, result.refreshToken);
     return res.status(200).json({ success: true, data: result });
   } catch (error) {
     if (error instanceof AuthError) {
@@ -91,6 +98,7 @@ export async function loginController(req: Request, res: Response) {
       });
     }
     const result = await login(parsed.data);
+    setAuthCookies(res, result.accessToken, result.refreshToken);
     return res.status(200).json({ success: true, data: result });
   } catch (error) {
     if (error instanceof AuthError) {

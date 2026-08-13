@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { Role } from '@prisma/client';
 import { prisma } from '../prisma';
 import { JwtPayload } from '../types';
+import { getAccessTokenFromCookie } from '../auth-cookies';
 
 export interface RequestWithUser extends Request {
   user?: JwtPayload;
@@ -15,14 +16,21 @@ export async function authenticate(
 ) {
   const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  let token: string | undefined;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  } else {
+    // Web SPA: el JWT viaja en cookie HttpOnly (no accesible desde JS).
+    token = getAccessTokenFromCookie(req);
+  }
+
+  if (!token) {
     return res.status(401).json({
       success: false,
       message: 'Token no proporcionado'
     });
   }
 
-  const token = authHeader.split(' ')[1];
 
   try {
     const decoded = jwt.verify(

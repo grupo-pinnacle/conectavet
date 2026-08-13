@@ -24,13 +24,13 @@ export function connectSocket(): Promise<Socket> {
     });
   }
 
-  const token = localStorage.getItem("vetconnect_auth_token");
+  // El JWT viaja en cookie HttpOnly; socket.io la envía con withCredentials.
   // En dev Vite proxya /socket.io al backend. En prod se puede apuntar el
   // socket directo al backend con VITE_SOCKET_URL (p.ej. https://api.tu dominio).
   const SOCKET_URL =
     (import.meta.env.VITE_SOCKET_URL as string | undefined) || window.location.origin;
   const sock = io(SOCKET_URL, {
-    auth: { token },
+    withCredentials: true,
     path: "/socket.io",
     transports: ["websocket", "polling"],
   });

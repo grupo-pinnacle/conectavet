@@ -55,7 +55,13 @@ export async function setupChatSocket(httpServer: HttpServer) {
   }
 
   io.use(async (socket, next) => {
-    const token = socket.handshake.auth.token as string;
+    const cookieToken = (() => {
+      const header = socket.handshake.headers.cookie;
+      if (!header) return undefined;
+      const m = header.match(/(?:^|;\s*)access_token=([^;]+)/);
+      return m ? decodeURIComponent(m[1]) : undefined;
+    })();
+    const token = (socket.handshake.auth?.token as string) || cookieToken;
     if (!token) return next(new Error('Token no proporcionado'));
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload;

@@ -15,7 +15,7 @@ describe('Auth Service', () => {
 
   describe('Register', () => {
     test('debe crear un usuario CLIENT correctamente', async () => {
-      const hashedPassword = await bcrypt.hash('123456', 10);
+      const hashedPassword = await bcrypt.hash('12345678', 10);
       const user = await prisma.user.create({
         data: { email: testEmail, password: hashedPassword, role: 'CLIENT' },
       });
@@ -113,7 +113,7 @@ describe('Auth Service', () => {
     test('POST /api/auth/register — 201 crea usuario + tokens', async () => {
       const res = await request(app)
         .post('/api/auth/register')
-        .send({ email, password: '123456', role: 'CLIENT' });
+        .send({ email, password: '12345678', role: 'CLIENT' });
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
       expect(res.body.data.accessToken).toBeDefined();
@@ -125,7 +125,7 @@ describe('Auth Service', () => {
     test('POST /api/auth/register — 409 email duplicado', async () => {
       const res = await request(app)
         .post('/api/auth/register')
-        .send({ email, password: '123456', role: 'CLIENT' });
+        .send({ email, password: '12345678', role: 'CLIENT' });
       expect(res.status).toBe(409);
       expect(res.body.message).toBe('Este email ya está registrado');
     });
@@ -133,7 +133,7 @@ describe('Auth Service', () => {
     test('POST /api/auth/register — 400 email inválido', async () => {
       const res = await request(app)
         .post('/api/auth/register')
-        .send({ email: 'no-email', password: '123456', role: 'CLIENT' });
+        .send({ email: 'no-email', password: '12345678', role: 'CLIENT' });
       expect(res.status).toBe(400);
     });
 
@@ -147,14 +147,14 @@ describe('Auth Service', () => {
     test('POST /api/auth/register — rechaza role ADMIN (whitelist)', async () => {
       const res = await request(app)
         .post('/api/auth/register')
-        .send({ email: `auth-http-${authUnique}-role@test.com`, password: '123456', role: 'ADMIN' });
+        .send({ email: `auth-http-${authUnique}-role@test.com`, password: '12345678', role: 'ADMIN' });
       expect(res.status).toBe(400);
     });
 
     test('POST /api/auth/register — 201 crea veterinario cuando role=VET', async () => {
       const res = await request(app)
         .post('/api/auth/register')
-        .send({ email: `auth-http-${authUnique}-vet@test.com`, password: '123456', role: 'VET', firstName: 'Vet', lastName: 'Registro' });
+        .send({ email: `auth-http-${authUnique}-vet@test.com`, password: '12345678', role: 'VET', firstName: 'Vet', lastName: 'Registro' });
       expect(res.status).toBe(201);
       expect(res.body.data.user.role).toBe('VET');
     });
@@ -162,7 +162,7 @@ describe('Auth Service', () => {
     test('POST /api/auth/register — 201 sin role crea CLIENT por defecto', async () => {
       const res = await request(app)
         .post('/api/auth/register')
-        .send({ email: `auth-http-${authUnique}-nodefault@test.com`, password: '123456' });
+        .send({ email: `auth-http-${authUnique}-nodefault@test.com`, password: '12345678' });
       expect(res.status).toBe(201);
       expect(res.body.data.user.role).toBe('CLIENT');
     });
@@ -170,7 +170,7 @@ describe('Auth Service', () => {
     test('POST /api/auth/login — 200 login exitoso con refreshToken', async () => {
       const res = await request(app)
         .post('/api/auth/login')
-        .send({ email, password: '123456' });
+        .send({ email, password: '12345678' });
       expect(res.status).toBe(200);
       expect(res.body.data.accessToken).toBeDefined();
       expect(res.body.data.refreshToken).toBeDefined();
@@ -188,14 +188,14 @@ describe('Auth Service', () => {
     test('POST /api/auth/login — 401 usuario inexistente', async () => {
       const res = await request(app)
         .post('/api/auth/login')
-        .send({ email: `no-exist-${authUnique}@test.com`, password: '123456' });
+        .send({ email: `no-exist-${authUnique}@test.com`, password: '12345678' });
       expect(res.status).toBe(401);
     });
 
     test('POST /api/auth/refresh — 200 renueva token', async () => {
       const loginRes = await request(app)
         .post('/api/auth/login')
-        .send({ email, password: '123456' });
+        .send({ email, password: '12345678' });
       const refreshToken = loginRes.body.data.refreshToken;
 
       const res = await request(app)
@@ -223,7 +223,7 @@ describe('Auth Service', () => {
     test('POST /api/auth/logout — revoca access y refresh tokens', async () => {
       const loginRes = await request(app)
         .post('/api/auth/login')
-        .send({ email, password: '123456' });
+        .send({ email, password: '12345678' });
       expect(loginRes.status).toBe(200);
       const { accessToken, refreshToken } = loginRes.body.data;
 

@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '../../shared/prisma';
 import { clearCache } from '../../shared/cache';
 
-const SALT_ROUNDS = 10;
+const SALT_ROUNDS = 12;
 
 interface RegisterInput {
   email: string;
@@ -31,7 +31,7 @@ function signAccessToken(user: { id: string; email: string; role: string; tokenV
   return jwt.sign(
     { userId: user.id, email: user.email, role: user.role, tokenVersion: user.tokenVersion },
     process.env.JWT_SECRET as string,
-    { expiresIn: '7d' }
+    { expiresIn: '2h' }
   );
 }
 
@@ -114,7 +114,11 @@ export async function login(input: LoginInput) {
 
 export async function refreshAccessToken(refreshTokenValue: string) {
   try {
-    const decoded = jwt.verify(refreshTokenValue, process.env.JWT_SECRET as string) as any;
+    const decoded = jwt.verify(refreshTokenValue, process.env.JWT_SECRET as string) as {
+      userId: string;
+      type: string;
+      tokenVersion: number;
+    };
     if (decoded.type !== 'refresh') {
       throw new AuthError('Token de refresco inválido', 401);
     }

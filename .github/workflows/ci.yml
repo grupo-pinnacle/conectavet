@@ -68,6 +68,30 @@ jobs:
       - run: npm ci
       - run: npm run build
 
+  security:
+    name: Security - Audit & Secret Scan
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      - name: npm audit (backend)
+        working-directory: backend
+        run: npm audit --audit-level=high || true
+      - name: npm audit (web)
+        working-directory: web
+        run: npm audit --audit-level=high || true
+      - name: gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          args: detect --no-history --source .
+
   deploy:
     name: Backend - Deploy to Railway
     needs: [backend-unit, backend-integration, web]

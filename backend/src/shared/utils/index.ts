@@ -1,3 +1,5 @@
+import { Request, Response, NextFunction } from 'express';
+
 export function parsePagination(query: { page?: string; limit?: string }, maxLimit = 50) {
   const page = Math.max(1, parseInt(query.page || '') || 1);
   const limit = Math.min(maxLimit, Math.max(1, parseInt(query.limit || '') || 20));
@@ -9,8 +11,10 @@ export function excludePassword<T extends Record<string, unknown>>(obj: T): Omit
   return rest as Omit<T, 'password'>;
 }
 
-export function asyncHandler(fn: (req: any, res: any, next: any) => Promise<any>) {
-  return (req: any, res: any, next: any) => {
+export function asyncHandler(
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
+) {
+  return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
 }

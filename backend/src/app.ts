@@ -13,8 +13,14 @@ import { notificationsRoutes } from './modules/notifications/index.js';
 import { UPLOADS_DIR } from './modules/media/media.service.js';
 import { prisma } from './shared/prisma.js';
 import { logger } from './shared/logger.js';
+import { AppError } from './shared/errors/index.js';
 import { authenticate, RequestWithUser } from './shared/middlewares/auth.middleware.js';
 import { join } from 'path';
+import { randomUUID } from 'crypto';
+
+interface AppRequest extends Request {
+  id: string;
+}
 
 if (!process.env.JWT_SECRET) {
   logger.error('JWT_SECRET no está definido en las variables de entorno');
@@ -23,20 +29,36 @@ if (!process.env.JWT_SECRET) {
 
 const app = express();
 
+app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
-app.use(helmet());
+const isProd = process.env.NODE_ENV === 'production';
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      useDefaults: false,
+      directives: {
+        defaultSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+      },
+    },
+    hsts: isProd ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false,
+  })
+);
 const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map(s => s.trim());
+const allowCredentials = !corsOrigins.includes('*');
 app.use(cors({
   origin: corsOrigins,
-  credentials: true,
+  credentials: allowCredentials,
 }));
 
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: false }));
 
 app.use((req: Request, _res: Response, next: NextFunction) => {
-  logger.info(`${req.method} ${req.path}`, { method: req.method, path: req.path });
+  const reqId = randomUUID();
+  (req as AppRequest).id = reqId;
+  logger.info('request', { reqId, method: req.method, path: req.path });
   next();
 });
 
@@ -86,6 +108,15 @@ app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/refresh', authLimiter);
 
+const callsLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Demasiadas solicitudes de llamada, intentá de nuevo más tarde' },
+});
+app.use('/api/calls', callsLimiter);
+
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/pets', petsRoutes);
@@ -132,12 +163,17 @@ app.use((_req: Request, res: Response) => {
   res.status(404).json({ success: false, message: 'Ruta no encontrada' });
 });
 
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  logger.error(err.message, { stack: err.stack });
-  res.status(500).json({
-    success: false,
-    message: process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : err.message,
-  });
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
+  const reqId = (req as AppRequest).id;
+  const statusCode = err instanceof AppError ? err.statusCode : 500;
+  const message =
+    err instanceof AppError
+      ? err.message
+      : process.env.NODE_ENV === 'production'
+        ? 'Error interno del servidor'
+        : err.message;
+  logger.error(err.message, { reqId, statusCode, stack: err.stack });
+  res.status(statusCode).json({ success: false, message });
 });
 
 export default app;

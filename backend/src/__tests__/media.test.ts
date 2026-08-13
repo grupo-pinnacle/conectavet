@@ -14,7 +14,7 @@ const prefix = `media-test-${uniqueId}`;
 jest.setTimeout(30000);
 
 beforeAll(async () => {
-  const hashed = await bcrypt.hash('123456', 10);
+  const hashed = await bcrypt.hash('12345678', 10);
   const user = await prisma.user.create({
     data: { email: `${prefix}@test.com`, password: hashed, role: 'CLIENT' },
   });

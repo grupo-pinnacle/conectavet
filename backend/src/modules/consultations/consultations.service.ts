@@ -297,7 +297,8 @@ export async function getAvailableVets(species?: string) {
   const cacheKey = species
     ? `vets:list:available:${species.toLowerCase()}`
     : 'vets:list:available';
-  const cached = getCached<any[]>(cacheKey);
+  type VetPublic = { id: string; email: string; firstName: string; lastName: string; isOnline: boolean };
+  const cached = getCached<VetPublic[]>(cacheKey);
   if (cached) return cached;
   const where: Prisma.UserWhereInput = {
     role: 'VET',

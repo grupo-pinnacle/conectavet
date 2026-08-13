@@ -63,7 +63,7 @@ async function assertParticipation(consultationId: string, userId: string) {
  * personales (user:{id}) del client y del vet, para que las listas se
  * actualicen en vivo sin depender de polling.
  */
-function emitConsultationUpdate(event: string, consultation: any) {
+function emitConsultationUpdate(event: string, consultation: { id: string; clientId?: string | null; vetId?: string | null }) {
   const io = getIO();
   if (!io) return;
   io.to(`consultation:${consultation.id}`).emit(event, consultation);

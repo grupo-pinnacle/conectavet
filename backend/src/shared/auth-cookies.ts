@@ -13,7 +13,7 @@ const baseCookieOpts = {
 };
 
 export function setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
-  res.cookie(ACCESS_COOKIE, accessToken, { ...baseCookieOpts, maxAge: 7 * 24 * 60 * 60 * 1000 });
+  res.cookie(ACCESS_COOKIE, accessToken, { ...baseCookieOpts, maxAge: 2 * 60 * 60 * 1000 });
   res.cookie(REFRESH_COOKIE, refreshToken, { ...baseCookieOpts, maxAge: 30 * 24 * 60 * 60 * 1000 });
 }
 

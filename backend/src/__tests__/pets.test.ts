@@ -14,7 +14,7 @@ let createdPetId: string;
 jest.setTimeout(30000);
 
 beforeAll(async () => {
-  const hashed = await bcrypt.hash('123456', 10);
+  const hashed = await bcrypt.hash('12345678', 10);
   clientUser = await prisma.user.create({
     data: { email: `pets-test-client-${uniqueId}@test.com`, password: hashed, role: 'CLIENT' },
   });

@@ -39,6 +39,11 @@ model User {
   role         Role
   isOnline     Boolean  @default(false)
   tokenVersion Int      @default(1)
+  isEmailVerified      Boolean    @default(false)
+  emailVerifyToken     String?    @map("email_verify_token")
+  emailVerifyExpires   DateTime?  @map("email_verify_expires")
+  passwordResetToken   String?    @map("password_reset_token")
+  passwordResetExpires DateTime?  @map("password_reset_expires")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

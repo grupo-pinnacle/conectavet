@@ -218,7 +218,50 @@ Hasta entonces, las fotos de mascotas subidas por API no son duraderas en prod.
 
 ---
 
-## 10. Pasos sugeridos (orden)
+## 10. Backups, rollback y Point-in-Time Recovery (PITR)
+
+> Backups y un runbook de rollback son **obligatorios** antes de abrir la app a usuarios reales. Sin esto, un deploy fallido o un borrado accidental es irrecuperable.
+
+### 10.1 Backups automáticos (Supabase)
+
+- Supabase habilita **backups diarios** y **PITR** en planes de pago; en el plan gratis solo hay backup puntual. Activar PITR en *Project Settings → Database → Point in Time Recovery*.
+- Con PITR podés restaurar la BD a cualquier momento de los últimos 7–30 días (según plan).
+- Si usás otra base (Railway/Render), configurar `pg_dump` programado o el backup nativo del proveedor.
+
+### 10.2 Snapshot antes de cada deploy con migración
+
+Antes de correr `prisma migrate deploy` en producción (o de aplicar una migración manual):
+
+```bash
+# Snapshot lógico rápido (no bloquea la base)
+pg_dump "$DATABASE_URL" --format=custom --file=backup_pre_$(date +%Y%m%d_%H%M).dump
+```
+
+Guardar el dump en un bucket externo (S3/Cloudinary no sirve para SQL), no en el disco efímero del backend.
+
+### 10.3 Rollback de la base de datos
+
+- **Migraciones deben ser reversibles (gated).** Toda migración que borre/renombre columnas o cambie tipos debe traer su `down`:
+  - En vez de `DROP COLUMN`, usar `ALTER COLUMN ... SET NOT NULL` solo tras backfill, o marcar `@@ignore` y eliminar en la siguiente migración.
+  - Nunca `DROP TABLE` sin backup previo (ver 10.2).
+- Para revertir una migración aplicada: restaurar el dump de 10.2 en una base nueva y repuntar `DATABASE_URL`, o usar PITR a un instante anterior al deploy.
+
+### 10.4 Rollback de la aplicación
+
+- **Backend:** los proveedores (Koyeb/Railway/Render) permiten redeploy de un commit anterior. Mantener el tag del último deploy estable.
+- **Web:** Vercel guarda cada deploy; un "Promote" a un deploy anterior es instantáneo.
+- **Mobile:** `eas update --branch production --message "rollback"` apunta el canal a un build JS previo; para cambios nativos, subir un AAB/build anterior.
+
+### 10.5 Checklist de rollback (tener a mano)
+
+1. Snapshot reciente de BD (10.2) ✔
+2. Commit/tag del último deploy estable anotado ✔
+3. `DATABASE_URL` apuntando a la base restaurada (si la migración falló) ✔
+4. Verificar `GET /health` tras revertir ✔
+
+---
+
+## 11. Pasos sugeridos (orden)
 
 1. Rotar secretos (JWT + Supabase) y generar nuevos.
 2. Purgar historial git de `.env` (BFG/filter-repo).

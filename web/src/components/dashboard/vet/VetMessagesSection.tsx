@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Send, Clock, CheckCircle, MessageSquare, ArrowLeft, FileText, Pill, Venus, Mars, XCircle, UserRound } from "lucide-react";
 import Button from "../../Button";
 import {
-  getMyConsultations,
   assignConsultation,
   declineConsultation,
   completeConsultation,
@@ -13,7 +13,6 @@ import {
 } from "../../../services/endpoints";
 import {
   getCachedConsultations,
-  setCachedConsultations,
   updateCachedConsultation,
   getCachedMessages,
   getCachedPrescriptions,
@@ -25,7 +24,9 @@ import {
   getLastConsultationId,
   setLastConsultationId,
 } from "../../../services/chatStore";
-import { connectSocket, joinConsultation, getSocket } from "../../../services/socket";
+import { joinConsultation } from "../../../services/socket";
+import { useChatSocket } from "../../hooks/useChatSocket";
+import { useConsultations, useInvalidateConsultations, consultationsKey } from "../../hooks/useConsultations";
 import { MessageBubble } from "../MessageBubble";
 import VetPatientProfile from "./VetPatientProfile";
 import CallButton from "../../call/CallButton";
@@ -105,7 +106,7 @@ export default function VetMessagesSection() {
   // Hidratación instantánea desde la caché: los inicializadores lazy corren
   // en el primer render, así al volver a esta sección no hay spinner ni
   // recarga — la conversación y la lista ya están en memoria.
-  const [consultations, setConsultations] = useState<Consultation[]>(() => getCachedConsultations() ?? []);
+  const { data: consultations = [] } = useConsultations('vet');
   const [activeCons, setActiveCons] = useState<Consultation | null>(() => {
     const cached = getCachedConsultations();
     if (!cached) return null;
@@ -139,12 +140,22 @@ export default function VetMessagesSection() {
   const [rxIndications, setRxIndications] = useState("");
   const [sendingPrescription, setSendingPrescription] = useState(false);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
-  const [socketConnected, setSocketConnected] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
   const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const activeConsRef = useRef<Consultation | null>(null);
+
+  const queryClient = useQueryClient();
+  const invalidateConsultations = useInvalidateConsultations('vet');
+  const patchConsultations = useCallback(
+    (updater: (prev: Consultation[]) => Consultation[]) =>
+      queryClient.setQueryData(consultationsKey('vet'), (prev: Consultation[] | undefined) => updater(prev ?? [])),
+    [queryClient]
+  );
+  // fetchConsultations ahora solo invalida la query de React Query (P2-4);
+  // el socket mantiene la lista al día en tiempo real.
+  const fetchConsultations = invalidateConsultations;
 
   useEffect(() => {
     activeConsRef.current = activeCons;
@@ -158,24 +169,18 @@ export default function VetMessagesSection() {
     tabRef.current = tab;
   }, [tab]);
 
-  const fetchConsultations = useCallback(async () => {
-    try {
-      const data = await getMyConsultations();
-      setCachedConsultations(data);
-      setConsultations(data);
-      // Si hay ofertas y ninguna consulta activa, mostrá la pestaña de
-      // ofertas (solo hasta que el vet cambie de pestaña manualmente).
-      if (
-        !tabTouchedRef.current &&
-        tabRef.current === "active" &&
-        data.some((c) => c.status === "PENDING") &&
-        !data.some((c) => c.status === "ACTIVE")
-      ) {
-        setTab("offers");
-      }
-    } catch { /* fallback handled */ }
-    setLoadingCons(false);
-  }, []);
+  // Si hay ofertas (PENDING) y ninguna consulta activa, mostrar la pestaña de
+  // ofertas al vet (solo hasta que cambie de pestaña manualmente).
+  useEffect(() => {
+    if (
+      !tabTouchedRef.current &&
+      tabRef.current === "active" &&
+      consultations.some((c) => c.status === "PENDING") &&
+      !consultations.some((c) => c.status === "ACTIVE")
+    ) {
+      setTab("offers");
+    }
+  }, [consultations]);
 
   const fetchMsgs = useCallback(async (consultationId: string) => {
     try {
@@ -217,80 +222,62 @@ export default function VetMessagesSection() {
   }, [prescriptions, activeCons]);
 
   // Socket global: mensajes, consultas, notificaciones.
-  useEffect(() => {
-    let cancelled = false;
-    let s: Awaited<ReturnType<typeof connectSocket>> | null = null;
-    const attach = (socket) => {
-      if (cancelled) return;
-      s = socket;
-      setSocketConnected(socket.connected);
-      const onConnect = () => {
-        setSocketConnected(true);
-        const active = activeConsRef.current;
-        if (active) joinConsultation(active.id);
-        fetchConsultations();
-        if (active) {
-          fetchMsgs(active.id);
-          fetchPrescriptions(active.id);
-        }
-      };
-      const onDisconnect = () => setSocketConnected(false);
-      socket.on("connect", onConnect);
-      socket.on("disconnect", onDisconnect);
-      socket.on("message:new", (msg: Message) => {
-        const active = activeConsRef.current;
-        if (active && msg.consultationId === active.id) {
-          applyMessageEcho(active.id, msg);
-          setMessages(getCachedMessages(active.id) ?? []);
-          // El mensaje ya llegó (echo del socket): el botón deja de
-          // mostrar "enviando" aunque el POST REST todavía no responda.
-          setIsSending(false);
-        }
-      });
-      socket.on("consultation:updated", (updated: Consultation) => {
-        updateCachedConsultation(updated);
-        setConsultations((prev) =>
-          prev.map((c) => (c.id === updated.id ? updated : c))
-        );
-        const active = activeConsRef.current;
-        if (active?.id === updated.id) setActiveCons(updated);
-      });
-      socket.on("consultation:new", () => fetchConsultations());
-      socket.on("prescription:new", (prescription: Prescription) => {
-        const active = activeConsRef.current;
-        if (active && prescription.consultationId === active.id) {
-          upsertPrescription(active.id, prescription);
-          setPrescriptions(getCachedPrescriptions(active.id) ?? []);
-        }
-      });
-      socket.on("notification:new", () => fetchConsultations());
-    };
-    // Si el handshake inicial rechaza (timeout), los listeners no se registrarían
-    // y la pantalla quedaría ciega. Nos suscribimos igual al singleton: cuando
-    // el socket reconecta, el handler 'connect' vuelve a unir la sala y refresca.
-    connectSocket().then(attach).catch(() => {
-      const sock = getSocket();
-      if (sock) attach(sock);
-    });
-    return () => {
-      cancelled = true;
-      if (s) {
-        s.off("connect");
-        s.off("disconnect");
-        s.off("message:new");
-        s.off("consultation:updated");
-        s.off("consultation:new");
-        s.off("prescription:new");
-        s.off("notification:new");
+  // La conexión (y el reintento si el handshake falla) vive en useChatSocket,
+  // compartido con MessagesSection (P2-6). Acá solo registramos los listeners.
+  const { socketConnected } = useChatSocket((socket) => {
+    const onConnect = () => {
+      const active = activeConsRef.current;
+      if (active) joinConsultation(active.id);
+      invalidateConsultations();
+      if (active) {
+        fetchMsgs(active.id);
+        fetchPrescriptions(active.id);
       }
     };
-  }, [fetchConsultations, fetchMsgs, fetchPrescriptions]);
+    socket.on("connect", onConnect);
+    socket.on("message:new", (msg: Message) => {
+      const active = activeConsRef.current;
+      if (active && msg.consultationId === active.id) {
+        applyMessageEcho(active.id, msg);
+        setMessages(getCachedMessages(active.id) ?? []);
+        // El mensaje ya llegó (echo del socket): el botón deja de
+        // mostrar "enviando" aunque el POST REST todavía no responda.
+        setIsSending(false);
+      }
+    });
+    socket.on("consultation:updated", (updated: Consultation) => {
+      updateCachedConsultation(updated);
+      patchConsultations((prev) =>
+        prev.map((c) => (c.id === updated.id ? updated : c))
+      );
+      const active = activeConsRef.current;
+      if (active?.id === updated.id) setActiveCons(updated);
+    });
+    socket.on("consultation:new", () => invalidateConsultations());
+    socket.on("prescription:new", (prescription: Prescription) => {
+      const active = activeConsRef.current;
+      if (active && prescription.consultationId === active.id) {
+        upsertPrescription(active.id, prescription);
+        setPrescriptions(getCachedPrescriptions(active.id) ?? []);
+      }
+    });
+    socket.on("notification:new", () => invalidateConsultations());
+    return () => {
+      socket.off("connect");
+      socket.off("message:new");
+      socket.off("consultation:updated");
+      socket.off("consultation:new");
+      socket.off("prescription:new");
+      socket.off("notification:new");
+    };
+  }, []);
 
   // Lista inicial: la caché ya la hidrató en el primer render; acá solo se
   // refresca en segundo plano. Sin polling mientras el socket está vivo.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch de datos al montar
     fetchConsultations();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch de datos al montar
+    setLoadingCons(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fetch de datos al montar
   }, []);
 
@@ -335,7 +322,7 @@ export default function VetMessagesSection() {
     setActionId(id);
     try {
       const updated = await assignConsultation(id);
-      setConsultations((prev) => prev.map((c) => (c.id === id ? updated : c)));
+      patchConsultations((prev) => prev.map((c) => (c.id === id ? updated : c)));
       updateCachedConsultation(updated);
       setActiveCons(updated);
       setLastConsultationId(id);
@@ -346,13 +333,13 @@ export default function VetMessagesSection() {
     } finally {
       setActionId(null);
     }
-  }, []);
+  }, [patchConsultations]);
 
   const handleDecline = useCallback(async (id: string) => {
     setActionId(id);
     try {
       const updated = await declineConsultation(id);
-      setConsultations((prev) => prev.map((c) => (c.id === id ? updated : c)));
+      patchConsultations((prev) => prev.map((c) => (c.id === id ? updated : c)));
       updateCachedConsultation(updated);
       setActiveCons((prev) => (prev?.id === id ? null : prev));
     } catch {
@@ -360,7 +347,7 @@ export default function VetMessagesSection() {
     } finally {
       setActionId(null);
     }
-  }, []);
+  }, [patchConsultations]);
 
   const handleSend = useCallback(async (textOverride?: string) => {
     const text = (textOverride ?? input).trim();
@@ -402,7 +389,7 @@ export default function VetMessagesSection() {
     setClosing(true);
     try {
       const updated = await completeConsultation(activeCons.id, closeNotes);
-      setConsultations((prev) =>
+      patchConsultations((prev) =>
         prev.map((c) => (c.id === activeCons.id ? updated : c))
       );
       setActiveCons(null);
@@ -413,7 +400,7 @@ export default function VetMessagesSection() {
     } finally {
       setClosing(false);
     }
-  }, [activeCons, closeNotes]);
+  }, [activeCons, closeNotes, patchConsultations]);
 
   const openPrescriptionModal = useCallback(() => {
     setRxContent("");

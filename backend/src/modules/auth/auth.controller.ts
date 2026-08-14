@@ -2,7 +2,8 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
 import { setAuthCookies, clearAuthCookies, getRefreshTokenFromCookie } from '../../shared/auth-cookies';
-import { register, login, logout, refreshAccessToken, AuthError } from './auth.service';
+import { register, login, logout, refreshAccessToken, verifyEmail, requestPasswordReset, resetPassword, AuthError } from './auth.service';
+import { ConflictError } from '../../shared/errors';
 
 const registerSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -103,6 +104,67 @@ export async function loginController(req: Request, res: Response) {
       return res.status(error.statusCode).json({ success: false, message: error.message });
     }
     console.error('Error en loginController:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+}
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email('Email inválido'),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Token requerido'),
+  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
+});
+
+export async function forgotPasswordController(req: Request, res: Response) {
+  try {
+    const parsed = forgotPasswordSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, message: parsed.error.issues[0].message });
+    }
+    // Siempre el mismo mensaje: no revela si el email existe.
+    await requestPasswordReset(parsed.data.email);
+    return res.status(200).json({
+      success: true,
+      message: 'Si el correo está registrado, te enviamos las instrucciones.',
+    });
+  } catch (error) {
+    console.error('Error en forgotPasswordController:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+}
+
+export async function resetPasswordController(req: Request, res: Response) {
+  try {
+    const parsed = resetPasswordSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, message: parsed.error.issues[0].message });
+    }
+    await resetPassword(parsed.data.token, parsed.data.password);
+    return res.status(200).json({ success: true, message: 'Contraseña actualizada. Iniciá sesión.' });
+  } catch (error) {
+    if (error instanceof ConflictError) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+    console.error('Error en resetPasswordController:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+}
+
+export async function verifyEmailController(req: Request, res: Response) {
+  try {
+    const token = typeof req.query.token === 'string' ? req.query.token : '';
+    if (!token) {
+      return res.status(400).json({ success: false, message: 'Token requerido' });
+    }
+    await verifyEmail(token);
+    return res.status(200).json({ success: true, message: 'Email verificado. Ya podés iniciar sesión.' });
+  } catch (error) {
+    if (error instanceof ConflictError) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+    console.error('Error en verifyEmailController:', error);
     return res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 }

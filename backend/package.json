@@ -25,6 +25,7 @@
     "livekit-server-sdk": "^2.17.0",
     "multer": "^2.2.0",
     "node-cache": "5.1.2",
+    "nodemailer": "^9.0.5",
     "prisma": "6.19.3",
     "socket.io": "4.8.3",
     "zod": "4.4.3"
@@ -38,6 +39,7 @@
     "@types/multer": "^2.2.0",
     "@types/node": "26.0.0",
     "@types/node-cache": "^4.1.3",
+    "@types/nodemailer": "^8.0.1",
     "@types/supertest": "7.2.0",
     "jest": "30.4.2",
     "supertest": "7.2.2",

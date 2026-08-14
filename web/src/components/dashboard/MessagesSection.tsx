@@ -1,14 +1,13 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Send, MessageSquare, ArrowLeft, Pill, Clock, CheckCircle2 } from "lucide-react";
 import {
-  getMyConsultations,
   getMessages,
   sendMessage,
   getPrescriptions,
 } from "../../services/endpoints";
 import {
   getCachedConsultations,
-  setCachedConsultations,
   updateCachedConsultation,
   getCachedMessages,
   getCachedPrescriptions,
@@ -20,7 +19,9 @@ import {
   getLastConsultationId,
   setLastConsultationId,
 } from "../../services/chatStore";
-import { connectSocket, joinConsultation, getSocket } from "../../services/socket";
+import { joinConsultation } from "../../services/socket";
+import { useChatSocket } from "../../hooks/useChatSocket";
+import { useConsultations, useInvalidateConsultations, consultationsKey } from "../../hooks/useConsultations";
 import { MessageBubble } from "./MessageBubble";
 import CallButton from "../call/CallButton";
 import type { Consultation, Message, Prescription } from "../../types";
@@ -103,7 +104,7 @@ export default function MessagesSection() {
   // Hidratación instantánea desde la caché: los inicializadores lazy corren
   // en el primer render, así al volver a esta sección no hay spinner ni
   // recarga — la conversación y la lista ya están en memoria.
-  const [consultations, setConsultations] = useState<Consultation[]>(() => getCachedConsultations() ?? []);
+  const { data: consultations = [] } = useConsultations('client');
   const [activeCons, setActiveCons] = useState<Consultation | null>(() => {
     const cached = getCachedConsultations();
     if (!cached) return null;
@@ -119,24 +120,26 @@ export default function MessagesSection() {
     return !(cached && getLastConsultationId() && cached.some((c) => c.id === getLastConsultationId()));
   });
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
-  const [socketConnected, setSocketConnected] = useState(false);
   const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const activeConsRef = useRef<Consultation | null>(null);
 
+  const queryClient = useQueryClient();
+  const invalidateConsultations = useInvalidateConsultations('client');
+  const patchConsultations = useCallback(
+    (updater: (prev: Consultation[]) => Consultation[]) =>
+      queryClient.setQueryData(consultationsKey('client'), (prev: Consultation[] | undefined) => updater(prev ?? [])),
+    [queryClient]
+  );
+
   useEffect(() => {
     activeConsRef.current = activeCons;
   });
 
-  const fetchCons = useCallback(async () => {
-    try {
-      const data = await getMyConsultations();
-      setCachedConsultations(data);
-      setConsultations(data);
-    } catch { /* fallback handled */ }
-    setLoading(false);
-  }, []);
+  // Mantener la caché de módulo al día es suficiente; React Query ya trae la
+  // lista (useConsultations) y los eventos de socket la invalidan.
+  const fetchCons = invalidateConsultations;
 
   const fetchMsgs = useCallback(async (consultationId: string) => {
     try {
@@ -181,80 +184,62 @@ export default function MessagesSection() {
   }, [prescriptions, activeCons]);
 
   // Socket global: eventos de mensajes, consultas y notificaciones.
-  useEffect(() => {
-    let cancelled = false;
-    let s: Awaited<ReturnType<typeof connectSocket>> | null = null;
-    const attach = (socket) => {
-      if (cancelled) return;
-      s = socket;
-      setSocketConnected(socket.connected);
-      const onConnect = () => {
-        setSocketConnected(true);
-        const active = activeConsRef.current;
-        if (active) joinConsultation(active.id);
-        fetchCons();
-        if (active) {
-          fetchMsgs(active.id);
-          fetchPrescriptions(active.id);
-        }
-      };
-      const onDisconnect = () => setSocketConnected(false);
-      socket.on("connect", onConnect);
-      socket.on("disconnect", onDisconnect);
-      socket.on("message:new", (msg: Message) => {
-        const active = activeConsRef.current;
-        if (active && msg.consultationId === active.id) {
-          applyMessageEcho(active.id, msg);
-          setMessages(getCachedMessages(active.id) ?? []);
-          // El mensaje ya llegó (echo del socket): el botón deja de
-          // mostrar "enviando" aunque el POST REST todavía no responda.
-          setIsSending(false);
-        }
-      });
-      socket.on("consultation:updated", (updated: Consultation) => {
-        updateCachedConsultation(updated);
-        setConsultations((prev) =>
-          prev.map((c) => (c.id === updated.id ? updated : c))
-        );
-        const active = activeConsRef.current;
-        if (active?.id === updated.id) setActiveCons(updated);
-      });
-      socket.on("consultation:new", () => fetchCons());
-      socket.on("prescription:new", (prescription: Prescription) => {
-        const active = activeConsRef.current;
-        if (active && prescription.consultationId === active.id) {
-          upsertPrescription(active.id, prescription);
-          setPrescriptions(getCachedPrescriptions(active.id) ?? []);
-        }
-      });
-      socket.on("notification:new", () => fetchCons());
-    };
-    // Si el handshake inicial rechaza (timeout), los listeners no se registrarían
-    // y la pantalla quedaría ciega. Nos suscribimos igual al singleton: cuando
-    // el socket reconecta, el handler 'connect' vuelve a unir la sala y refresca.
-    connectSocket().then(attach).catch(() => {
-      const sock = getSocket();
-      if (sock) attach(sock);
-    });
-    return () => {
-      cancelled = true;
-      if (s) {
-        s.off("connect");
-        s.off("disconnect");
-        s.off("message:new");
-        s.off("consultation:updated");
-        s.off("consultation:new");
-        s.off("prescription:new");
-        s.off("notification:new");
+  // La conexión (y el reintento si el handshake falla) vive en useChatSocket,
+  // compartido con VetMessagesSection (P2-6). Acá solo registramos los listeners.
+  const { socketConnected } = useChatSocket((socket) => {
+    const onConnect = () => {
+      const active = activeConsRef.current;
+      if (active) joinConsultation(active.id);
+      invalidateConsultations();
+      if (active) {
+        fetchMsgs(active.id);
+        fetchPrescriptions(active.id);
       }
     };
-  }, [fetchCons, fetchMsgs, fetchPrescriptions]);
+    socket.on("connect", onConnect);
+    socket.on("message:new", (msg: Message) => {
+      const active = activeConsRef.current;
+      if (active && msg.consultationId === active.id) {
+        applyMessageEcho(active.id, msg);
+        setMessages(getCachedMessages(active.id) ?? []);
+        // El mensaje ya llegó (echo del socket): el botón deja de
+        // mostrar "enviando" aunque el POST REST todavía no responda.
+        setIsSending(false);
+      }
+    });
+    socket.on("consultation:updated", (updated: Consultation) => {
+      updateCachedConsultation(updated);
+      patchConsultations((prev) =>
+        prev.map((c) => (c.id === updated.id ? updated : c))
+      );
+      const active = activeConsRef.current;
+      if (active?.id === updated.id) setActiveCons(updated);
+    });
+    socket.on("consultation:new", () => invalidateConsultations());
+    socket.on("prescription:new", (prescription: Prescription) => {
+      const active = activeConsRef.current;
+      if (active && prescription.consultationId === active.id) {
+        upsertPrescription(active.id, prescription);
+        setPrescriptions(getCachedPrescriptions(active.id) ?? []);
+      }
+    });
+    socket.on("notification:new", () => invalidateConsultations());
+    return () => {
+      socket.off("connect");
+      socket.off("message:new");
+      socket.off("consultation:updated");
+      socket.off("consultation:new");
+      socket.off("prescription:new");
+      socket.off("notification:new");
+    };
+  }, []);
 
   // Lista inicial: la caché ya la hidrató en el primer render; acá solo se
   // refresca en segundo plano. Sin polling mientras el socket está vivo.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch de datos al montar
     fetchCons();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch de datos al montar
+    setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fetch de datos al montar
   }, []);
 

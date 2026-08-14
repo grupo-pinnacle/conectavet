@@ -144,6 +144,9 @@ backend/
 | `/api/notifications` | GET | Sí | `{ items, unreadCount }`
 | `/api/notifications/token` | POST, DELETE | Sí | `{ token, platform }`
 | `/api/notifications/:id/read` | PATCH | Sí | Marca leída
+| `/api/calls/:id/token` | POST | Sí (participante) | Token de LiveKit para la videollamada de la consulta `:id` (app móvil)
+| `/api/users/admin/users` | POST | ADMIN | Crea usuarios `VET`/`ADMIN` (el registro público `/register` solo crea `CLIENT`)
+| `/api/users/admin-only` | GET | ADMIN | Debug: devuelve el payload del JWT del usuario (no exponer en prod)
 
 > ⚠️ `/auth/me` existe en `auth.routes` y `GET /api/users/me` en `users.routes`; `PATCH /api/users/me` es el toggle online/offline (`{ isOnline }`) que dispara la auto-asignación de la cola.
 > ⚠️ `/api/auth/logout` ahora **revoca la sesión**: incrementa `tokenVersion` y todos los JWT emitidos antes quedan invalidados (access 7d y refresh 30d).

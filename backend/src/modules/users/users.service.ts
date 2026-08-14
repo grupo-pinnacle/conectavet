@@ -76,7 +76,9 @@ export async function updateProfile(
 export async function updateAvailability(userId: string, isOnline: boolean) {
   const user = await prisma.user.update({
     where: { id: userId },
-    data: { isOnline },
+    // Al ponerse online registramos lastSeen para que la presencia no quede
+    // "pegada" si se cae la conexión (P3-4).
+    data: { isOnline, lastSeen: isOnline ? new Date() : undefined },
   });
 
   // Invalidar caches de vets disponibles/lista al cambiar el estado

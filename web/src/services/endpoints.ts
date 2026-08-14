@@ -88,7 +88,12 @@ export async function getMessages(id: string): Promise<Message[]> {
 }
 
 export async function sendMessage(id: string, content: string): Promise<Message> {
-  const res = await api.post(`/api/consultations/${id}/messages`, { content });
+  // clientMsgId estable para dedup: si el POST se reintenta (error de red antes
+  // de la respuesta) enviamos el mismo id y el backend descarta el duplicado (P3-6).
+  const clientMsgId = typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `c-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const res = await api.post(`/api/consultations/${id}/messages`, { content, clientMsgId });
   return res.data.data;
 }
 

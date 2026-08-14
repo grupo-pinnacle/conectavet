@@ -1,5 +1,6 @@
-import { Image, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { AuthImage } from '../AuthImage';
 import { useTheme, radius, fontSizes, fontWeights } from '@/theme';
 
 interface AvatarProps {
@@ -16,10 +17,10 @@ export function Avatar({ uri, name, size = 40, icon }: AvatarProps) {
 
   if (uri) {
     return (
-      <Image
-        source={{ uri }}
+      <AuthImage
+        uri={uri}
         style={{ width: size, height: size, borderRadius: radius.full }}
-        accessibilityRole="image"
+        resizeMode="cover"
         accessibilityLabel={name ? `Foto de ${name}` : 'Foto de perfil'}
       />
     );
@@ -44,6 +45,8 @@ export function Avatar({ uri, name, size = 40, icon }: AvatarProps) {
     );
   }
 
+  const initial = name && name.trim().length > 0 ? name.trim()[0] : '?';
+
   return (
     <View
       style={{
@@ -58,7 +61,7 @@ export function Avatar({ uri, name, size = 40, icon }: AvatarProps) {
       accessibilityLabel={name ? `Inicial de ${name}` : 'Avatar'}
     >
         <Text style={{ color: c.white, fontSize, fontWeight: fontWeights.bold }}>
-        {(name ?? '?')[0].toUpperCase()}
+        {initial.toUpperCase()}
       </Text>
     </View>
   );

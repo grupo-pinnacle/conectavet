@@ -79,6 +79,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const res = await api.post("/api/auth/login", { email, password });
     const { user: userData, accessToken } = res.data.data;
     setApiToken(accessToken ?? null);
+    // Reflejamos el token real en memoria (no es HttpOnly) para que el contexto
+    // no mienta con `token: null` (P3-14). El JWT de sesión vive en cookie.
+    setToken(accessToken ?? null);
     setAuth(normalizeUser(userData));
   }, [setAuth]);
 
@@ -88,6 +91,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const res = await api.post("/api/auth/register", { firstName, lastName: rest.join(" ") || undefined, email, password, role: roleMap[role] || role });
     const { user: userData, accessToken } = res.data.data;
     setApiToken(accessToken ?? null);
+    setToken(accessToken ?? null);
     setAuth(normalizeUser(userData));
   }, [setAuth]);
 

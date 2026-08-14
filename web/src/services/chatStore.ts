@@ -10,6 +10,9 @@ const messagesCache = new Map<string, Message[]>();
 const prescriptionsCache = new Map<string, Prescription[]>();
 let consultationsCache: Consultation[] | null = null;
 let lastConsultationId: string | null = null;
+// Si llega un update de consulta antes de haber cargado la lista (caché fría),
+// lo guardamos acá para no perderlo (P3-13) y lo aplicamos al hidratar.
+let pendingConsultationUpdates: Map<string, Consultation> | null = null;
 const listeners = new Set<() => void>();
 
 function notify() {
@@ -21,12 +24,21 @@ export function getCachedConsultations(): Consultation[] | undefined {
 }
 
 export function setCachedConsultations(consultations: Consultation[]) {
-  consultationsCache = consultations;
+  // Aplicamos los updates que llegaron con la caché fría (P3-13).
+  consultationsCache = consultations.map(
+    (c) => pendingConsultationUpdates?.get(c.id) ?? c
+  );
+  pendingConsultationUpdates = null;
   notify();
 }
 
 export function updateCachedConsultation(updated: Consultation) {
-  if (!consultationsCache) return;
+  if (!consultationsCache) {
+    // Caché fría: guardamos el update para no perderlo hasta que se hidrate.
+    if (!pendingConsultationUpdates) pendingConsultationUpdates = new Map();
+    pendingConsultationUpdates.set(updated.id, updated);
+    return;
+  }
   consultationsCache = consultationsCache.map((c) =>
     c.id === updated.id ? updated : c
   );

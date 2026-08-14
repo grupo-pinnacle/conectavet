@@ -50,6 +50,18 @@ function RootRedirect() {
   return <Navigate to="/dashboard" replace />;
 }
 
+function NotFoundPage() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-teal-50 to-white gap-4 px-6 text-center">
+      <h1 className="text-3xl font-extrabold text-teal-700">404</h1>
+      <p className="text-body text-slate-600">La página que buscás no existe.</p>
+      <a href="/" className="text-teal-700 underline font-medium">
+        Volver al inicio
+      </a>
+    </div>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
@@ -58,7 +70,14 @@ function App() {
           <Route path="/" element={<RootRedirect />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/call" element={<CallPage />} />
+          <Route
+            path="/call"
+            element={
+              <ProtectedRoute>
+                <CallPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/dashboard"
             element={
@@ -75,6 +94,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

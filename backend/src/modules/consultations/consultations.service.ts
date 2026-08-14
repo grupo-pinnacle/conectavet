@@ -220,16 +220,23 @@ export async function completeConsultation(
   consultationId: string,
   notes?: string
 ) {
-  const consultation = await prisma.consultation.findUnique({
-    where: { id: consultationId },
-  });
-  if (!consultation) throw new NotFoundError('Consulta no encontrada');
-  if (!VALID_TRANSITIONS[consultation.status].includes('COMPLETED')) {
-    throw new ConflictError(`No se puede cerrar — la consulta está en estado ${consultation.status}`);
-  }
-  return prisma.consultation.update({
-    where: { id: consultationId },
+  // Actualización atómica: cerramos la consulta SÓLO si está ACTIVE. Así
+  // evitamos la carrera (TOCTOU) entre leer el estado y actualizarlo, que
+  // podía pisar un estado ya finalizado. Si no había fila ACTIVE, avisamos.
+  const result = await prisma.consultation.updateMany({
+    where: { id: consultationId, status: 'ACTIVE' },
     data: { status: 'COMPLETED', notes, endedAt: new Date() },
+  });
+  if (result.count === 0) {
+    const current = await prisma.consultation.findUnique({
+      where: { id: consultationId },
+      select: { status: true },
+    });
+    if (!current) throw new NotFoundError('Consulta no encontrada');
+    throw new ConflictError(`No se puede cerrar — la consulta está en estado ${current.status}`);
+  }
+  return prisma.consultation.findUniqueOrThrow({
+    where: { id: consultationId },
   });
 }
 
@@ -340,6 +347,7 @@ export async function saveMessage(data: {
       senderId: data.senderId,
       content: hasContent ? data.content!.trim() : '',
       attachmentUrl: hasAttachment ? data.attachmentUrl : null,
+      clientMsgId: data.clientMsgId ?? null,
     },
     include: { sender: { select: { id: true, email: true, role: true } } },
   });
@@ -438,13 +446,26 @@ export async function createReview(data: {
     throw new ConflictError('Esta consulta ya fue calificada');
   }
 
-  return prisma.review.create({
-    data: {
-      rating: data.rating,
-      comment: data.comment,
-      consultationId: data.consultationId,
-      clientId: data.clientId,
-      vetId: consultation.vetId,
-    },
-  });
+  // Carrera (TOCTOU): dos requests pueden pasar la verificación de "ya
+  // calificada" a la vez. Si llegan concurrentes, el unique en consultationId
+  // lanza P2002. En vez de un 500 genérico, devolvemos 409 claro (ConflictError).
+  try {
+    return await prisma.review.create({
+      data: {
+        rating: data.rating,
+        comment: data.comment,
+        consultationId: data.consultationId,
+        clientId: data.clientId,
+        vetId: consultation.vetId,
+      },
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      throw new ConflictError('Esta consulta ya fue calificada');
+    }
+    throw error;
+  }
 }

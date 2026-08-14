@@ -35,6 +35,7 @@ const sendMessageSchema = z
   .object({
     content: z.string().max(2000, 'El mensaje no puede superar los 2000 caracteres').optional(),
     attachmentUrl: z.string().startsWith('/uploads/', 'Imagen adjunta inválida').optional(),
+    clientMsgId: z.string().max(100).optional(),
   })
   .refine((data) => data.content || data.attachmentUrl, {
     message: 'El mensaje no puede estar vacío',
@@ -300,6 +301,7 @@ export async function sendMessageController(req: RequestWithUser, res: Response)
       senderId: req.user.userId,
       content: parsed.data.content,
       attachmentUrl: parsed.data.attachmentUrl,
+      clientMsgId: parsed.data.clientMsgId,
     });
     try {
       const io = getIO();

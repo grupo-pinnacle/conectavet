@@ -44,6 +44,7 @@ model User {
   emailVerifyExpires   DateTime?  @map("email_verify_expires")
   passwordResetToken   String?    @map("password_reset_token")
   passwordResetExpires DateTime?  @map("password_reset_expires")
+  lastSeen             DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -124,6 +125,7 @@ model Message {
   sender         User         @relation(fields: [senderId], references: [id])
   content        String
   attachmentUrl  String?
+  clientMsgId    String?      @map("client_msg_id") @unique
   createdAt      DateTime     @default(now())
 
   @@index([consultationId, createdAt])

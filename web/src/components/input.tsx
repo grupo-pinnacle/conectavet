@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes } from "react";
+import { useId, type InputHTMLAttributes } from "react";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement | HTMLTextAreaElement> {
   label?: string;
@@ -12,7 +12,12 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement | HTMLTextArea
 export default function Input({
   label, error, hint, leftIcon, rightIcon, multiline, className = "", id, ...rest
 }: InputProps) {
-  const inputId = id || label?.toLowerCase().replace(/\s+/g, "-");
+  // Siempre hay un id estable (P3-8): sin esto, cuando no hay label el input
+  // quedaba sin id y la etiqueta no se asociaba correctamente (accesibilidad).
+  const generatedId = useId();
+  const inputId = id || label?.toLowerCase().replace(/\s+/g, "-") || generatedId;
+  const errorId = `${inputId}-error`;
+  const hintId = `${inputId}-hint`;
 
   return (
     <div className="w-full mb-3">
@@ -33,6 +38,8 @@ export default function Input({
         {multiline ? (
           <textarea
             id={inputId}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : hint ? hintId : undefined}
             className={[
               "w-full rounded-lg px-4 py-3 text-input text-ink",
               "border-2 transition-all duration-fast",
@@ -49,6 +56,8 @@ export default function Input({
         ) : (
           <input
             id={inputId}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : hint ? hintId : undefined}
             className={[
               "w-full rounded-lg px-4 py-3 text-input text-ink",
               "border-2 transition-all duration-fast",
@@ -70,10 +79,10 @@ export default function Input({
         )}
       </div>
       {hint && !error && (
-        <p className="mt-1 text-label text-slate-500">{hint}</p>
+        <p id={hintId} className="mt-1 text-label text-slate-500">{hint}</p>
       )}
       {error && (
-        <p className="mt-1 text-label text-danger flex items-center gap-1">
+        <p id={errorId} role="alert" className="mt-1 text-label text-danger flex items-center gap-1">
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>

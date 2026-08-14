@@ -1,6 +1,5 @@
 import { Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
 import { AuthImage } from './AuthImage';
 import type { ChatMessage } from '@/types';
@@ -39,17 +38,16 @@ export function ChatBubble({ message, isOwn = false, senderName = 'Veterinario' 
 
   if (!role || (role !== 'CLIENT' && role !== 'VET' && role !== 'ADMIN')) {
     return (
-      <Animated.View entering={FadeInUp.duration(200).springify()} style={{ alignItems: 'center', marginVertical: spacing.xs }}>
+      <View style={{ alignItems: 'center', marginVertical: spacing.xs }}>
         <View style={{ backgroundColor: c.borderLight, paddingHorizontal: spacing.lg, paddingVertical: spacing.xs, borderRadius: radius.full }}>
           <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted, fontStyle: 'italic' }}>{message.content}</Text>
         </View>
-      </Animated.View>
+      </View>
     );
   }
 
   return (
-    <Animated.View
-      entering={FadeInUp.duration(200).springify().damping(24).stiffness(200)}
+    <View
       style={{
         marginVertical: 3,
         flexDirection: isOwn ? 'row-reverse' : 'row',
@@ -152,6 +150,6 @@ export function ChatBubble({ message, isOwn = false, senderName = 'Veterinario' 
           </View>
         </View>
       </View>
-    </Animated.View>
+    </View>
   );
 }

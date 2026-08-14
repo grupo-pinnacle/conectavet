@@ -1,7 +1,8 @@
 import { memo } from 'react';
-import { Image, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Card, Badge } from './ui';
+import { AuthImage } from './AuthImage';
 import { useTheme, spacing, radius, fontSizes, fontWeights, speciesIcon, speciesLabel } from '@/theme';
 import { formatAge } from '@/utils/format';
 import type { Pet } from '@/types';
@@ -35,7 +36,12 @@ export const PetCard = memo(function PetCard({ pet, onPress }: PetCardProps) {
             }}
           >
             {pet.photoUrl ? (
-              <Image source={{ uri: pet.photoUrl }} style={{ width: 96, height: 96 }} accessibilityRole="image" accessibilityLabel={`Foto de ${pet.name}`} />
+              <AuthImage
+                uri={pet.photoUrl}
+                style={{ width: 96, height: 96 }}
+                resizeMode="cover"
+                accessibilityLabel={`Foto de ${pet.name}`}
+              />
             ) : (
               <MaterialCommunityIcons name={iconName} size={40} color={c.primary} />
             )}

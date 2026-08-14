@@ -239,3 +239,75 @@ Entre Sprint 12–13 dedicar un bloque de **bugs de auditoría** a la correcció
 5. **QA/PM**: actualizar `INTEGRATION.md` (documenta `/api/queue/*`, IA, LiveKit y refresh por cookie que no existen en el código actual) y re-testear los flujos de cola con el toggle web + feedback mobile.
 
 La tabla de scores v4 con los números de esta auditoría está en `FAANG_AUDIT.md`.
+
+---
+
+## Hallazgos P3 (resueltos el 13-Ago-2026)
+
+Segunda tanda de revisión (bugs de robustez, concurrencia, accesibilidad y hardening de
+media/presencia). Cada ítem indica el cambio real y dónde vive.
+
+### Backend
+- **P3-1 (completeConsultation atómico):** antes hacía `findUnique` y luego `update`
+  (carrera TOCTOU que podía pisar un estado ya finalizado). Ahora usa `updateMany` con
+  `WHERE { id, status: 'ACTIVE' }`; si no afectó filas avisa con `ConflictError`.
+  `backend/src/modules/consultations/consultations.service.ts`.
+- **P3-2 (review duplicado → 500):** `createReview` ya chequeaba existencia, pero dos
+  requests concurrentes podían romper el unique y tirar `P2002` → 500. Ahora ese caso
+  devuelve `409 ConflictError` claro. Mismo archivo.
+- **P3-3 (Pet soft-delete):** `Pet` ya tiene `deletedAt` (borrado lógico). El borrado
+  físico desde una mascota con historial está bloqueado por `onDelete: Restrict` en
+  `Consultation` → el repo debe usar el borrado lógico, no el físico. Documentado aquí.
+- **P3-4 (presencia frágil):** se agregó `User.lastSeen` (columna + migración
+  `20260815000000_presence_and_msg_dedup`) y se setea al ponerse online en
+  `updateAvailability`. Así el "online" no queda pegado si se cae la conexión.
+- **P3-5 (PushToken):** ya resuelto antes — `registerPushToken` usa `upsert` en lugar de
+  `insert`, por lo que un token repetido no rompe.
+- **P3-6 (dedup de mensajes durable):** `Message.clientMsgId` (columna + unique). El
+  gateway ahora descarta echoes con el mismo `clientMsgId` consulta+id (cubre multi-instancia,
+  no solo la memoria). El REST acepta `clientMsgId` y el web lo genera por mensaje
+  (`endpoints.sendMessage`). El mobile aún no envía mensajes (scaffold sin pantalla de chat).
+- **P3-18 (cuota de media):** `saveAttachment` ahora cuenta las subidas de las últimas 24h
+  por usuario y rechaza con `429` al superar 30; además re-valida el MIME. No reemplaza un
+  antivirus real (ver P3-19). `backend/src/modules/media/media.service.ts`.
+- **P3-20 (tests aislados):** el harness de tests ya crea un schema `test_*` dinámico, por
+  lo que no golpea la base de producción. Ya resuelto.
+
+### Web
+- **P3-7 (`/call` y 404):** `/call` ahora está detrás de `ProtectedRoute` y se agregó una
+  ruta `*` que renderiza un 404. `web/src/App.tsx`.
+- **P3-8 (a11y de inputs):** `Input` genera siempre un `id` estable (`useId`), marca
+  `aria-invalid`/`aria-describedby` y el error usa `role="alert"`. La app no tiene nav con
+  estados activos, así que `aria-current`/`aria-pressed` no aplicaban.
+- **P3-13 (caché de chat):** `updateCachedConsultation` ya no pierde updates cuando la lista
+  está fría (guarda pendientes y los aplica al hidratar). `message:new` siempre cachea el echo
+  por consulta, no solo la activa. `web/src/services/chatStore.ts` + `MessagesSection`/`VetMessagesSection`.
+- **P3-14 (token y visor de imagen):** `AuthContext.token` ahora refleja el token real en
+  memoria (antes siempre `null`, engañoso). `ImageViewer` solo cierra al tocar el fondo, no
+  al tocar la imagen.
+
+### Mobile
+- **P3-9 (dark mode):** `app.json` pasó de `userInterfaceStyle: "light"` a `"automatic"`.
+  Los helpers `rf()`/`fontScale`/`isReducedMotion` citados en la auditoría no existen en este
+  repo (no había código de theming reducido).
+- **P3-10 (Avatar):** `Avatar` con `name=''` crasheaba (`''[0].toUpperCase()`); ahora usa `'?'`
+  cuando el nombre está vacío. `setPendingImage` citado no existe en este scaffold.
+- **P3-11 (socket):** `connectSocket` ya no filtra/rega instancias viejas (reusa la del
+  singleton y espera la reconexión). Tras un refresh de token se llama `applySocketToken`,
+  que actualiza `socket.auth` y reconecta para que el handshake use el token nuevo.
+  `mobile/src/lib/socket.ts` + `api.ts`.
+- **P3-12 (chat / imágenes):** `ChatBubble` ya no anima cada ítem con `Animated.View`
+  (evita jank en `FlatList`); `PetCard` y `Avatar` usan `expo-image` (`AuthImage`) para
+  decodificar fuera del hilo de JS y cachear en disco.
+
+### Documentación
+- **P3-15 (conteos/provider/dominio/puerto):** se revisaron `TECH_REFERENCE.md`,
+  `PRODUCTION_DEPLOYMENT.md` y afines; no se encontraron las inconsistencias citadas
+  (119 vs 159 tests, Koyeb vs Railway, conectavet vs vetconnect, 3000 vs 3001). Sin cambios.
+- **P3-16 (`/uploads` y CDN):** `/uploads/*` está detrás de auth (Bearer/Session) y **no**
+  debe ponerse detrás de un CDN público sin firma; mantener autenticado. Decidido y documentado.
+- **P3-17 (ADR-004 / tokenVersion):** no existe un `ADR-004` en el repo. La revocación por
+  logout (`tokenVersion` en `User`, incrementado en `logout`) ya está implementada (S11).
+- **P3-19 (media en disco efímero):** en producción el disco del contenedor es efímero; se
+  recomienda mover los adjuntos a S3 / Cloudinary y servirlos con URL firmada. Pendiente de
+ 产品决策 (no se implementó en este ciclo).

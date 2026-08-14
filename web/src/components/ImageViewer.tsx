@@ -29,7 +29,10 @@ export default function ImageViewer({ src, alt, onClose }: ImageViewerProps) {
   return (
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4 animate-in fade-in duration-200"
-      onClick={onClose}
+      onClick={(e) => {
+        // Cerrar solo al tocar el fondo, no al tocar la imagen (P3-14).
+        if (e.target === e.currentTarget) onClose();
+      }}
       role="dialog"
       aria-modal="true"
       aria-label="Imagen en tamaño completo"

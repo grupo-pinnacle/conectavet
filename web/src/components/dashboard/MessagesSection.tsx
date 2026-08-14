@@ -198,9 +198,11 @@ export default function MessagesSection() {
     };
     socket.on("connect", onConnect);
     socket.on("message:new", (msg: Message) => {
+      // Siempre guardamos el echo en la caché de esa consulta, aunque no esté
+      // abierta ahora, para que esté caliente al abrirla (P3-13).
+      applyMessageEcho(msg.consultationId, msg);
       const active = activeConsRef.current;
       if (active && msg.consultationId === active.id) {
-        applyMessageEcho(active.id, msg);
         setMessages(getCachedMessages(active.id) ?? []);
         // El mensaje ya llegó (echo del socket): el botón deja de
         // mostrar "enviando" aunque el POST REST todavía no responda.

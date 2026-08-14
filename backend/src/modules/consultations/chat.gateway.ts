@@ -148,6 +148,21 @@ export async function setupChatSocket(httpServer: HttpServer) {
             return socket.emit('error', { message: 'La consulta no está activa. No podés enviar mensajes.' });
           }
 
+          // Dedup durable (P3-6): si el cliente ya envió este clientMsgId para
+          // esta consulta, devolvemos el mensaje existente en lugar de duplicar.
+          // Esto cubre reintentos y el caso multi-instancia (más allá del
+          // dedup en memoria de arriba).
+          if (data.clientMsgId) {
+            const existing = await prisma.message.findFirst({
+              where: { consultationId: data.consultationId, clientMsgId: data.clientMsgId },
+              include: { sender: { select: { id: true, email: true, role: true } } },
+            });
+            if (existing) {
+              if (typeof ack === 'function') ack({ message: existing, duplicated: true });
+              return;
+            }
+          }
+
           const message = await saveMessage({
             consultationId: data.consultationId,
             senderId: user.userId,

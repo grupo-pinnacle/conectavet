@@ -1,5 +1,6 @@
 import { Platform, Linking } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { mediaService } from '@/services';
 
 export async function requestMediaLibraryPermission(): Promise<boolean> {
   if (Platform.OS === 'web') return true;
@@ -24,25 +25,14 @@ export async function pickImage(): Promise<{ uri: string; mimeType?: string } | 
 }
 
 export async function uploadPetPhoto(localUri: string): Promise<string> {
-  const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  const preset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-
-  if (!cloudName || !preset) {
-    return localUri;
-  }
-
-  const form = new FormData();
-  form.append('file', {
+  // Siempre subimos la foto al backend (/media), que la guarda en /uploads y
+  // devuelve una URL relativa válida en cualquier dispositivo y en web.
+  // Antes caía a un file:// local si faltaba Cloudinary, lo que dejaba la
+  // photoUrl inválida fuera del dispositivo que la subió.
+  const res = await mediaService.upload({
     uri: localUri,
-    type: 'image/jpeg',
     name: `pet-${Date.now()}.jpg`,
-  } as unknown as Blob);
-  form.append('upload_preset', preset);
-
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-    method: 'POST',
-    body: form,
+    type: 'image/jpeg',
   });
-  const json = await res.json();
-  return json.secure_url as string;
+  return res.url;
 }

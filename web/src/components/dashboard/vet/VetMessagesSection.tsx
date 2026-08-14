@@ -25,7 +25,7 @@ import {
   getLastConsultationId,
   setLastConsultationId,
 } from "../../../services/chatStore";
-import { connectSocket, joinConsultation } from "../../../services/socket";
+import { connectSocket, joinConsultation, getSocket } from "../../../services/socket";
 import { MessageBubble } from "../MessageBubble";
 import VetPatientProfile from "./VetPatientProfile";
 import CallButton from "../../call/CallButton";
@@ -220,7 +220,7 @@ export default function VetMessagesSection() {
   useEffect(() => {
     let cancelled = false;
     let s: Awaited<ReturnType<typeof connectSocket>> | null = null;
-    connectSocket().then((socket) => {
+    const attach = (socket) => {
       if (cancelled) return;
       s = socket;
       setSocketConnected(socket.connected);
@@ -264,6 +264,13 @@ export default function VetMessagesSection() {
         }
       });
       socket.on("notification:new", () => fetchConsultations());
+    };
+    // Si el handshake inicial rechaza (timeout), los listeners no se registrarían
+    // y la pantalla quedaría ciega. Nos suscribimos igual al singleton: cuando
+    // el socket reconecta, el handler 'connect' vuelve a unir la sala y refresca.
+    connectSocket().then(attach).catch(() => {
+      const sock = getSocket();
+      if (sock) attach(sock);
     });
     return () => {
       cancelled = true;

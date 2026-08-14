@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { secureStorage } from '@/lib/secure-storage';
 import { disconnectSocket } from '@/lib/socket';
 import api from '@/lib/api';
+import { ApiError } from '@/types';
 import type { User, AuthResponse, LoginPayload, RegisterPayload } from '@/types';
 
 interface AuthState {
@@ -40,8 +41,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const me = await api.get<{ user: User }>('/auth/me');
       set({ user: me.user, isAuthenticated: true, isHydrated: true });
-    } catch (e: any) {
-      if (e?.response?.status === 401) {
+    } catch (e) {
+      // El interceptor normaliza el error de la API en ApiError (con .status),
+      // no en un AxiosError con .response.status. Por eso chequeamos la instancia.
+      if (e instanceof ApiError && e.status === 401) {
         await secureStorage.clearAll();
         set({ user: null, isAuthenticated: false });
       }

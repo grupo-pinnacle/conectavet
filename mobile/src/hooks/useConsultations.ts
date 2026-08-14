@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { consultationsService, type SendMessagePayload } from '@/services';
-import { connectSocket, joinConsultation, leaveConsultation } from '@/lib/socket';
+import { connectSocket, joinConsultation, leaveConsultation, getSocket } from '@/lib/socket';
 import type { ChatMessage, Consultation, CreateConsultationPayload, Prescription, RateConsultationPayload } from '@/types';
 
 export function useConsultationHistory(params?: { page?: number; limit?: number }) {
@@ -29,7 +29,9 @@ export function useConsultationPrescriptions(consultationId: string | undefined)
       (await consultationsService.getPrescriptions(consultationId!)) as Prescription[],
     enabled: Boolean(consultationId),
     staleTime: 30_000,
-    refetchInterval: 15_000,
+    // Solo poll mientras el socket NO está conectado: evita tráfico/batería
+    // duplicados con los eventos prescription:new en tiempo real.
+    refetchInterval: () => (getSocket()?.connected ? false : 15_000),
   });
 }
 

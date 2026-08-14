@@ -415,6 +415,15 @@ export async function createReview(data: {
   if (consultation.clientId !== data.clientId) {
     throw new ForbiddenError('Solo el cliente de la consulta puede calificarla');
   }
+  // Defensa en profundidad: el controller ya valida con Zod, pero el
+  // servicio no debe confiar en el caller. Rating entero 1–10 y comentario
+  // obligatorio (mínimo 10 caracteres).
+  if (!Number.isInteger(data.rating) || data.rating < 1 || data.rating > 10) {
+    throw new ConflictError('La calificación debe ser un entero del 1 al 10');
+  }
+  if (!data.comment || data.comment.trim().length < 10) {
+    throw new ConflictError('El comentario es obligatorio (mínimo 10 caracteres)');
+  }
   if (consultation.status !== 'COMPLETED') {
     throw new ConflictError('Solo se pueden calificar consultas finalizadas');
   }

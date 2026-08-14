@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { useRouter } from 'expo-router';
 import { notificationsService } from '@/services';
 
 Notifications.setNotificationHandler({
@@ -13,6 +14,10 @@ Notifications.setNotificationHandler({
 });
 
 export function usePushToken(enabled: boolean) {
+  const router = useRouter();
+  const lastNotificationResponse = Notifications.useLastNotificationResponse();
+
+  // Registro del token de push en el backend.
   useEffect(() => {
     if (!Platform.OS || Platform.OS === 'web') return;
 
@@ -40,4 +45,27 @@ export function usePushToken(enabled: boolean) {
       cancelled = true;
     };
   }, [enabled]);
+
+  // Al tocar una notificación, navegamos a la consulta (p.ej. "el vet respondió").
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as
+        | { consultationId?: string }
+        | undefined;
+      if (data?.consultationId) {
+        router.push(`/(app)/chat/${data.consultationId}`);
+      }
+    });
+    return () => sub.remove();
+  }, [router]);
+
+  // Arranque en frío: la app se abrió tocando la notificación.
+  useEffect(() => {
+    const data = lastNotificationResponse?.notification?.request.content.data as
+      | { consultationId?: string }
+      | undefined;
+    if (data?.consultationId) {
+      router.push(`/(app)/chat/${data.consultationId}`);
+    }
+  }, [lastNotificationResponse, router]);
 }

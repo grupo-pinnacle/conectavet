@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { randomUUID } from 'crypto';
 import { prisma } from '../../shared/prisma';
 import { clearCache } from '../../shared/cache';
 
@@ -36,9 +37,11 @@ function signAccessToken(user: { id: string; email: string; role: string; tokenV
 
 function signRefreshToken(userId: string, tokenVersion: number) {
   return jwt.sign(
-    { userId, type: 'refresh', tokenVersion },
+    { userId, type: 'refresh', tokenVersion, jti: randomUUID() },
     process.env.JWT_SECRET as string,
-    { expiresIn: '30d' }
+    // 7 días (era 30d). Ventana de exposición menor si un refresh se filtra;
+    // el usuario sigue logueado y el refresh rota en cada uso.
+    { expiresIn: '7d' }
   );
 }
 

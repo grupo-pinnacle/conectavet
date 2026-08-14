@@ -4,6 +4,9 @@
 >
 > **Grupo Pinnacle** — 6° 2da · Desarrollo de Apps · Camila Lambertucci & Walter Perez
 
+> [!IMPORTANT]
+> **Estado actual (14-ago-2026):** el proyecto pasó por auditorías P0→P3 que corrigieron seguridad (role fijo en registro, exposición de `password`, revocación de sesiones por `tokenVersion`, concurrencia en `completeConsultation`/review, dedup de mensajes, cuota de media) y UX/UI/a11y. Falta todavía: **rotar secretos y purgar historial git** (bloqueante de producción), endpoints de video (LiveKit server-side listo, cliente vía WebView), tests de WebSocket/authz/concurrencia, y observabilidad. Ver [`docs/CODE_AUDIT.md`](docs/CODE_AUDIT.md).
+
 ---
 
 ## Tabla de contenidos
@@ -32,8 +35,9 @@
 | **Frontend web** | React + Vite + TailwindCSS | React 19, Vite 8 |
 | **Mobile** | React Native + Expo | SDK 54 |
 | **Chat** | Socket.io | - |
-| **Deploy backend** | Railway | - |
+| **Deploy backend** | PaaS (Railway/Koyeb/Render — ver [`docs/DEPLOY.md`](docs/DEPLOY.md)) | - |
 | **Deploy web** | Vercel | - |
+| **Deploy mobile** | EAS Build (APK/IPA) | - |
 | **Metodología** | Scrumban (Trello/Notion) | - |
 
 ---
@@ -171,6 +175,13 @@ curl http://localhost:3001/health
 # → {"status":"ok","database":"connected","environment":"development"}
 ```
 
+> [!NOTE]
+> **Sincronizar la base de datos con el esquema (paso frecuente):** el desarrollo usa `prisma db push` (no versiona la estructura, pero deja la BD idéntica al `schema.prisma`). Si agregás columnas al schema y el backend falla con `P2022: column does not exist`, corré:
+> ```bash
+> cd backend && npx prisma db push
+> ```
+> Para producción se usan migraciones versionadas: `npx prisma migrate dev --name <cambio>` (genera la migración) y `npm start` aplica `prisma migrate deploy`.
+
 ---
 
 ## Sprint plan
@@ -215,6 +226,17 @@ curl http://localhost:3001/health
 | [`docs/CHANNEL_DECISION.md`](docs/CHANNEL_DECISION.md) | Estrategia web + mobile por rol |
 | [`docs/RUN_GUIDE.md`](docs/RUN_GUIDE.md) | Guía para correr el proyecto local |
 | [`backend/readme.md`](backend/readme.md) | Documentación técnica del backend + API |
+
+---
+
+## Estado y limitaciones conocidas
+
+- **Seguridad de borde (P0 pendiente):** rotar `JWT_SECRET` y credenciales de BD, y purgar el historial de git de los `.env`. Hasta entonces no es apto para producción real.
+- **Video (LiveKit):** el backend expone `POST /api/calls/:id/token` (mint de token LiveKit), pero el cliente mobile lanza una **WebView** de deep-link (`vetconnect://`) en lugar de usar el SDK de LiveKit. El flujo de videollamada no está completamente cableado en los frontends.
+- **Tests:** 159 tests de backend (10 archivos en `backend/src/__tests__`). **No hay tests de WebSocket/authz negativa/concurrencia ni tests de mobile/web.** Ver [`docs/CODE_AUDIT.md`](docs/CODE_AUDIT.md).
+- **Monorepo `packages/shared`:** existe pero **no es importado** por web ni mobile (0 imports). Los tipos se redefinen localmente. ADR-008 pendiente de adoptar.
+- **Media:** `/uploads` se sirve desde disco del contenedor (efímero en PaaS). Para producción, mover a S3/Cloudinary con URL firmada.
+- **Observabilidad:** solo `GET /health` + logs por consola. Sin métricas/trazas/alertas.
 
 ---
 

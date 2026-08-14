@@ -3,6 +3,15 @@
 > Auditoría completa de las 3 capas: **backend** (Express/Prisma), **web** (React+Vite) y **mobile** (Expo/RN).
 > Corresponde a Sprint 11 y es la referencia de la sección "Auditoría v4" de `FAANG_AUDIT.md`.
 
+> [!NOTE]
+> **Estado 14-ago-2026:** los hallazgos **P0 → P3** de esta auditoría fueron resueltos y commiteados
+> (commit `36d76f0`). Incluye: registro solo CLIENT, hash `password` en `getUserById`, revocación de
+> sesiones por `tokenVersion`, servir `/uploads` tras auth, bloqueo de rutas admin con `authorize()`,
+> concurrencia en `completeConsultation`/`createReview`, dedup de mensajes (`clientMsgId`), cuota de
+> media, y correcciones UX/a11y de web y mobile. **Pendiente (fuera de P3):** rotar secretos y purgar
+> git (P0 de borde), video LiveKit end-to-end, tests WS/authz/concurrencia, y observabilidad. Ver
+> `README.md` (Estado y limitaciones conocidas).
+
 ---
 
 ## Metodología
@@ -301,9 +310,17 @@ media/presencia). Cada ítem indica el cambio real y dónde vive.
   decodificar fuera del hilo de JS y cachear en disco.
 
 ### Documentación
-- **P3-15 (conteos/provider/dominio/puerto):** se revisaron `TECH_REFERENCE.md`,
-  `PRODUCTION_DEPLOYMENT.md` y afines; no se encontraron las inconsistencias citadas
-  (119 vs 159 tests, Koyeb vs Railway, conectavet vs vetconnect, 3000 vs 3001). Sin cambios.
+- **P3-15 (conteos/provider/dominio/puerto):** CORRECCIÓN — la auditoría integral posterior
+  **sí confirmó** estas inconsistencias. Se corrigen en esta pasada:
+  - Tests: los docs decían "119/9" y "155/155"; la realidad es **159 tests en 10 archivos**
+    (`app, auth, cache, calls, consultations, media, notifications, pets, users, utils`).
+  - Provider de deploy: `README` decía Railway, `DEPLOY.md`/`PRODUCTION_DEPLOYMENT.md`
+    recomiendan **Koyeb**; ahora `README` apunta a `DEPLOY.md` como fuente única (Koyeb recomendado).
+  - Dominio: `vetconnect` (código) vs `conectavet` (docs/nombre) — se mantiene `vetconnect`
+    en deep-links/esquema y se aclara en `README`.
+  - Puerto: `server.ts` usa `process.env.PORT || 3000` (comúnmente 3001 en dev).
+  - `TECH_REFERENCE.md`, `README.md`, `SPRINT_PLAN.md`, `MVP_SCOPE.md` y `FAANG_AUDIT.md`
+    fueron actualizados a los valores reales. Ver `docs/TECH_REFERENCE.md` (v6, 14-ago).
 - **P3-16 (`/uploads` y CDN):** `/uploads/*` está detrás de auth (Bearer/Session) y **no**
   debe ponerse detrás de un CDN público sin firma; mantener autenticado. Decidido y documentado.
 - **P3-17 (ADR-004 / tokenVersion):** no existe un `ADR-004` en el repo. La revocación por

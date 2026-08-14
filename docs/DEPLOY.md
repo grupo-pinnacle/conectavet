@@ -17,14 +17,16 @@
 
 ---
 
-## Backend — Railway (activo, vía CI/CD)
+## Backend — Proveedor de deploy
 
-El pipeline actual (`backend` y docs README) deploya a **Railway** automáticamente desde GitHub Actions al pushear a `main`:
+> **Fuente única de verdad:** el backend se puede deployar en cualquier PaaS que corra Node. El pipeline documentado en `README.md` y en la sección de abajo usa **Railway vía CI/CD** como configuración activa. **Koyeb** se recomienda como alternativa gratis (always-on 1GB RAM, HTTPS automático). Ambos son válidos; no son mutuamente excluyentes.
+
+El pipeline activo (`backend` y docs README) deploya a **Railway** automáticamente desde GitHub Actions al pushear a `main`:
 `push a main → tests (unit + integration + tsc) → build web → railway up --service conectavet-api → smoke test /health`.
 
-> Abajo se deja la opción alternativa **Koyeb** (si se prefiere otro proveedor gratis):
+> Abajo se deja la opción **Koyeb** (alternativa gratis recomendada):
 
-## Backend — Opción alternativa: Koyeb (gratis)
+## Backend — Opción: Koyeb (gratis)
 
 ### Por qué Koyeb
 

@@ -35,7 +35,7 @@
 
 | Feature | Sprint estimado | Nota | Estado |
 |---------|----------------|------|--------|
-| **LiveKit (videollamada)** | Post-MVP (S11+) | Código eliminado del proyecto MVP. Se reemplazó por chat de texto. | — |
+| **LiveKit (videollamada)** | Post-MVP (S11+) | El backend expone `POST /api/calls/:id/token` (mint de token LiveKit) y el SDK `@livekit/server-sdk` está en deps. El **cliente** mobile lanza una WebView de deep-link (`vetconnect://`) en lugar de usar el SDK de LiveKit; el flujo de videollamada no está completo en los frontends. El MVP usó chat de texto como canal principal. | 🟡 Parcial |
 | **Cola de espera automática** | Post-MVP (S11) | Auto-asignación de `WAITING` al ponerse online un vet (S11, backend + web). | ✅ S11 |
 | **Online/Offline del médico** | Post-MVP (S11) | Toggle en la web del médico con feedback de error + sync por socket. | ✅ S11 backend + web + mobile |
 | **Historial clínico completo** | Post-MVP (S12+) | Se muestra historial básico de consultas anteriores. | — |

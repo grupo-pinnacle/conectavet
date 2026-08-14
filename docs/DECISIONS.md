@@ -78,6 +78,9 @@
 
 **Consecuencias:** + Tipos unificados (cambio en un solo lugar), + Eliminación de duplicación, - Dependencia de estructura de monorepo. Los workspaces están configurados pero el equipo debe recordar `npm install` desde la raíz, no desde los subdirectorios.
 
+> [!WARNING]
+> **ADR-008 no adoptado en la práctica:** aunque el paquete existe, **web y mobile no lo importan** (0 imports reales de `@conectavet/shared`). Los tipos `ApiResponse`, `JwtPayload`, `User`, `Pet` se siguen redefiniendo localmente en cada capa. La "eliminación de duplicación" aún no ocurrió. Pendiente aplicar: reexportar desde `packages/shared` y reemplazar los tipos locales (`backend/src/lib/types/index.ts` ya re-exporta de shared, pero web/mobile no lo consumen).
+
 ---
 
 ## ADR-009: Chat de texto con Socket.io + PostgreSQL

@@ -1,7 +1,7 @@
 # VetConnect — Referencia Técnica Completa
 
 > Documento definitivo del proyecto. Explica cada archivo, cada carpeta, y cómo funciona todo.
-> **Última actualización:** 11 de agosto, 2026 (v5 — Sprint 13 backend cerrado + docs al día)
+> **Última actualización:** 14 de agosto, 2026 (v6 — post auditorías P0→P3; correcciones de seguridad, concurrencia y a11y aplicadas)
 
 ---
 
@@ -96,7 +96,7 @@ backend/
 │   │   ├── middlewares/
 │   │   │   └── auth.middleware.ts  # authenticate() (valida tokenVersion) + authorize(roles)
 │   │   └── types/index.ts     # JwtPayload, ApiResponse (re-export de packages/shared)
-│   └── __tests__/             # 119 tests (auth, pets, consultations, users, media, notifications, ...)
+│   └── __tests__/             # 159 tests (auth, pets, consultations, users, media, notifications, calls, cache, app, utils)
 ├── .env                       # ⚠️ NO versionado (gitignored); copiar .env.example
 └── package.json               # postinstall: prisma generate
 ```
@@ -105,14 +105,16 @@ backend/
 
 | Modelo | Campos clave |
 |--------|-------------|
-| `User` | id, email, password (hash), firstName, lastName, phone, role (CLIENT/VET/ADMIN), isOnline, **tokenVersion** (revocación de sesiones) |
-| `Pet` | id, name, species, breed, age, weight, weightKg, sex, birthDate, allergies, ownerId, photoUrl, deletedAt, isDeceased |
+| `User` | id, email (único), password (hash), firstName, lastName, phone, role (CLIENT/VET/ADMIN), isOnline, **tokenVersion** (revocación de sesiones), lastSeen, isEmailVerified, emailVerifyToken, emailVerifyExpires, passwordResetToken, passwordResetExpires |
+| `Pet` | id, name, species, breed, age, weight, weightKg, sex, birthDate, allergies, chronicConditions, microchip, ownerId, photoUrl, deletedAt (soft delete), isDeceased |
 | `Consultation` | id, clientId, vetId (nullable), petId, status (WAITING/ACTIVE/COMPLETED/CANCELLED), notes, startedAt, endedAt |
-| `Message` | id, consultationId, senderId, content, **attachmentUrl**, createdAt |
+| `Message` | id, consultationId, senderId, content, **attachmentUrl**, **clientMsgId** (único, dedup), createdAt |
 | `Prescription` | id, consultationId, vetId, content, createdAt |
 | `Attachment` | id, uploaderId, url (/uploads/…), mimeType, size, createdAt |
 | `PushToken` | id, userId, token (único), platform, createdAt |
 | `Notification` | id, userId, type, title, body, data (Json), readAt, createdAt |
+| `Review` | id, consultationId (único), clientId, vetId, rating (1–10), comment, createdAt |
+| `FavoriteVet` | id, clientId, vetId, createdAt |
 
 > ✅ **Migraciones alineadas al schema** (resuelto en S13): la migración correctiva `20260810000000_sprint13_align` re-agrega `isOnline`, crea `messages`/`prescriptions`/`attachments`/`push_tokens`/`notifications`, hace `vetId` nullable y agrega el enum `CANCELLED`; `20260812000000_session_revocation` agrega `tokenVersion`. `prisma migrate deploy` ya replica el schema en prod.
 
@@ -125,7 +127,13 @@ backend/
 | `/api/auth/refresh` | POST | No |
 | `/api/auth/logout` | POST | Sí |
 | `/api/auth/me` | GET | Sí |
+| `/api/auth/forgot-password` | POST | No |
+| `/api/auth/reset-password` | POST | No |
+| `/api/auth/verify-email` | GET | No |
 | `/api/users/me` | GET, PATCH | Sí |
+| `/api/users/me/availability` | PATCH | VET/ADMIN | Toggle online/offline (dispara auto-asignación de cola) |
+| `/api/users/favorites` | GET | Sí |
+| `/api/users/vets/:id/favorite` | POST, DELETE | Sí |
 | `/api/users/vets` | GET | Sí |
 | `/api/pets` | GET, POST | Sí |
 | `/api/pets/managed` | GET | Sí |
@@ -140,17 +148,21 @@ backend/
 | `/api/consultations/:id/complete` | PATCH | VET/ADMIN |
 | `/api/consultations/:id/messages` | GET, POST | Sí (participante) |
 | `/api/consultations/:id/prescriptions` | GET (part.), POST (VET) | Sí |
-| `/api/media` | POST (multipart `file`) | Sí | Estático `GET /uploads/:file`
+| `/api/consultations/:id/rating` | POST | CLIENT (dueño de la consulta) |
+| `/api/media` | POST (multipart `file`) | Sí | Estático `GET /uploads/:file` (requiere auth)
 | `/api/notifications` | GET | Sí | `{ items, unreadCount }`
 | `/api/notifications/token` | POST, DELETE | Sí | `{ token, platform }`
 | `/api/notifications/:id/read` | PATCH | Sí | Marca leída
-| `/api/calls/:id/token` | POST | Sí (participante) | Token de LiveKit para la videollamada de la consulta `:id` (app móvil)
+| `/api/calls/:id/token` | POST | Sí (participante) | Mint de token **LiveKit** para la videollamada de la consulta `:id` (app móvil) |
 | `/api/users/admin/users` | POST | ADMIN | Crea usuarios `VET`/`ADMIN` (el registro público `/register` solo crea `CLIENT`)
 | `/api/users/admin-only` | GET | ADMIN | Debug: devuelve el payload del JWT del usuario (no exponer en prod)
 
 > ⚠️ `/auth/me` existe en `auth.routes` y `GET /api/users/me` en `users.routes`; `PATCH /api/users/me` es el toggle online/offline (`{ isOnline }`) que dispara la auto-asignación de la cola.
 > ⚠️ `/api/auth/logout` ahora **revoca la sesión**: incrementa `tokenVersion` y todos los JWT emitidos antes quedan invalidados (access 7d y refresh 30d).
 > ⚠️ `POST /api/consultations/:id/messages` y `message:send` (socket) solo aceptan mensajes en consultas `ACTIVE`; en `WAITING` devuelven 409 (`ConflictError`).
+> ⚠️ `completeConsultation` es **atómico** (`updateMany` status + calificación) para evitar condiciones de carrera; `createReview` devuelve 409 si ya existe la calificación (`P2022`/`P2002`).
+> ⚠️ Dedup de mensajes: `Message.clientMsgId` es único; reenvíos (gateway socket y `POST /messages`) devuelven 200 con el mensaje existente en lugar de duplicar.
+> ⚠️ `/api/media` tiene cuota diaria por usuario (429 al superarla) y solo admite imágenes/videos; los archivos se guardan en `/uploads` del contenedor (efímero en PaaS).
 
 ### Media (imágenes) y Notificaciones push (S12)
 - `POST /api/media` solo imágenes (jpeg/png/webp/gif, máx 5 MB); responde 201 `{ id, url: /uploads/…, mimeType, size }`. Los archivos se sirven desde `GET /uploads/*` (estático, gitignoreado).
@@ -158,8 +170,15 @@ backend/
 - Tipos de evento (push + bandeja): `consultation_new`, `consultation_assigned`, `consultation_completed`, `message`, `prescription_new`.
 - Push por API de Expo (best-effort); `EXPO_PUSH_DISABLED=true` desactiva el envío real (usado en tests).
 
+> ⚠️ **`packages/shared` no se adoptó:** el paquete npm workspaces existe pero **web y mobile no lo importan** (0 imports reales). Los tipos (`ApiResponse`, `JwtPayload`) se redefinen localmente. ADR-008 sigue pendiente de aplicar.
+
+### Sincronización de la base de datos en desarrollo
+
+- El desarrollo usa `npx prisma db push` para dejar la BD idéntica al `schema.prisma` (sin versionar estructura). Si el backend arranca con `P2022: column does not exist`, ejecutá `npx prisma db push` en `backend/`.
+- Para producción se generan migraciones versionadas: `npx prisma migrate dev --name <cambio>` y el arranque aplica `prisma migrate deploy` (`npm start`).
+
 ### Tests
-**119 tests** en 9 archivos con Jest + supertest. Usan schema `test_` dinámico en Supabase.
+**159 tests** en 10 archivos (`app, auth, cache, calls, consultations, media, notifications, pets, users, utils`) con Jest + supertest. Usan schema `test_` dinámico en Supabase. **No hay tests de WebSocket, authz negativa, ni concurrencia.**
 
 ---
 

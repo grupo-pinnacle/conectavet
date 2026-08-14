@@ -2,6 +2,9 @@
 
 > **Calendario:** 2 sprints por semana | **Inicio:** 15 de junio | **MVP:** 20 de julio | **Fin:** 5 de septiembre (buffer hasta oct)
 
+> [!NOTE]
+> **Conteo actual de tests:** el backend tiene **159 tests en 10 archivos** (`backend/src/__tests__`: `app, auth, cache, calls, consultations, media, notifications, pets, users, utils`). Los conteos citados por sprint (108/108, 149/149, 155/155, 119/119) son *snapshots* de esa fecha, no el total actual. No hay tests de WebSocket, authz negativa, ni concurrencia.
+
 ---
 
 ## Resumen ejecutivo

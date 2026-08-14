@@ -5,6 +5,8 @@
 
 ---
 
+> ✅ **Hallazgos P0→P3 de `CODE_AUDIT.md` resueltos (14-ago, commit `36d76f0`):** registro solo `CLIENT`, `password` oculto en respuestas, revocación de sesiones por `tokenVersion`, `/uploads` tras auth, rutas admin con `authorize()`, concurrencia en `completeConsultation`/`createReview`, dedup de mensajes (`clientMsgId`), cuota de media y correcciones UX/a11y. **Sigue bloqueante de borde:** rotar secretos + purgar git (ítems 3–5 abajo). El `userInterfaceStyle` de `app.json` volvió a `light` (la app se veía "en negro" con `automatic` + modo oscuro del SO).
+
 ## 0. Checklist pre-lanzamiento (leer primero)
 
 Estos ítems son **bloqueantes** antes de cualquier build de producción. La mayoría ya están hechos (S13) pero varios siguen pendientes manualmente.
@@ -21,6 +23,9 @@ Estos ítems son **bloqueantes** antes de cualquier build de producción. La may
 | 8 | Almacenamiento de imágenes persistente (no disco efímero) | ⚠️ **pendiente recomendado** | Cloudinary/S3 |
 | 9 | Rate limiting en `/register` y `/refresh` | ✅ hecho (S16) | `backend/src/app.ts` |
 | 10 | Mensaje de registro genérico (anti-enumeración) | ✅ hecho (S16) | `auth.controller.ts` |
+| 11 | Adoptar `packages/shared` (web/mobile no lo importan: 0 imports) | ⚠️ pendiente | `ADR-008` / `DECISIONS.md` |
+| 12 | CORS de WebSocket restrictivo (ahora `*`; validar origen en `socket.ts`) | ⚠️ pendiente | `mobile/src/lib/socket.ts` |
+| 13 | Video LiveKit end-to-end (cliente usa WebView, no el SDK) | ⚠️ pendiente | `mobile/src/screens/CallScreen.tsx` |
 
 > **Nota sobre el registro de veterinarios:** el backend ignora el campo `role` y siempre crea cuentas `CLIENT`. El alta de `VET` es manual (directo en BD o panel admin). La web ya advierte esto en el selector. No se debe prometer "registro de veterinarios" en marketing hasta implementar el flujo.
 

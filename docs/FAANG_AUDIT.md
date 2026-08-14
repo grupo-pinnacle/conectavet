@@ -2,6 +2,7 @@
 
 > Evaluación del proyecto contra estándares de ingeniería de FAANG.
 > **Fecha:** 6 de agosto, 2026 | **Versión:** v5 — Post Sprint 12 (Imágenes + Notificaciones)
+> **Actualización:** 14 de agosto, 2026 | **Versión:** v6 — Post auditorías P0→P3 (ver [`CODE_AUDIT.md`](./CODE_AUDIT.md), commit `36d76f0`).
 > Detalle de todos los hallazgos en [`CODE_AUDIT.md`](./CODE_AUDIT.md).
 
 ---
@@ -190,25 +191,27 @@
 
 ## 📊 Resumen de calificaciones
 
-| Categoría | v1 (30 Jun) | v2 (1 Jul) | v3 (12 Jul) | v4 (5 Ago) | v5 (6 Ago) | Tendencia |
-|-----------|-------------|------------|-------------|------------|------------|-----------|
-| Code Quality & Structure | 5/10 | 8/10 | 8/10 | **7/10** | **7/10** | — |
-| Security | 3/10 | 9/10 | 9/10 | **4/10** | **4/10** | — |
-| Testing | 3/10 | 8/10 | 8/10 | **9/10** | **9/10** | — |
-| Documentation | 8/10 | 9/10 | 9/10 | **8/10** | **8/10** | — |
-| Architecture & Scalability | 4/10 | 8/10 | 8/10 | **7/10** | **7/10** | — |
-| DevOps & Deploy | 3/10 | 7/10 | 7/10 | **6/10** | **6/10** | — |
-| Frontend Web | 3/10 | 7/10 | 8/10 | **6/10** | **6/10** | — |
-| Mobile | 1/10 | 1/10 | 7/10 | **6/10** | **7/10** | 🟢 +1 |
-| Project Management | 6/10 | 6/10 | 7/10 | **7/10** | **7/10** | — |
-| | | | | | | |
-| **PROMEDIO PONDERADO** | **4.0/10** | **7.0/10** | **7.9/10** | **6.7/10** | **6.8/10** | 🟢 +0.1 |
+| Categoría | v1 (30 Jun) | v2 (1 Jul) | v3 (12 Jul) | v4 (5 Ago) | v5 (6 Ago) | v6 (14 Ago) | Tendencia |
+|-----------|-------------|------------|-------------|------------|------------|-------------|-----------|
+| Code Quality & Structure | 5/10 | 8/10 | 8/10 | **7/10** | **7/10** | **7/10** | — |
+| Security | 3/10 | 9/10 | 9/10 | **4/10** | **4/10** | **7/10** | 🟢 +3 |
+| Testing | 3/10 | 8/10 | 8/10 | **9/10** | **9/10** | **8/10** | 🔻 -1 |
+| Documentation | 8/10 | 9/10 | 9/10 | **8/10** | **8/10** | **7/10** | 🔻 -1 |
+| Architecture & Scalability | 4/10 | 8/10 | 8/10 | **7/10** | **7/10** | **6/10** | 🔻 -1 |
+| DevOps & Deploy | 3/10 | 7/10 | 7/10 | **6/10** | **6/10** | **5/10** | 🔻 -1 |
+| Frontend Web | 3/10 | 7/10 | 8/10 | **6/10** | **6/10** | **6/10** | — |
+| Mobile | 1/10 | 1/10 | 7/10 | **6/10** | **7/10** | **7/10** | — |
+| Project Management | 6/10 | 6/10 | 7/10 | **7/10** | **7/10** | **7/10** | — |
+| | | | | | | | |
+| **PROMEDIO PONDERADO** | **4.0/10** | **7.0/10** | **7.9/10** | **6.7/10** | **6.8/10** | **6.7/10** | 🔻 -0.1 |
 
 > El descenso de v3 → v4 **no es una regresión del código**: es el resultado de la *auditoría real y completa* del 5-Ago (ver `CODE_AUDIT.md`). La puntuación previa de Security (9/10) y Frontend/Mobile sobreestimaban el estado.
 >
 > v5 (6-Ago): sube **Mobile 6→7** por el Sprint 12 (imágenes en el chat + push + feedback de espera).
 >
-> **v6 (11-Ago):** Sprint 13 + cierre de bugs backend (Tobias) resuelven **los 4 CRITICOS** (`.env` fuera de git, rol fijo en `/register`, `password` fuera de respuestas, migraciones alineadas), el IDOR de mascota, `/my-history` separado, el caché de vets (B11) y **logout con revocación real** (`tokenVersion`). **119/119 tests.** Quedan los pendientes de Web/Mobile (top-10 de `CODE_AUDIT.md`) y los manuales: rotar credenciales Supabase + `JWT_SECRET` + purgar historial git.
+> **v6 (11-Ago):** Sprint 13 + cierre de bugs backend (Tobias) resuelven **los 4 CRITICOS** (`.env` fuera de git, rol fijo en `/register`, `password` fuera de respuestas, migraciones alineadas), el IDOR de mascota, `/my-history` separado, el caché de vets (B11) y **logout con revocación real** (`tokenVersion`). **159 tests en 10 archivos.** Quedan los pendientes de Web/Mobile (top-10 de `CODE_AUDIT.md`) y los manuales: rotar credenciales Supabase + `JWT_SECRET` + purgar historial git.
+>
+> **v6 (14-Ago) — post auditorías P0→P3 (commit `36d76f0`):** se cierran los hallazgos P0→P3 de `CODE_AUDIT.md`: registro solo CLIENT, `password` oculto en `getUserById`, revocación por `tokenVersion`, `/uploads` tras auth, rutas admin con `authorize()`, concurrencia en `completeConsultation`/`createReview`, dedup de mensajes (`clientMsgId`), cuota de media, y correcciones UX/a11y de web y mobile. **Security sube 4→7.** Quedan borde de producción: **rotar secretos + purgar git** (P0), video LiveKit end-to-end, tests WS/authz/concurrencia, observabilidad, e adoptar `packages/shared`. Docs corregidas (119→159 tests; Koyeb como fuente única de deploy).
 
 ---
 

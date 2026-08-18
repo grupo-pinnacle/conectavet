@@ -7,32 +7,32 @@ interface AuthImageProps {
   className?: string;
 }
 
-/**
- * Carga imágenes subidas (/uploads/...) con el token de acceso, ya que el
- * recurso está protegido y un <img> directo no puede enviar la cookie/auth
- * cross-origin (lo que daba 401). Usamos el cliente api (que adjunta Bearer)
- * y mostramos un object URL.
- */
+const blobCache = new Map<string, string>();
+
 export default function AuthImage({ src, alt, className }: AuthImageProps) {
-  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const [objectUrl, setObjectUrl] = useState<string | null>(() => blobCache.get(src) ?? null);
 
   useEffect(() => {
+    const cached = blobCache.get(src);
+    if (cached) {
+      setObjectUrl(cached);
+      return;
+    }
     let revoked = false;
-    let url: string | null = null;
     api
       .get(src, { responseType: "blob" })
       .then((res) => {
         if (revoked) return;
-        url = URL.createObjectURL(res.data);
+        const url = URL.createObjectURL(res.data);
+        blobCache.set(src, url);
         setObjectUrl(url);
       })
       .catch(() => {});
     return () => {
       revoked = true;
-      if (url) URL.revokeObjectURL(url);
     };
   }, [src]);
 
   if (!objectUrl) return null;
-  return <img src={objectUrl} alt={alt} className={className} />;
+  return <img src={objectUrl} alt={alt} className={className} loading="lazy" />;
 }

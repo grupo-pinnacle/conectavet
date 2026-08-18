@@ -28,7 +28,8 @@ export default function QueueScreen() {
 
   const { data: selectedVet } = useQuery<Vet | undefined>({
     queryKey: ['queue', 'selectedVet'],
-    queryFn: () => qc.getQueryData<Vet>(['queue', 'selectedVet']),
+    queryFn: () => qc.getQueryData<Vet>(['queue', 'selectedVet']) as Vet,
+    enabled: false,
     initialData: () => qc.getQueryData<Vet>(['queue', 'selectedVet']),
   });
 

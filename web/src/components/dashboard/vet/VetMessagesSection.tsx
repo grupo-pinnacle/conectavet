@@ -25,8 +25,8 @@ import {
   setLastConsultationId,
 } from "../../../services/chatStore";
 import { joinConsultation } from "../../../services/socket";
-import { useChatSocket } from "../../hooks/useChatSocket";
-import { useConsultations, useInvalidateConsultations, consultationsKey } from "../../hooks/useConsultations";
+import { useChatSocket } from "../../../hooks/useChatSocket";
+import { useConsultations, useInvalidateConsultations, consultationsKey } from "../../../hooks/useConsultations";
 import { MessageBubble } from "../MessageBubble";
 import VetPatientProfile from "./VetPatientProfile";
 import CallButton from "../../call/CallButton";

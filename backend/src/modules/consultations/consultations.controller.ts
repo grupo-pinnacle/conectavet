@@ -5,6 +5,7 @@ import { AppError, NotFoundError, ForbiddenError, ConflictError } from '../../sh
 import { parsePagination } from '../../shared/utils';
 import { getIO } from './chat.gateway';
 import { notifyUser, notifyVetsOnline, notifyConsultationMessage } from '../notifications';
+import { prisma } from '../../shared/prisma';
 import {
   createConsultation,
   assignVet,
@@ -51,7 +52,10 @@ const prescriptionSchema = z.object({
 });
 
 async function assertParticipation(consultationId: string, userId: string) {
-  const consultation = await getConsultationById(consultationId);
+  const consultation = await prisma.consultation.findUnique({
+    where: { id: consultationId },
+    select: { id: true, clientId: true, vetId: true, status: true },
+  });
   if (!consultation) throw new NotFoundError('Consulta no encontrada');
   if (consultation.clientId !== userId && consultation.vetId !== userId) {
     throw new ForbiddenError('No participás de esta consulta');

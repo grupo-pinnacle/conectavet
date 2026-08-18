@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role } from '@prisma/client';
-import { prisma } from '../prisma';
 import { JwtPayload } from '../types';
 import { getAccessTokenFromCookie } from '../auth-cookies';
 
@@ -38,15 +37,10 @@ export async function authenticate(
       process.env.JWT_SECRET as string
     ) as JwtPayload;
 
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: { tokenVersion: true },
-    });
-
-    if (!user || (decoded.tokenVersion ?? 1) !== user.tokenVersion) {
+    if (!decoded.userId || !decoded.role) {
       return res.status(401).json({
         success: false,
-        message: 'Sesión cerrada. Iniciá sesión de nuevo'
+        message: 'Token inválido'
       });
     }
 

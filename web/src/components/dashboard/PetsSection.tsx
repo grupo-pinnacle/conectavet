@@ -4,6 +4,20 @@ import type { Pet } from "../../types";
 import { PawPrint } from "lucide-react";
 import { formatSex } from "../../utils/sex";
 
+function computeAge(birthDate: string): string | null {
+  const birth = new Date(birthDate);
+  const now = new Date();
+  if (isNaN(birth.getTime()) || birth > now) return null;
+  let months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+  if (now.getDate() < birth.getDate()) months--;
+  if (months < 0) return null;
+  const years = Math.floor(months / 12);
+  const rem = months % 12;
+  if (years === 0) return `${rem} mes${rem !== 1 ? "es" : ""}`;
+  if (rem === 0) return `${years} año${years !== 1 ? "s" : ""}`;
+  return `${years} año${years !== 1 ? "s" : ""} y ${rem} mes${rem !== 1 ? "es" : ""}`;
+}
+
 const avatarList = ["🐶", "🐱", "🐩", "🐕", "🐕‍🦺", "🐦", "🐰", "🐹"];
 
 const emptyForm = {
@@ -11,7 +25,6 @@ const emptyForm = {
   species: "",
   breed: "",
   age: 1,
-  weight: "",
   sex: "",
   color: "",
   microchip: "",
@@ -48,13 +61,18 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
     e.preventDefault();
     if (!form.name.trim()) return;
     setSaving(true);
-    const weight = form.weight === "" ? undefined : Number(form.weight);
+    const computedAge = form.birthDate ? (() => {
+      const b = new Date(form.birthDate);
+      const now = new Date();
+      let m = (now.getFullYear() - b.getFullYear()) * 12 + (now.getMonth() - b.getMonth());
+      if (now.getDate() < b.getDate()) m--;
+      return m >= 0 ? Math.floor(m / 12) : undefined;
+    })() : undefined;
     const payload = {
       name: form.name.trim(),
       species: form.species,
       breed: form.breed,
-      age: form.age,
-      weight: Number.isNaN(weight) ? undefined : weight,
+      age: computedAge,
       sex: form.sex || undefined,
       color: form.color || undefined,
       microchip: form.microchip || undefined,
@@ -88,7 +106,6 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
       species: pet.species || "",
       breed: pet.breed || "",
       age: pet.age ?? 1,
-      weight: pet.weight ? String(pet.weight) : "",
       sex: pet.sex || "",
       color: pet.color || "",
       microchip: pet.microchip || "",
@@ -157,16 +174,6 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Raza</label>
               <input type="text" value={form.breed} onChange={(e) => setForm((f) => ({ ...f, breed: e.target.value }))} placeholder="Raza" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
             </div>
-            <div className="flex gap-4">
-              <div className="flex-1">
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Edad</label>
-                <input type="number" min={0} value={form.age} onChange={(e) => setForm((f) => ({ ...f, age: Number(e.target.value) }))} className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink focus:border-teal-600 focus:outline-none" />
-              </div>
-              <div className="flex-1">
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Peso</label>
-                <input type="number" min={0} step="0.1" value={form.weight} onChange={(e) => setForm((f) => ({ ...f, weight: e.target.value }))} placeholder="Ej: 10" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
-              </div>
-            </div>
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Sexo</label>
               <select value={form.sex} onChange={(e) => setForm((f) => ({ ...f, sex: e.target.value }))} className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink focus:border-teal-600 focus:outline-none">
@@ -178,6 +185,12 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Fecha de nacimiento</label>
               <input type="date" value={form.birthDate} onChange={(e) => setForm((f) => ({ ...f, birthDate: e.target.value }))} className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink focus:border-teal-600 focus:outline-none" />
+              {form.birthDate && (() => {
+                const age = computeAge(form.birthDate);
+                return age ? (
+                  <p className="mt-1 text-xs text-slate-400">{age}</p>
+                ) : null;
+              })()}
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Peso (kg)</label>
@@ -241,11 +254,11 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
               </div>
               <div>
                 <p className="text-xs text-slate-400">Edad</p>
-                <p className="font-semibold text-ink">{pet.age} años</p>
+                <p className="font-semibold text-ink">{pet.birthDate ? computeAge(pet.birthDate) ?? `${pet.age ?? "—"} años` : `${pet.age ?? "—"} años`}</p>
               </div>
               <div>
                 <p className="text-xs text-slate-400">Peso</p>
-                <p className="font-semibold text-ink">{pet.weight}</p>
+                <p className="font-semibold text-ink">{pet.weightKg ? `${pet.weightKg} kg` : "—"}</p>
               </div>
               <div>
                 <p className="text-xs text-slate-400">Sexo</p>

@@ -83,7 +83,9 @@ export async function completeConsultation(id: string, notes?: string): Promise<
 }
 
 export async function getMessages(id: string): Promise<Message[]> {
-  const res = await api.get(`/api/consultations/${id}/messages`);
+  const res = await api.get(`/api/consultations/${id}/messages`, {
+    params: { page: 1, limit: 100 },
+  });
   return res.data.data;
 }
 

@@ -52,7 +52,9 @@ export const consultationsService = {
   myHistory: (params?: { page?: number; limit?: number; status?: string }) =>
     api.get<Consultation[]>('/consultations/my-history', { params }),
   getMessages: (consultationId: string) =>
-    api.get<ChatMessage[]>(`/consultations/${consultationId}/messages`),
+    api.get<ChatMessage[]>(`/consultations/${consultationId}/messages`, {
+      params: { page: 1, limit: 100 },
+    }),
   sendMessage: (consultationId: string, payload: SendMessagePayload) =>
     api.post<ChatMessage>(`/consultations/${consultationId}/messages`, payload),
   getPrescriptions: (consultationId: string) =>

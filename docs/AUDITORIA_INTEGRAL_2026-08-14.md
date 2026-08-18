@@ -509,4 +509,20 @@ de BD sin beneficio para la puesta en producción. La suite E2E ahora cubre la
 protección de contrato que justificaba hacerlos. Se recomiendan solo con una
 E2E de pantalla (web/mobile) y coordinación de clientes.
 
+---
+
+## 12. Corrección: mobile ya tenía app completa (no hacía falta shell)
+
+Se detectó que el mobile **ya contaba** con una app completa (tabs `(app)`,
+auth `(auth)`, chat y videollamada vía WebView a la web `/call`). Los archivos
+de "shell" agregados en tandas previas (`app/index.tsx`, `app/chat/[id].tsx`,
+`app/call/[id].tsx`, `AuthScreen/ChatScreen/ConsultationsHome/CallScreen`,
+`lib/outbox|deepLink|image`) **duplicaban rutas** y reemplazaban el root layout
+por uno sin providers → rompían el build. Se revirtió mobile a `c249fa5`
+(restaura el root layout con QueryClient/Theme/RouteGuard y elimina los
+archivos redundantes) y se conservaron solo los fixes válidos:
+- `eas.json`: preview/production → `api.conectavet.com` + `/socket.io` + `EXPO_PUBLIC_WEB_URL` (WebView de llamada).
+- `start.ps1`: ruta WS `/socket.io`.
+- Se quitaron deps nativas de LiveKit no usadas (la llamada usa WebView).
+
 > Fin de la auditoría integral. Fuente de verdad: docs del repo + código verificado. Los `.env` no fueron inspeccionados.

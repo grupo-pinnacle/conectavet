@@ -45,6 +45,6 @@ if (!MOBILE_WEB_URL) {
   console.error('[env] EXPO_PUBLIC_WEB_URL no está definida. Las videollamadas no funcionarán en producción (no apuntan a localhost).');
 }
 
-export const API_URL = MOBILE_API_URL;
-export const WS_URL = MOBILE_WS_URL;
+export const API_URL = Platform.OS === 'web' ? 'http://localhost:3001' : MOBILE_API_URL;
+export const WS_URL = Platform.OS === 'web' ? 'ws://localhost:3001' : MOBILE_WS_URL;
 export const WEB_URL = Platform.OS === 'web' ? 'http://localhost:5173' : MOBILE_WEB_URL;

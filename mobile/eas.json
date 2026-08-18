@@ -23,7 +23,8 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.conectavet.com",
-        "EXPO_PUBLIC_WS_URL": "wss://api.conectavet.com/socket.io"
+        "EXPO_PUBLIC_WS_URL": "wss://api.conectavet.com/socket.io",
+        "EXPO_PUBLIC_WEB_URL": "https://web.conectavet.com"
       }
     },
     "production": {
@@ -32,7 +33,8 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.conectavet.com",
-        "EXPO_PUBLIC_WS_URL": "wss://api.conectavet.com/socket.io"
+        "EXPO_PUBLIC_WS_URL": "wss://api.conectavet.com/socket.io",
+        "EXPO_PUBLIC_WEB_URL": "https://web.conectavet.com"
       }
     }
   },

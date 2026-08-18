@@ -134,8 +134,6 @@ export function useConsultationMessages(consultationId: string | undefined, user
         const onReconnect = () => {
           setSocketConnected(true);
           joinConsultation(consultationId);
-          // Red reestablecida: reintentar mensajes encolados offline (mismo clientMsgId → sin duplicados).
-          consultationsService.flushOutbox().catch(() => undefined);
         };
         socketInstance.on('disconnect', onDisconnect);
         socketInstance.on('connect', onReconnect);

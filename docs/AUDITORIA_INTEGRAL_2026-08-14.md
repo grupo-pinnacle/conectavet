@@ -525,4 +525,16 @@ archivos redundantes) y se conservaron solo los fixes válidos:
 - `start.ps1`: ruta WS `/socket.io`.
 - Se quitaron deps nativas de LiveKit no usadas (la llamada usa WebView).
 
+## 13. Limpieza final de mobile + typecheck
+
+Tras recuperar los módulos, el `tsc --noEmit` del mobile marcó errores reales en
+`AuthScreen/ChatScreen/ConsultationsHome/image` (usaban tokens de tema inexistentes
+y duplicaban pantallas ya funcionales) y `package.json` traía una versión de
+`expo-image-manipulator` inexistente. Se eliminaron esos archivos rotos y la
+dependencia inválida. Resultado: **`tsc --noEmit` del mobile en 0 errores**.
+Quedan integrados y compilando: `outbox` (cola offline, conectada en el reconnect
+del hook de consultas) y `deepLink`. La app conserva login/registro/chat/consultas
+y videollamada (WebView a la web `/call`). Falta definir `EXPO_PUBLIC_WEB_URL`
+(dominio) y correr `eas build`.
+
 > Fin de la auditoría integral. Fuente de verdad: docs del repo + código verificado. Los `.env` no fueron inspeccionados.

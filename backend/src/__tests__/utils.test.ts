@@ -22,6 +22,17 @@ describe('parsePagination', () => {
     expect(result.limit).toBe(50);
   });
 
+  test('limit se capa al máximo por defecto (50) sin max explícito', () => {
+    const result = parsePagination({ limit: '999' });
+    expect(result.limit).toBe(50);
+  });
+
+  test('limit se capa al máximo por defecto (50) sin max explícito con page calculado', () => {
+    const result = parsePagination({ page: '3', limit: '999' });
+    expect(result.limit).toBe(50);
+    expect(result.skip).toBe(100);
+  });
+
   test('mínimo limit = 1', () => {
     const result = parsePagination({ limit: '-5' });
     expect(result.limit).toBe(1);

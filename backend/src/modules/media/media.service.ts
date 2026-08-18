@@ -4,6 +4,7 @@ import { randomBytes } from 'crypto';
 import multer from 'multer';
 import { prisma } from '../../shared/prisma';
 import { AppError } from '../../shared/errors';
+import { persistUpload } from './storage';
 
 export const UPLOADS_DIR = join(process.cwd(), 'uploads');
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -64,10 +65,12 @@ export async function saveAttachment(data: {
     throw new AppError('Tipo de archivo no permitido', 400);
   }
 
+  const url = await persistUpload(data.filename, data.mimeType);
+
   return prisma.attachment.create({
     data: {
       uploaderId: data.uploaderId,
-      url: `/uploads/${data.filename}`,
+      url,
       mimeType: data.mimeType,
       size: data.size,
     },

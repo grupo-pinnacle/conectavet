@@ -1,4 +1,5 @@
 import api from '@/lib/api';
+import { enqueueMessage, getPendingMessages, removeMessage } from '@/lib/outbox';
 import type {
   AppNotification,
   Attachment,
@@ -21,7 +22,7 @@ import type {
   VetCard,
 } from '@/types';
 
-export type SendMessagePayload = { content?: string; attachmentUrl?: string };
+export type SendMessagePayload = { content?: string; attachmentUrl?: string; clientMsgId?: string };
 
 export const authService = {
   register: (payload: RegisterPayload) =>
@@ -53,8 +54,35 @@ export const consultationsService = {
     api.get<Consultation[]>('/consultations/my-history', { params }),
   getMessages: (consultationId: string) =>
     api.get<ChatMessage[]>(`/consultations/${consultationId}/messages`),
-  sendMessage: (consultationId: string, payload: SendMessagePayload) =>
-    api.post<ChatMessage>(`/consultations/${consultationId}/messages`, payload),
+  sendMessage: async (consultationId: string, payload: SendMessagePayload) => {
+    // clientMsgId estable: el backend deduplica por él, así que los reintentos
+    // (por red inestable / offline) no crean mensajes duplicados.
+    const clientMsgId = payload.clientMsgId ?? `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    try {
+      return await api.post<ChatMessage>(`/consultations/${consultationId}/messages`, {
+        ...payload,
+        clientMsgId,
+      });
+    } catch (err) {
+      // Red caída / offline: encolar y reintentar luego con el mismo clientMsgId.
+      await enqueueMessage(consultationId, payload).catch(() => undefined);
+      throw err;
+    }
+  },
+  flushOutbox: async () => {
+    const pending = await getPendingMessages();
+    for (const m of pending) {
+      try {
+        await api.post<ChatMessage>(`/consultations/${m.consultationId}/messages`, {
+          ...m.payload,
+          clientMsgId: m.id,
+        });
+        await removeMessage(m.id);
+      } catch {
+        break; // mantener el resto en cola para otro intento
+      }
+    }
+  },
   getPrescriptions: (consultationId: string) =>
     api.get<Prescription[]>(`/consultations/${consultationId}/prescriptions`),
   rate: (consultationId: string, payload: RateConsultationPayload) =>

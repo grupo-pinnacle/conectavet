@@ -134,10 +134,10 @@ Write-Host ""
 # ── Set API URL for mobile (environment override for Metro bundler) ──
 if ($useADB) {
     $env:EXPO_PUBLIC_API_URL = "http://localhost:3001"
-    $env:EXPO_PUBLIC_WS_URL = "ws://localhost:3001/ws/queue"
+    $env:EXPO_PUBLIC_WS_URL = "ws://localhost:3001/socket.io"
 } else {
     $env:EXPO_PUBLIC_API_URL = "http://${ip}:3001"
-    $env:EXPO_PUBLIC_WS_URL = "ws://${ip}:3001/ws/queue"
+    $env:EXPO_PUBLIC_WS_URL = "ws://${ip}:3001/socket.io"
 }
 
 # ── Start Expo ──

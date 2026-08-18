@@ -62,6 +62,18 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
   next();
 });
 
+// O-02: métricas mínimas en memoria (suficiente para alertas básicas en prod
+// sin dependencias externas). Para observabilidad profunda se puede conectar
+// Prometheus/OpenTelemetry más adelante.
+const metrics = { total: 0, errors: 0, startTime: Date.now() };
+app.use((_req: Request, res: Response, next: NextFunction) => {
+  metrics.total++;
+  res.on('finish', () => {
+    if (res.statusCode >= 500) metrics.errors++;
+  });
+  next();
+});
+
 app.get('/health', async (_req: Request, res: Response) => {
   try {
     await Promise.race([
@@ -126,6 +138,16 @@ app.use('/api/media', mediaRoutes);
 app.use('/api/notifications', notificationsRoutes);
 // Archivos subidos: requieren autenticación y participación en la consulta
 // propietaria (o ser el uploader / admin). Evita exposición de PII médica.
+app.get('/metrics', (_req: Request, res: Response) => {
+  res.json({
+    uptimeSeconds: Math.round((Date.now() - metrics.startTime) / 1000),
+    totalRequests: metrics.total,
+    serverErrors: metrics.errors,
+    memoryMb: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+    environment: process.env.NODE_ENV || 'development',
+  });
+});
+
 app.use('/uploads', authenticate, async (req: RequestWithUser, res: Response, next: NextFunction) => {
   try {
     const rel = (req.path || '').replace(/^\/+/, '');

@@ -107,6 +107,7 @@ model Consultation {
   endedAt       DateTime?
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
+  deletedAt     DateTime?
   messages      Message[]
   prescriptions Prescription[]
   review        Review?
@@ -114,6 +115,7 @@ model Consultation {
   @@index([clientId])
   @@index([vetId])
   @@index([status])
+  @@index([deletedAt])
   @@map("consultations")
 }
 
@@ -127,8 +129,10 @@ model Message {
   attachmentUrl  String?
   clientMsgId    String?      @map("client_msg_id") @unique
   createdAt      DateTime     @default(now())
+  deletedAt      DateTime?
 
   @@index([consultationId, createdAt])
+  @@index([deletedAt])
   @@map("messages")
 }
 

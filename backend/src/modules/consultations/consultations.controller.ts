@@ -243,7 +243,8 @@ export async function getMyHistoryController(req: RequestWithUser, res: Response
       return res.status(401).json({ success: false, message: 'No autenticado' });
     }
     const { page, limit } = parsePagination(req.query as Record<string, string>);
-    const result = await getConsultationHistory(req.user.userId, req.user.role, page, limit);
+    const cursor = typeof req.query.cursor === 'string' ? req.query.cursor : undefined;
+    const result = await getConsultationHistory(req.user.userId, req.user.role, { page, limit, cursor });
     return res.status(200).json({ success: true, ...result });
   } catch (error) {
     if (error instanceof AppError) {

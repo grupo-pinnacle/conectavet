@@ -34,6 +34,12 @@ router.get(
   adminOnlyController
 );
 router.get('/vets', authenticate, listVetsController);
+
+// S-03: endpoint de debug que expone el payload del JWT. Se mantiene
+// DESACTIVADO en producción; solo se registra si se habilita explícitamente.
+if (process.env.ENABLE_DEBUG_ENDPOINTS === 'true') {
+  router.get('/admin-only', authenticate, authorize(Role.ADMIN), adminOnlyController);
+}
 router.post(
   '/admin/users',
   authenticate,

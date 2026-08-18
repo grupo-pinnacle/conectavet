@@ -20,6 +20,8 @@ Thumbs.db
 
 coverage/
 
+.agents/
+
 # Subidas de imágenes (Sprint 12)
 backend/uploads/
 

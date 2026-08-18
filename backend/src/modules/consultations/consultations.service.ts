@@ -241,8 +241,8 @@ export async function completeConsultation(
 }
 
 export async function getConsultationById(id: string) {
-  return prisma.consultation.findUnique({
-    where: { id },
+  return prisma.consultation.findFirst({
+    where: { id, deletedAt: null },
     select: consultationWithMessages,
   });
 }
@@ -258,8 +258,8 @@ export async function getConsultationsByUser(
   const cappedLimit = Math.min(limit, MAX_PAGE_SIZE);
   const where =
     role === 'VET'
-      ? { OR: [{ vetId: userId }, { status: 'WAITING' as const }] }
-      : { clientId: userId };
+      ? { OR: [{ vetId: userId }, { status: 'WAITING' as const }], deletedAt: null }
+      : { clientId: userId, deletedAt: null };
   const skip = (page - 1) * cappedLimit;
   const [data, total] = await Promise.all([
     prisma.consultation.findMany({
@@ -281,11 +281,48 @@ export async function getConsultationsByUser(
 export async function getConsultationHistory(
   userId: string,
   role: string,
-  page = 1,
-  limit = 50
+  opts: { page?: number; limit?: number; cursor?: string } = {}
 ) {
-  const cappedLimit = Math.min(limit, MAX_PAGE_SIZE);
-  const where = role === 'VET' ? { vetId: userId } : { clientId: userId };
+  const cappedLimit = Math.min(opts.limit ?? 50, MAX_PAGE_SIZE);
+  const where = role === 'VET' ? { vetId: userId, deletedAt: null } : { clientId: userId, deletedAt: null };
+
+  // A-03 (cursor): paginación keyset O(log n) para listas grandes. Si llega
+  // `cursor` (id_ts), usamos búsqueda por (createdAt, id) y devolvemos
+  // `nextCursor`. Sin `cursor` se mantiene la paginación por offset (compat
+  // con web/mobile que hoy usan page/limit).
+  if (opts.cursor) {
+    const [cursorId, cursorTsRaw] = opts.cursor.split('_');
+    const cursorCreatedAt = new Date(Number(cursorTsRaw));
+    const keysetWhere =
+      !isNaN(cursorCreatedAt.getTime()) ?
+        {
+          ...where,
+          OR: [
+            { createdAt: { lt: cursorCreatedAt } },
+            { createdAt: { equals: cursorCreatedAt }, id: { lt: cursorId } },
+          ],
+        }
+      : where;
+    const rows = await prisma.consultation.findMany({
+      where: keysetWhere,
+      select: { ...consultationSnapshot, prescriptions: true },
+      orderBy: { createdAt: 'desc' },
+      take: cappedLimit + 1,
+    });
+    const hasMore = rows.length > cappedLimit;
+    const data = hasMore ? rows.slice(0, cappedLimit) : rows;
+    const last = data[data.length - 1];
+    return {
+      data,
+      total: data.length,
+      page: 1,
+      limit: cappedLimit,
+      totalPages: 1,
+      nextCursor: hasMore && last ? `${last.id}_${last.createdAt.getTime()}` : null,
+    };
+  }
+
+  const page = opts.page ?? 1;
   const skip = (page - 1) * cappedLimit;
   const [data, total] = await Promise.all([
     prisma.consultation.findMany({
@@ -338,7 +375,11 @@ export async function saveMessage(data: {
   if (data.content && data.content.length > 2000) {
     throw new ConflictError('El mensaje no puede superar los 2000 caracteres');
   }
-  if (hasAttachment && !data.attachmentUrl!.startsWith('/uploads/')) {
+  if (
+    hasAttachment &&
+    !data.attachmentUrl!.startsWith('/uploads/') &&
+    !data.attachmentUrl!.startsWith('https://')
+  ) {
     throw new ConflictError('La imagen adjunta es inválida');
   }
   return prisma.message.create({
@@ -359,7 +400,7 @@ export async function getMessages(consultationId: string, page = 1, limit = MAX_
   const cappedLimit = Math.min(Math.max(1, limit), MAX_MESSAGES);
   const skip = (page - 1) * cappedLimit;
   return prisma.message.findMany({
-    where: { consultationId },
+    where: { consultationId, deletedAt: null },
     include: { sender: { select: { id: true, email: true, role: true } } },
     orderBy: { createdAt: 'asc' },
     skip,

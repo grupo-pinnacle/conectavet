@@ -494,4 +494,19 @@ Completado lo necesario para considerar el proyecto **desplegable en producción
 - **Humanos (fuera de alcance):** rotar secretos + purgar git (S-01) y dominio + DNS/SSL.
 - **Deferidos a propósito (riesgo > beneficio sin E2E):** A-01 `/api/v1`, C-01 adoptar `packages/shared`, C-02 `Role` enum, C-03 extraer `ChatService`. Ninguno bloquea el deploy; se recomiendan solo con suite E2E.
 
+---
+
+## 11. Suite E2E de contrato (agregada)
+
+- `backend/src/__tests__/e2e-flow.test.ts`: flujo real contra el backend completo
+  (registro/login → mascota → consulta → asignación de vet → mensaje → historial
+  + cursor). Corre en CI con Postgres real (mismo harness de integration). Protege
+  el formato de la API ante refactors sin necesidad de tocar clientes.
+
+### Decisión Tech Lead sobre refactors estructurales (A-01/C-01/C-02/C-03)
+No ejecutados: no bloquean el deploy y añaden riesgo de breaking change / migración
+de BD sin beneficio para la puesta en producción. La suite E2E ahora cubre la
+protección de contrato que justificaba hacerlos. Se recomiendan solo con una
+E2E de pantalla (web/mobile) y coordinación de clientes.
+
 > Fin de la auditoría integral. Fuente de verdad: docs del repo + código verificado. Los `.env` no fueron inspeccionados.

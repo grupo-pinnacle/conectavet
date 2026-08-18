@@ -35,7 +35,8 @@ export async function authenticate(
   try {
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET as string
+      process.env.JWT_SECRET as string,
+      { algorithms: ['HS256'] }
     ) as JwtPayload;
 
     const user = await prisma.user.findUnique({

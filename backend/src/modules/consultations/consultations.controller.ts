@@ -15,7 +15,7 @@ import {
   getConsultationHistory,
   getAvailableVets,
   getMessages,
-  saveMessage,
+  sendConsultationMessage,
   savePrescription,
   getPrescriptions,
   createReview,
@@ -293,13 +293,9 @@ export async function sendMessageController(req: RequestWithUser, res: Response)
     if (!parsed.success) {
       return res.status(400).json({ success: false, message: parsed.error.issues[0].message });
     }
-    const consultation = await assertParticipation(req.params.id as string, req.user.userId);
-    if (consultation.status !== 'ACTIVE') {
-      throw new ConflictError('La consulta no está activa. No podés enviar mensajes.');
-    }
-    const message = await saveMessage({
+    const result = await sendConsultationMessage({
+      userId: req.user.userId,
       consultationId: req.params.id as string,
-      senderId: req.user.userId,
       content: parsed.data.content,
       attachmentUrl: parsed.data.attachmentUrl,
       clientMsgId: parsed.data.clientMsgId,
@@ -307,13 +303,13 @@ export async function sendMessageController(req: RequestWithUser, res: Response)
     try {
       const io = getIO();
       if (io) {
-        io.to(`consultation:${req.params.id}`).emit('message:new', message);
+        io.to(`consultation:${req.params.id}`).emit('message:new', result.message);
       }
     } catch {
       // Socket not available, messages still reachable via polling
     }
     await notifyConsultationMessage(req.params.id as string, req.user.userId);
-    return res.status(201).json({ success: true, data: message });
+    return res.status(201).json({ success: true, data: result.message });
   } catch (error) {
     if (error instanceof AppError) {
       return res.status(error.statusCode).json({ success: false, message: error.message });

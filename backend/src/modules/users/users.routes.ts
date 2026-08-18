@@ -10,6 +10,7 @@ import {
   removeFavoriteController,
   listFavoritesController,
   createUserController,
+  updateVetStatusController,
 } from './users.controller';
 import {
   authenticate,
@@ -50,5 +51,11 @@ router.get('/favorites', authenticate, listFavoritesController);
 router.post('/vets/:id/favorite', authenticate, addFavoriteController);
 router.delete('/vets/:id/favorite', authenticate, removeFavoriteController);
 router.get('/vets/:id', authenticate, getVetByIdController);
+router.patch(
+  '/vets/:id/vet-status',
+  authenticate,
+  authorize(Role.ADMIN),
+  updateVetStatusController
+);
 
 export default router;

@@ -4,7 +4,7 @@ import { randomUUID, randomBytes } from 'crypto';
 import { prisma } from '../../shared/prisma';
 import { clearCache } from '../../shared/cache';
 import { sendMail } from '../../shared/mailer';
-import { ConflictError } from '../../shared/errors';
+import { ConflictError, AppError } from '../../shared/errors';
 
 const SALT_ROUNDS = 12;
 
@@ -14,6 +14,8 @@ interface RegisterInput {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  role?: 'CLIENT' | 'VET';
+  specialty?: string;
 }
 
 interface LoginInput {
@@ -21,11 +23,9 @@ interface LoginInput {
   password: string;
 }
 
-export class AuthError extends Error {
-  statusCode: number;
+export class AuthError extends AppError {
   constructor(message: string, statusCode: number) {
-    super(message);
-    this.statusCode = statusCode;
+    super(message, statusCode);
   }
 }
 
@@ -33,7 +33,7 @@ function signAccessToken(user: { id: string; email: string; role: string; tokenV
   return jwt.sign(
     { userId: user.id, email: user.email, role: user.role, tokenVersion: user.tokenVersion },
     process.env.JWT_SECRET as string,
-    { expiresIn: '2h' }
+    { algorithm: 'HS256', expiresIn: '2h' }
   );
 }
 
@@ -43,7 +43,7 @@ function signRefreshToken(userId: string, tokenVersion: number) {
     process.env.JWT_SECRET as string,
     // 7 días (era 30d). Ventana de exposición menor si un refresh se filtra;
     // el usuario sigue logueado y el refresh rota en cada uso.
-    { expiresIn: '7d' }
+    { algorithm: 'HS256', expiresIn: '7d' }
   );
 }
 
@@ -74,13 +74,19 @@ export async function register(input: RegisterInput) {
   const emailVerifyToken = randomBytes(32).toString('hex');
   const emailVerifyExpires = new Date(Date.now() + 1000 * 60 * 60 * 24);
 
+  // Registro público: CLIENT siempre, o VET con aprobación posterior
+  // (vetStatus = PENDING, ver ADR-012). El alta de ADMIN solo la hace un
+  // ADMIN vía POST /api/users/admin/users.
+  const role = input.role === 'VET' ? 'VET' : 'CLIENT';
+  const vetStatus = role === 'VET' ? 'PENDING' : 'APPROVED';
+
   const user = await prisma.user.create({
     data: {
       email: input.email,
       password: hashedPassword,
-      // El registro público SIEMPRE crea un CLIENT. El alta de VET/ADMIN
-      // solo puede hacerla un ADMIN vía POST /api/users/admin/users.
-      role: 'CLIENT',
+      role,
+      vetStatus,
+      specialty: role === 'VET' ? input.specialty || null : null,
       firstName: input.firstName,
       lastName: input.lastName,
       phone: input.phone,
@@ -131,7 +137,9 @@ export async function login(input: LoginInput) {
 
 export async function refreshAccessToken(refreshTokenValue: string) {
   try {
-    const decoded = jwt.verify(refreshTokenValue, process.env.JWT_SECRET as string) as {
+    const decoded = jwt.verify(refreshTokenValue, process.env.JWT_SECRET as string, {
+      algorithms: ['HS256'],
+    }) as {
       userId: string;
       type: string;
       tokenVersion: number;

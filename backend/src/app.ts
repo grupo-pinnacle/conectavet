@@ -14,7 +14,8 @@ import { UPLOADS_DIR } from './modules/media/media.service.js';
 import { prisma } from './shared/prisma.js';
 import { logger } from './shared/logger.js';
 import { AppError } from './shared/errors/index.js';
-import { authenticate, RequestWithUser } from './shared/middlewares/auth.middleware.js';
+import { authenticate, authorize, RequestWithUser } from './shared/middlewares/auth.middleware.js';
+import { Role } from '@prisma/client';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 
@@ -138,7 +139,7 @@ app.use('/api/media', mediaRoutes);
 app.use('/api/notifications', notificationsRoutes);
 // Archivos subidos: requieren autenticación y participación en la consulta
 // propietaria (o ser el uploader / admin). Evita exposición de PII médica.
-app.get('/metrics', (_req: Request, res: Response) => {
+app.get('/metrics', authenticate, authorize(Role.ADMIN), (_req: RequestWithUser, res: Response) => {
   res.json({
     uptimeSeconds: Math.round((Date.now() - metrics.startTime) / 1000),
     totalRequests: metrics.total,

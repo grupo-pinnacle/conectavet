@@ -11,6 +11,10 @@ const registerSchema = z.object({
   firstName: z.string().max(50).optional(),
   lastName: z.string().max(50).optional(),
   phone: z.string().max(20).optional(),
+  // Registro público: un vet puede darse de alta, pero queda PENDING hasta
+  // aprobación de un admin (ADR-012). Nunca se permite 'ADMIN' por esta vía.
+  role: z.enum(['CLIENT', 'VET']).optional(),
+  specialty: z.string().max(100).optional(),
 });
 
 const loginSchema = z.object({

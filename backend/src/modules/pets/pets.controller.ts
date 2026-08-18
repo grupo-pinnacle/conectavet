@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { z } from 'zod';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
 import { AppError, NotFoundError, ForbiddenError } from '../../shared/errors';
-import { getPetsByOwner, getManagedPets, getPetById, createPet, updatePet, deletePet, restorePet, getPetVetCard } from './pets.service';
+import { getPetsByOwner, getManagedPets, getPetById, createPet, updatePet, deletePet, restorePet, getPetVetCard, vetHasConsultationForPet } from './pets.service';
 import { parsePagination } from '../../shared/utils';
 
 const dateStringSchema = z
@@ -55,8 +55,9 @@ export async function getManagedPetsController(req: RequestWithUser, res: Respon
     if (req.user.role !== 'VET' && req.user.role !== 'ADMIN') {
       return res.status(403).json({ success: false, message: 'Solo veterinarios' });
     }
-    const pets = await getManagedPets(req.user.userId);
-    return res.status(200).json({ success: true, data: pets });
+    const { page, limit } = parsePagination(req.query as Record<string, string>);
+    const result = await getManagedPets(req.user.userId, page, limit);
+    return res.status(200).json({ success: true, ...result });
   } catch (error) {
     return handleError(error, res);
   }
@@ -86,6 +87,13 @@ export async function getPetByIdController(req: RequestWithUser, res: Response) 
     }
     if (pet.ownerId !== req.user.userId && req.user.role === 'CLIENT') {
       throw new ForbiddenError('No tenés permiso para ver esta mascota');
+    }
+    // ADR-013: un veterinario solo ve el detalle de una mascota si la atendió/hay en consulta.
+    if (req.user.role === 'VET' && pet.ownerId !== req.user.userId) {
+      const allowed = await vetHasConsultationForPet(req.user.userId, pet.id);
+      if (!allowed) {
+        throw new ForbiddenError('No tenés permiso para ver esta mascota');
+      }
     }
     return res.status(200).json({ success: true, data: pet });
   } catch (error) {

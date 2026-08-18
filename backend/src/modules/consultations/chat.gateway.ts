@@ -3,60 +3,9 @@ import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../../shared/prisma';
 import { JwtPayload } from '../../shared/types';
-import { saveMessage } from './consultations.service';
+import { sendConsultationMessage } from './consultations.service';
 import { notifyConsultationMessage } from '../notifications';
-
-const RATE_LIMIT_WINDOW = 1000;
-const RATE_LIMIT_MAX = 10;
-const rateLimitMap = new Map<string, number[]>();
-
-// Idempotency window for retried/duplicated messages.
-const MSG_DEDUP = new Map<string, number>();
-const MSG_DEDUP_TTL = 10_000;
-
-// Redis client compartido (solo si REDIS_URL está configurado). Permite que el
-// rate-limit y el dedup sean distribuidos en entornos multi-instancia.
-let redisClient: any = null;
-
-function checkRateLimitSync(key: string): boolean {
-  const now = Date.now();
-  const timestamps = rateLimitMap.get(key) || [];
-  const recent = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW);
-  if (recent.length >= RATE_LIMIT_MAX) return false;
-  recent.push(now);
-  rateLimitMap.set(key, recent);
-  return true;
-}
-
-async function checkRateLimit(key: string): Promise<boolean> {
-  if (redisClient) {
-    try {
-      const count = await redisClient.incr(`ratelimit:${key}`);
-      if (count === 1) await redisClient.expire(`ratelimit:${key}`, Math.ceil(RATE_LIMIT_WINDOW / 1000));
-      return count <= RATE_LIMIT_MAX;
-    } catch {
-      // Redis caído -> fallback a in-memory para no bloquear el servicio.
-    }
-  }
-  return checkRateLimitSync(key);
-}
-
-async function isDuplicate(consultationId: string, clientMsgId: string): Promise<boolean> {
-  const key = `dedup:${consultationId}:${clientMsgId}`;
-  if (redisClient) {
-    try {
-      const result = await redisClient.set(key, '1', 'NX', 'EX', Math.ceil(MSG_DEDUP_TTL / 1000));
-      return result === null; // null => ya existía => duplicado
-    } catch {
-      // fallback a in-memory
-    }
-  }
-  const dedupeKey = `${consultationId}:${clientMsgId}`;
-  if (MSG_DEDUP.has(dedupeKey)) return true;
-  MSG_DEDUP.set(dedupeKey, Date.now());
-  setTimeout(() => MSG_DEDUP.delete(dedupeKey), MSG_DEDUP_TTL);
-  return false;
-}
+import { checkRateLimit, setRedisClient } from './message-throttle';
 
 let io: Server;
 
@@ -68,6 +17,10 @@ export async function setupChatSocket(httpServer: HttpServer) {
     .split(',')
     .map((s) => s.trim());
   const wsAllowCredentials = !wsOrigins.includes('*');
+
+  // Cliente Redis local a esta instancia (el estado compartido vive en
+  // message-throttle vía setRedisClient). Se usa solo si REDIS_URL está seteado.
+  let redisClient: any = null;
 
   io = new Server(httpServer, {
     cors: {
@@ -85,6 +38,7 @@ export async function setupChatSocket(httpServer: HttpServer) {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const IORedis = require('ioredis');
       redisClient = new IORedis(process.env.REDIS_URL);
+      setRedisClient(redisClient);
       const pub = redisClient;
       const sub = redisClient.duplicate();
       io.adapter(createAdapter(pub, sub));
@@ -108,7 +62,9 @@ export async function setupChatSocket(httpServer: HttpServer) {
     const token = (socket.handshake.auth?.token as string) || cookieToken;
     if (!token) return next(new Error('Token no proporcionado'));
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload;
+      const decoded = jwt.verify(token, process.env.JWT_SECRET as string, {
+        algorithms: ['HS256'],
+      }) as JwtPayload;
       // Re-leemos el usuario para validar tokenVersion (revocación por logout).
       const dbUser = await prisma.user.findUnique({ where: { id: decoded.userId } });
       if (!dbUser) return next(new Error('Usuario inválido'));
@@ -158,69 +114,33 @@ export async function setupChatSocket(httpServer: HttpServer) {
       'message:send',
       async (data: { consultationId: string; content?: string; attachmentUrl?: string; clientMsgId?: string }, ack?: (r: any) => void) => {
         try {
-          if (!(await checkRateLimit(limitKey))) {
-            return socket.emit('error', { message: 'Demasiados mensajes. Esperá un momento.' });
-          }
           const hasContent = !!data.content && data.content.trim().length > 0;
           const hasAttachment = !!data.attachmentUrl;
+          if (!data.consultationId) {
+            return socket.emit('error', { message: 'consultationId requerido' });
+          }
           if (!hasContent && !hasAttachment) {
             return socket.emit('error', { message: 'El mensaje no puede estar vacío' });
           }
           if (data.content && data.content.length > 2000) {
             return socket.emit('error', { message: 'El mensaje no puede superar los 2000 caracteres' });
           }
-          if (
-            hasAttachment &&
-            !data.attachmentUrl!.startsWith('/uploads/') &&
-            !data.attachmentUrl!.startsWith('https://')
-          ) {
+          if (hasAttachment && !data.attachmentUrl!.startsWith('/uploads/') && !data.attachmentUrl!.startsWith('https://')) {
             return socket.emit('error', { message: 'La imagen adjunta es inválida' });
           }
 
-          // Idempotencia: evita duplicados por reintentos/desconexiones (distribuido si hay Redis).
-          if (data.clientMsgId && (await isDuplicate(data.consultationId, data.clientMsgId))) {
-            if (typeof ack === 'function') ack({ skipped: true });
-            return;
-          }
-
-          const consultation = await prisma.consultation.findFirst({
-            where: {
-              id: data.consultationId,
-              OR: [{ clientId: user.userId }, { vetId: user.userId }],
-            },
-          });
-          if (!consultation) {
-            return socket.emit('error', { message: 'No pertenecés a esta consulta' });
-          }
-          if (consultation.status !== 'ACTIVE') {
-            return socket.emit('error', { message: 'La consulta no está activa. No podés enviar mensajes.' });
-          }
-
-          // Dedup durable (P3-6): si el cliente ya envió este clientMsgId para
-          // esta consulta, devolvemos el mensaje existente en lugar de duplicar.
-          // Esto cubre reintentos y el caso multi-instancia (más allá del
-          // dedup en memoria de arriba).
-          if (data.clientMsgId) {
-            const existing = await prisma.message.findFirst({
-              where: { consultationId: data.consultationId, clientMsgId: data.clientMsgId },
-              include: { sender: { select: { id: true, email: true, role: true } } },
-            });
-            if (existing) {
-              if (typeof ack === 'function') ack({ message: existing, duplicated: true });
-              return;
-            }
-          }
-
-          const message = await saveMessage({
+          // Lógica única compartida con REST: participación, estado ACTIVE,
+          // rate-limit y dedup durable por clientMsgId.
+          const result = await sendConsultationMessage({
+            userId: user.userId,
             consultationId: data.consultationId,
-            senderId: user.userId,
             content: data.content,
             attachmentUrl: data.attachmentUrl,
             clientMsgId: data.clientMsgId,
           });
 
-          io.to(`consultation:${data.consultationId}`).emit('message:new', message);
-          if (typeof ack === 'function') ack({ message });
+          io.to(`consultation:${data.consultationId}`).emit('message:new', result.message);
+          if (typeof ack === 'function') ack({ message: result.message, duplicated: result.duplicated });
 
           // Fire-and-forget: no bloquear el evento de socket esperando el push.
           notifyConsultationMessage(data.consultationId, user.userId).catch(() => {});
@@ -231,7 +151,7 @@ export async function setupChatSocket(httpServer: HttpServer) {
     );
 
     socket.on('disconnect', () => {
-      rateLimitMap.delete(socket.id);
+      // Los maps de rate-limit/dedup viven en message-throttle (compartido).
     });
   });
 

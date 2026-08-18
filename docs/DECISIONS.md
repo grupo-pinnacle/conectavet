@@ -134,3 +134,33 @@ model Message {
 **Decisión:** `expo-notifications` en mobile genera el `ExpoPushToken`, que el usuario publica en `POST /api/notifications/token`. El backend guarda `PushToken` (único por token) y envía con `sendExpoPush` (fetch a `exp.host/--/api/v2/push/send`, timeout 5s, best-effort). Además se persiste una `Notification` por usuario (bandeja in-app: `GET /api/notifications`, `PATCH /:id/read`).
 
 **Consecuencias:** + Cero infraestructura de push, + La bandeja in-app funciona aunque el push no llegue (app cerrada/sin permiso). - `sendExpoPush` es best-effort (si Expo responde 5xx, el usuario igual ve la bandeja), - En tests se desactiva con `EXPO_PUSH_DISABLED=true`.
+
+---
+
+## ADR-012: Auto-registro de veterinarios con aprobación (vetStatus)
+
+**Contexto:** Hoy el registro público solo crea `CLIENT` y el alta de `VET` la hace un `ADMIN` por `POST /api/users/admin/users`. Para escalar sin cuello de botella en el dueño, los veterinarios deben poder registrarse solos.
+
+**Decisión:** El registro público acepta `role: 'VET'` + `specialty`. Se crean con `vetStatus = PENDING` y NO pueden atender hasta ser aprobados. La aprobación se hace por `ADMIN` vía `PATCH /api/users/:id/vet-status` (o CLI). Los vets creados por admin mantienen `vetStatus = APPROVED` (default). El directorio (`listVets`, `getAvailableVets`) solo muestra `APPROVED`. El front muestra el estado "pendiente de aprobación".
+
+**Consecuencias:** + Escala el onboarding de vets, + Sin vets no verificados atendiendo, - Requiere flujo de aprobación (admin/CLI) y migración de columna (`vetStatus` + enum). Default `APPROVED` para no romper vets existentes creados por admin.
+
+---
+
+## ADR-013: Lectura de mascota/PII acotada a la participación en la consulta
+
+**Contexto:** `getPetById` permitía a CUALQUIER vet leer el detalle (y PII del dueño) de CUALQUIER mascota. Riesgo de enumeración/fuga de PII médica.
+
+**Decisión:** Un `VET`` solo puede leer el detalle completo de una mascota si tiene o tuvo una consulta con ella (`consultation` con `vetId` + `petId`). `CLIENT` solo su propia mascota. `ADMIN` acceso total. En las listas de directorio (`listVets`, `getAvailableVets`) se omite `email` (PII) para evitar cosecha masiva; el detalle 1-a-1 (`getVetById`) mantiene contacto intencional.
+
+**Consecuencias:** + Cierre de fuga de PII, + Alineado al principio de mínimo privilegio, - Pequeña consulta extra por lectura de mascota por vet (cacheable).
+
+---
+
+## ADR-014: Redis obligatorio en producción multi-instancia
+
+**Contexto:** El adapter de Socket.io, el rate-limit y el dedup de mensajes usan in-memory y solo se vuelven distribuidos si `REDIS_URL` está presente. Con >1 instancia y sin Redis, los mensajes/estado se fragmentan.
+
+**Decisión:** En `NODE_ENV=production` con `REDIS_URL` seteado se activa el adapter Redis (multi-instancia) + rate-limit/dedup distribuido. Si `REDIS_URL` falta en prod, el arranque emite WARNING y usa in-memory (NO apto para >1 instancia). El `healthcheck` no degrada por Redis caído (fallback in-memory), pero se loguea.
+
+**Consecuencias:** + Horizontal scaling seguro cuando se configura, + Fallback graceful, - Requiere que el deploy de prod setee `REDIS_URL` para >1 instancia.

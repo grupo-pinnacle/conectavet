@@ -2,6 +2,7 @@ import { prisma } from '../../shared/prisma';
 import { NotFoundError, ConflictError, ForbiddenError } from '../../shared/errors';
 import { getCached, setCache, clearCache } from '../../shared/cache';
 import { Prisma } from '@prisma/client';
+import { checkRateLimit } from './message-throttle';
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   WAITING: ['PENDING', 'ACTIVE'],
@@ -72,6 +73,7 @@ export async function findFirstAvailableVet(species?: string) {
       where: {
         role: 'VET',
         isOnline: true,
+        vetStatus: 'APPROVED',
         consultationsAsVet: { some: { pet: { species } } },
       },
       orderBy: { createdAt: 'asc' },
@@ -80,7 +82,7 @@ export async function findFirstAvailableVet(species?: string) {
     if (experienced) return experienced;
   }
   return prisma.user.findFirst({
-    where: { role: 'VET', isOnline: true },
+    where: { role: 'VET', isOnline: true, vetStatus: 'APPROVED' },
     orderBy: { createdAt: 'asc' },
     select: vetPublicSelect,
   });
@@ -347,13 +349,14 @@ export async function getAvailableVets(species?: string) {
   const where: Prisma.UserWhereInput = {
     role: 'VET',
     isOnline: true,
+    vetStatus: 'APPROVED',
     ...(species
       ? { consultationsAsVet: { some: { pet: { species } } } }
       : {}),
   };
   const vets = await prisma.user.findMany({
     where,
-    select: { id: true, email: true, firstName: true, lastName: true, isOnline: true },
+    select: { id: true, firstName: true, lastName: true, isOnline: true },
     orderBy: { createdAt: 'asc' },
   });
   setCache(cacheKey, vets, 30);
@@ -392,6 +395,49 @@ export async function saveMessage(data: {
     },
     include: { sender: { select: { id: true, email: true, role: true } } },
   });
+}
+
+/**
+ * Envío de mensaje UNIFICADO para REST y Socket.io: valida participación,
+ * estado ACTIVE, aplica rate-limit compartido y dedup durable por clientMsgId.
+ * Los llamadores (controller/gateway) se encargan de emitir por socket y
+ * notificar; así no hay dos caminos de validación que diverjan.
+ */
+export async function sendConsultationMessage(params: {
+  userId: string;
+  consultationId: string;
+  content?: string;
+  attachmentUrl?: string;
+  clientMsgId?: string;
+}) {
+  const { userId, consultationId, content, attachmentUrl, clientMsgId } = params;
+  const consultation = await getConsultationById(consultationId);
+  if (!consultation) throw new NotFoundError('Consulta no encontrada');
+  if (consultation.clientId !== userId && consultation.vetId !== userId) {
+    throw new ForbiddenError('No participás de esta consulta');
+  }
+  if (consultation.status !== 'ACTIVE') {
+    throw new ConflictError('La consulta no está activa. No podés enviar mensajes.');
+  }
+  if (!(await checkRateLimit(`msg:${userId}`))) {
+    throw new ConflictError('Demasiados mensajes. Esperá un momento.');
+  }
+  // Dedup durable por clientMsgId (cubre reintentos y multi-instancia).
+  if (clientMsgId) {
+    const existing = await prisma.message.findFirst({
+      where: { consultationId, clientMsgId },
+      include: { sender: { select: { id: true, email: true, role: true } } },
+    });
+    if (existing) return { message: existing, duplicated: true };
+  }
+  const message = await saveMessage({
+    consultationId,
+    senderId: userId,
+    content,
+    attachmentUrl,
+    clientMsgId,
+  });
+  return { message };
 }
 
 const MAX_MESSAGES = 500;

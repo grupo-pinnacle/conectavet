@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { authenticate } from '../../shared/middlewares/auth.middleware';
 import {
   registerController,
@@ -35,7 +35,7 @@ const forgotPasswordLimiter = rateLimit({
   // Clave compuesta: misma IP o mismo email cuentan para el límite.
   keyGenerator: (req) => {
     const email = (req.body && typeof req.body.email === 'string' ? req.body.email : '').toLowerCase();
-    return `${req.ip}:${email}`;
+    return `${ipKeyGenerator(req.ip ?? 'unknown')}:${email}`;
   },
   message: { success: false, message: 'Demasiados intentos. Intentá de nuevo más tarde.' },
 });

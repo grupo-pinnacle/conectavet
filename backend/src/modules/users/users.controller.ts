@@ -11,6 +11,7 @@ import {
   removeFavorite,
   listFavorites,
   createUser,
+  updateVetStatus,
 } from './users.service';
 import { assignNextPendingVet } from '../consultations/consultations.service';
 import { getIO } from '../consultations/chat.gateway';
@@ -184,6 +185,30 @@ export async function getVetByIdController(req: RequestWithUser, res: Response) 
       return res.status(error.statusCode).json({ success: false, message: error.message });
     }
     console.error('Error en getVetByIdController:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+}
+
+const updateVetStatusSchema = z.object({
+  vetStatus: z.enum(['PENDING', 'APPROVED']),
+});
+
+export async function updateVetStatusController(req: RequestWithUser, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'No autenticado' });
+    }
+    const parsed = updateVetStatusSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, message: parsed.error.issues[0].message });
+    }
+    const user = await updateVetStatus(req.params.id as string, parsed.data.vetStatus);
+    return res.status(200).json({ success: true, data: user });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
+    console.error('Error en updateVetStatusController:', error);
     return res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 }

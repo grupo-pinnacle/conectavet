@@ -27,6 +27,11 @@ enum ConsultationStatus {
   CANCELLED
 }
 
+enum VetStatus {
+  PENDING
+  APPROVED
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -37,14 +42,15 @@ model User {
   bio          String?
   specialty    String?
   role         Role
+  vetStatus    VetStatus @default(APPROVED) @map("vet_status")
   isOnline     Boolean  @default(false)
   tokenVersion Int      @default(1)
-  isEmailVerified      Boolean    @default(false)
+  isEmailVerified      Boolean    @default(false) @map("is_email_verified")
   emailVerifyToken     String?    @map("email_verify_token")
   emailVerifyExpires   DateTime?  @map("email_verify_expires")
   passwordResetToken   String?    @map("password_reset_token")
   passwordResetExpires DateTime?  @map("password_reset_expires")
-  lastSeen             DateTime?
+  lastSeen             DateTime? @map("last_seen")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -106,8 +112,8 @@ model Consultation {
   startedAt     DateTime?
   endedAt       DateTime?
   createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  deletedAt     DateTime?
+  updatedAt    DateTime @updatedAt
+  deletedAt     DateTime? @map("deleted_at")
   messages      Message[]
   prescriptions Prescription[]
   review        Review?
@@ -129,7 +135,7 @@ model Message {
   attachmentUrl  String?
   clientMsgId    String?      @map("client_msg_id") @unique
   createdAt      DateTime     @default(now())
-  deletedAt      DateTime?
+  deletedAt      DateTime? @map("deleted_at")
 
   @@index([consultationId, createdAt])
   @@index([deletedAt])

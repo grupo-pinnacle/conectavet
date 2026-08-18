@@ -111,14 +111,29 @@ export async function restorePet(id: string, userId: string) {
   });
 }
 
-export async function getManagedPets(vetId: string) {
-  const consultations = await prisma.consultation.findMany({
-    where: { vetId, pet: { deletedAt: null } },
-    select: { pet: true },
-    distinct: ['petId'],
-    orderBy: { updatedAt: 'desc' },
+export async function getManagedPets(vetId: string, page = 1, limit = 50) {
+  const cappedLimit = Math.min(Math.max(1, limit), 100);
+  const skip = (page - 1) * cappedLimit;
+  // Mascotas que el vet atendió/hay en consulta (sin duplicar por consulta).
+  const where = { consultations: { some: { vetId, pet: { is: { deletedAt: null } } } } };
+  const [data, total] = await Promise.all([
+    prisma.pet.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: cappedLimit,
+    }),
+    prisma.pet.count({ where }),
+  ]);
+  return { data, total, page, limit: cappedLimit, totalPages: Math.ceil(total / cappedLimit) };
+}
+
+export async function vetHasConsultationForPet(vetId: string, petId: string) {
+  const consultation = await prisma.consultation.findFirst({
+    where: { vetId, petId, deletedAt: null },
+    select: { id: true },
   });
-  return consultations.map((c) => c.pet);
+  return !!consultation;
 }
 
 export async function getPetVetCard(petId: string) {

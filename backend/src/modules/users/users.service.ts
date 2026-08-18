@@ -108,6 +108,7 @@ export async function listVets(
   const skip = (page - 1) * limit;
   const where: Prisma.UserWhereInput = {
     role: 'VET',
+    vetStatus: 'APPROVED',
     ...(onlineOnly ? { isOnline: true } : {}),
     ...(search
       ? {
@@ -125,7 +126,6 @@ export async function listVets(
       where,
       select: {
         id: true,
-        email: true,
         firstName: true,
         lastName: true,
         specialty: true,
@@ -167,6 +167,17 @@ export async function listVets(
   const result = { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   setCache(cacheKey, result, 30);
   return result;
+}
+
+export async function updateVetStatus(vetId: string, vetStatus: 'PENDING' | 'APPROVED') {
+  const vet = await prisma.user.findFirst({ where: { id: vetId, role: 'VET' } });
+  if (!vet) throw new NotFoundError('Veterinario no encontrado');
+  const updated = await prisma.user.update({
+    where: { id: vetId },
+    data: { vetStatus },
+  });
+  const { password, ...rest } = updated;
+  return rest;
 }
 
 export async function getVetById(vetId: string) {

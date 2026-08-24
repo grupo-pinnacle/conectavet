@@ -159,6 +159,17 @@ app.use('/uploads', authenticate, async (req: RequestWithUser, res: Response, ne
         const att = await prisma.attachment.findFirst({ where: { url: fileUrl, uploaderId: req.user!.userId } });
         allowed = !!att || req.user!.role === 'ADMIN';
       }
+      // Fotos de perfil (usuarios y mascotas): cualquier usuario autenticado
+      // puede verlas — ya se exponen en los payloads de la API (directorio,
+      // chat, consultas). Sin esta regla el dueño ve su foto pero el resto
+      // recibe 403.
+      if (!allowed) {
+        const [asUserPhoto, asPetPhoto] = await Promise.all([
+          prisma.user.findFirst({ where: { photoUrl: fileUrl }, select: { id: true } }),
+          prisma.pet.findFirst({ where: { photoUrl: fileUrl }, select: { id: true } }),
+        ]);
+        allowed = !!(asUserPhoto || asPetPhoto);
+      }
       // Solo cacheamos resultados positivos: si cambia un permiso negativo
       // no quedará bloqueado por el TTL.
       if (allowed) uploadAuthCache.set(cacheKey, true);

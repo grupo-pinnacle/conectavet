@@ -170,7 +170,7 @@ export async function getPetVetCard(petId: string) {
         'firstName', u."firstName",
         'lastName', u."lastName",
         'phone', u.phone,
-        'photoUrl', u."photoUrl",
+        'photoUrl', u."photo_url",
         'role', u.role
       )) AS owner,
       (SELECT COUNT(*) FROM consultations WHERE "petId" = ${petId}) AS "totalConsultations",

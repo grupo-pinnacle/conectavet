@@ -29,6 +29,7 @@ function touchCache(key: string, url: string) {
 
 export default function AuthImage({ src, alt, className }: AuthImageProps) {
   const [objectUrl, setObjectUrl] = useState<string | null>(() => blobCache.get(src) ?? null);
+  const [failed, setFailed] = useState(false);
   const [prevSrc, setPrevSrc] = useState(src);
 
   // Cambio de imagen dentro del mismo componente: ajustamos estado durante
@@ -36,6 +37,7 @@ export default function AuthImage({ src, alt, className }: AuthImageProps) {
   if (prevSrc !== src) {
     setPrevSrc(src);
     setObjectUrl(blobCache.get(src) ?? null);
+    setFailed(false);
   }
 
   useEffect(() => {
@@ -68,12 +70,28 @@ export default function AuthImage({ src, alt, className }: AuthImageProps) {
       .then((url) => {
         if (!cancelled) setObjectUrl(url);
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
 
     return () => {
       cancelled = true;
     };
   }, [src]);
+
+  // El archivo ya no existe (o no hay permiso): estado visible en vez de
+  // un skeleton pulsando para siempre.
+  if (failed) {
+    return (
+      <div
+        className={`${className ?? ""} flex items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-400`}
+        role="img"
+        aria-label={alt ? `${alt} (no disponible)` : "Imagen no disponible"}
+      >
+        Imagen no disponible
+      </div>
+    );
+  }
 
   // Placeholder del mismo tamaño: sin saltos de layout mientras carga
   if (!objectUrl) {

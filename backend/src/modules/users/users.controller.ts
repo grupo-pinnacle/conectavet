@@ -55,6 +55,7 @@ const updateProfileSchema = z.object({
   phone: z.string().trim().max(30).optional(),
   bio: z.string().trim().max(500, 'La bio no puede superar los 500 caracteres').optional(),
   specialty: z.string().trim().max(100, 'La especialidad no puede superar los 100 caracteres').optional(),
+  photoUrl: z.string().trim().max(500, 'La URL de la foto no puede superar los 500 caracteres').nullish(),
 }).refine((d) => Object.values(d).some((v) => v !== undefined), {
   message: 'Enviá al menos un campo para actualizar',
 });

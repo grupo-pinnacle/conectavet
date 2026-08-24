@@ -5,6 +5,7 @@ export interface User {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  photoUrl?: string | null;
   isOnline?: boolean;
   role: "owner" | "vet" | "admin";
 }

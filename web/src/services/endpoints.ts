@@ -10,10 +10,18 @@ export interface UpdateProfilePayload {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  photoUrl?: string | null;
 }
 
 export async function updateProfile(data: UpdateProfilePayload): Promise<User> {
   const res = await api.patch("/api/users/me", data);
+  return res.data.data;
+}
+
+export async function uploadImage(file: File): Promise<{ url: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await api.post("/api/media", form);
   return res.data.data;
 }
 

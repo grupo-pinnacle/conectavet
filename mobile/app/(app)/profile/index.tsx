@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
 import { usePets } from '@/hooks/usePets';
-import { Card, Button, Badge } from '@/components/ui';
+import { Card, Button, Badge, Avatar } from '@/components/ui';
 import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
 import type { Role } from '@/types';
 
@@ -40,7 +40,6 @@ export default function ProfileScreen() {
   const pets = list.data ?? [];
 
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Sin nombre';
-  const initials = (fullName.charAt(0) || 'U').toUpperCase();
 
   return (
     <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: insets.bottom + spacing.huge }}>
@@ -61,19 +60,13 @@ export default function ProfileScreen() {
         <View style={{ alignItems: 'center', gap: spacing.md }}>
           <View
             style={{
-              width: 92,
-              height: 92,
-              borderRadius: 46,
-              backgroundColor: c.surface,
-              justifyContent: 'center',
-              alignItems: 'center',
+              borderRadius: 49,
               borderWidth: 3,
               borderColor: 'rgba(255,255,255,0.7)',
+              overflow: 'hidden',
             }}
           >
-            <Text style={{ fontSize: fontSizes.title, fontWeight: fontWeights.bold, color: c.primary }}>
-              {initials}
-            </Text>
+            <Avatar uri={user?.photoUrl} name={fullName} size={92} />
           </View>
           <View style={{ alignItems: 'center', gap: spacing.xs }}>
             <Text style={{ fontSize: fontSizes.title, fontWeight: fontWeights.bold, color: c.white, letterSpacing: -0.5 }}>

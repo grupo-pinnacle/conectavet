@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { ScrollView, Text, View, KeyboardAvoidingView, Platform } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
 import { useUpdateProfile } from '@/hooks/useUpdateProfile';
-import { Input, Button } from '@/components/ui';
+import { Input, Button, Avatar } from '@/components/ui';
+import { pickImage } from '@/utils/permissions';
+import { mediaService } from '@/services';
 import { useTheme, spacing, fontSizes, fontWeights } from '@/theme';
 
 export default function EditProfileScreen() {
@@ -21,6 +24,29 @@ export default function EditProfileScreen() {
   const [phone, setPhone] = useState(user?.phone ?? '');
   const [bio, setBio] = useState(user?.bio ?? '');
   const [specialty, setSpecialty] = useState(user?.specialty ?? '');
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email || '';
+
+  const onChangePhoto = async () => {
+    if (uploadingPhoto) return;
+    try {
+      const picked = await pickImage();
+      if (!picked?.uri) return;
+      setUploadingPhoto(true);
+      const attachment = await mediaService.upload({
+        uri: picked.uri,
+        name: `profile-${Date.now()}.jpg`,
+        type: picked.mimeType ?? 'image/jpeg',
+      });
+      updateProfile.mutate(
+        { photoUrl: attachment.url },
+        { onSettled: () => setUploadingPhoto(false) }
+      );
+    } catch {
+      setUploadingPhoto(false);
+    }
+  };
 
   const onSave = () => {
     updateProfile.mutate(
@@ -49,6 +75,42 @@ export default function EditProfileScreen() {
         <Text style={{ fontSize: fontSizes.title, fontWeight: fontWeights.bold, color: c.ink, letterSpacing: -0.5, marginBottom: spacing.xl }}>
           Editar perfil
         </Text>
+
+        <Pressable
+          onPress={onChangePhoto}
+          disabled={uploadingPhoto}
+          style={{ alignSelf: 'center', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xl }}
+          accessibilityRole="button"
+          accessibilityLabel="Cambiar foto de perfil"
+        >
+          <View>
+            <Avatar uri={user?.photoUrl} name={fullName} size={96} />
+            <View
+              style={{
+                position: 'absolute',
+                right: 0,
+                bottom: 0,
+                width: 30,
+                height: 30,
+                borderRadius: 15,
+                backgroundColor: c.primary,
+                justifyContent: 'center',
+                alignItems: 'center',
+                borderWidth: 2,
+                borderColor: c.surface,
+              }}
+            >
+              {uploadingPhoto ? (
+                <ActivityIndicator size="small" color={c.white} />
+              ) : (
+                <MaterialCommunityIcons name="camera" size={15} color={c.white} />
+              )}
+            </View>
+          </View>
+          <Text style={{ fontSize: fontSizes.caption, color: c.primary, fontWeight: fontWeights.semibold }}>
+            {uploadingPhoto ? 'Subiendo…' : user?.photoUrl ? 'Cambiar foto' : 'Añadir foto'}
+          </Text>
+        </Pressable>
 
         <Input
           label="Nombre"

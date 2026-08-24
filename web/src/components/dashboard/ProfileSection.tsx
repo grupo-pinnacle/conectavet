@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import type { ChangeEvent } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import { getMyPets } from "../../services/endpoints";
+import { getMyPets, uploadImage } from "../../services/endpoints";
+import AuthImage from "../AuthImage";
 import Button from "../Button";
 import { PawPrint, Phone, Mail, Stethoscope, UserRound, Check, Pencil } from "lucide-react";
 
@@ -16,12 +18,6 @@ export default function ProfileSection() {
   const [petCount, setPetCount] = useState<number | null>(null);
 
   useEffect(() => {
-    setFirstName(user?.firstName ?? "");
-    setLastName(user?.lastName ?? "");
-    setPhone(user?.phone ?? "");
-  }, [user]);
-
-  useEffect(() => {
     getMyPets()
       .then((pets) => setPetCount(pets.length))
       .catch(() => setPetCount(null));
@@ -29,6 +25,30 @@ export default function ProfileSection() {
 
   const roleLabel = user?.role === "vet" ? "Veterinario/a" : user?.role === "admin" ? "Administrador" : "Dueño de mascota";
   const initials = (user?.name || user?.email || "U").charAt(0).toUpperCase();
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  const handlePhotoChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploadingPhoto(true);
+    setError("");
+    try {
+      const { url } = await uploadImage(file);
+      await updateProfile({ photoUrl: url });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message
+        || (err as { message?: string })?.message
+        || "No pudimos subir la foto.";
+      setError(msg);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -60,9 +80,22 @@ export default function ProfileSection() {
         {/* Avatar card */}
         <div className="rounded-xl border border-border bg-white p-6 shadow-sm md:col-span-1">
           <div className="flex flex-col items-center text-center">
-            <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-teal-600 to-teal-800 text-3xl font-bold text-white shadow-subtle">
-              {initials}
+            <div className="relative mb-4 flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-teal-600 to-teal-800 text-3xl font-bold text-white shadow-subtle">
+              {user?.photoUrl ? (
+                <AuthImage src={user.photoUrl} alt={user?.name || "Foto de perfil"} className="h-24 w-24 object-cover" />
+              ) : (
+                initials
+              )}
             </div>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingPhoto}
+              className="mb-2 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700 transition hover:bg-teal-100 disabled:opacity-50"
+            >
+              {uploadingPhoto ? "Subiendo…" : user?.photoUrl ? "Cambiar foto" : "Añadir foto"}
+            </button>
+            <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={handlePhotoChange} />
             <p className="text-xl font-bold text-ink">{user?.name || "Usuario"}</p>
             <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
               <Stethoscope className="h-3.5 w-3.5" /> {roleLabel}

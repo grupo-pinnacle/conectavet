@@ -51,6 +51,7 @@ model User {
   passwordResetExpires DateTime?  @map("password_reset_expires")
   lastSeen             DateTime?  @map("last_seen")
   vetStatus            VetStatus  @default(APPROVED) @map("vet_status")
+  photoUrl             String?    @map("photo_url")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

@@ -46,6 +46,7 @@ export const userSchema = z.object({
   isActive: z.boolean(),
   bio: z.string().nullable().optional(),
   specialty: z.string().nullable().optional(),
+  photoUrl: z.string().nullable().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -57,6 +58,7 @@ export const updateProfileSchema = z.object({
   phone: z.string().regex(/^\+?[\d\s-]{6,20}$/, 'Teléfono inválido').optional(),
   bio: z.string().max(500).nullable().optional(),
   specialty: z.string().max(100).nullable().optional(),
+  photoUrl: z.string().max(500).nullable().optional(),
 });
 export type UpdateProfilePayload = z.infer<typeof updateProfileSchema>;
 

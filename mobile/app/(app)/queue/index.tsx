@@ -1,11 +1,12 @@
 import { useState, useRef } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button, EmptyState, SkeletonCard } from '@/components/ui';
+import { AuthImage } from '@/components/AuthImage';
 import { useCreateConsultation } from '@/hooks/useConsultations';
 import { usePets } from '@/hooks/usePets';
 import { useTheme, spacing, fontSizes, fontWeights, radius, speciesIcon, speciesLabel } from '@/theme';
@@ -122,7 +123,7 @@ export default function QueueScreen() {
                 >
                   <View style={{ width: 56, height: 56, borderRadius: radius.full, backgroundColor: selected ? c.primaryLight : c.borderLight, justifyContent: 'center', alignItems: 'center', overflow: 'hidden', marginBottom: spacing.sm }}>
                     {p.photoUrl ? (
-                      <Image source={{ uri: p.photoUrl }} style={{ width: 56, height: 56 }} accessibilityRole="image" accessibilityLabel={`Foto de ${p.name}`} />
+                      <AuthImage uri={p.photoUrl} style={{ width: 56, height: 56 }} resizeMode="cover" accessibilityLabel={`Foto de ${p.name}`} />
                     ) : (
                       <MaterialCommunityIcons name={iconName} size={28} color={selected ? c.primary : c.inkMuted} />
                     )}

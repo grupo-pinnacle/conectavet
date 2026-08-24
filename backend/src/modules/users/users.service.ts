@@ -56,7 +56,7 @@ export async function createUser(data: {
 
 export async function updateProfile(
   userId: string,
-  data: { firstName?: string; lastName?: string; phone?: string; bio?: string; specialty?: string }
+  data: { firstName?: string; lastName?: string; phone?: string; bio?: string; specialty?: string; photoUrl?: string | null }
 ) {
   const user = await prisma.user.update({
     where: { id: userId },
@@ -66,6 +66,7 @@ export async function updateProfile(
       ...(data.phone !== undefined && { phone: data.phone || null }),
       ...(data.bio !== undefined && { bio: data.bio || null }),
       ...(data.specialty !== undefined && { specialty: data.specialty || null }),
+      ...(data.photoUrl !== undefined && { photoUrl: data.photoUrl || null }),
     },
   });
 
@@ -126,10 +127,11 @@ export async function listVets(
       select: {
         id: true,
         email: true,
-        firstName: true,
-        lastName: true,
-        specialty: true,
-        role: true,
+           firstName: true,
+           lastName: true,
+           photoUrl: true,
+           specialty: true,
+           role: true,
         isOnline: true,
         createdAt: true,
         reviewsAsVet: { select: { rating: true } },
@@ -175,11 +177,12 @@ export async function getVetById(vetId: string) {
     select: {
       id: true,
       email: true,
-      firstName: true,
-      lastName: true,
-      phone: true,
-      bio: true,
-      specialty: true,
+         firstName: true,
+         lastName: true,
+         phone: true,
+         bio: true,
+         photoUrl: true,
+         specialty: true,
       isOnline: true,
       createdAt: true,
       reviewsAsVet: { select: { rating: true, comment: true, createdAt: true } },
@@ -221,11 +224,12 @@ export async function listFavorites(clientId: string) {
     include: {
       vet: {
         select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          specialty: true,
+             id: true,
+             email: true,
+             firstName: true,
+             lastName: true,
+             photoUrl: true,
+             specialty: true,
           isOnline: true,
           reviewsAsVet: { select: { rating: true } },
         },

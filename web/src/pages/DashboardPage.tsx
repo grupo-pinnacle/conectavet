@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import type { Socket } from "socket.io-client";
 import { useAuth } from "../hooks/useAuth";
+import AuthImage from "../components/AuthImage";
 import { useNavigate } from "react-router-dom";
 import { Home, PawPrint, Calendar, MessageCircle, Search, User, LogOut } from "lucide-react";
 import Logo from "../components/Logo";
@@ -127,8 +128,12 @@ export default function DashboardPage() {
         </nav>
         <div className="border-t border-border px-4 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-700 text-sm font-bold text-white">
-              {user?.name?.charAt(0) || "U"}
+            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-teal-700 text-sm font-bold text-white">
+              {user?.photoUrl ? (
+                <AuthImage src={user.photoUrl} alt={user?.name || "Foto de perfil"} className="h-10 w-10 object-cover" />
+              ) : (
+                (user?.name?.charAt(0) || "U")
+              )}
             </div>
             <div className="flex-1 truncate">
               <p className="text-sm font-semibold text-ink">{user?.name || "Usuario"}</p>

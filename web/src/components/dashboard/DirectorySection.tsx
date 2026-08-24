@@ -10,6 +10,7 @@ import {
 } from "../../services/endpoints";
 import type { VetSummary } from "../../services/endpoints";
 import { onDataChanged } from "../../services/realtime";
+import AuthImage from "../AuthImage";
 import Button from "../Button";
 import type { Pet } from "../../types";
 
@@ -241,8 +242,12 @@ export default function DirectorySection() {
           {vets.map((v) => (
             <div key={v.id} className="rounded-xl border border-border bg-white p-5 shadow-sm">
               <div className="flex flex-wrap items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-50 text-lg font-bold text-teal-700">
-                  {(v.firstName || v.email || "V").charAt(0).toUpperCase()}
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-teal-50 text-lg font-bold text-teal-700">
+                  {v.photoUrl ? (
+                    <AuthImage src={v.photoUrl} alt={v.firstName || "Veterinario"} className="h-12 w-12 object-cover" />
+                  ) : (
+                    (v.firstName || v.email || "V").charAt(0).toUpperCase()
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import AuthImage from "../AuthImage";
 import { Send, MessageSquare, ArrowLeft, Pill, Clock, CheckCircle2 } from "lucide-react";
 import {
   getMessages,
@@ -355,8 +356,12 @@ export default function MessagesSection() {
                   isSelected ? "bg-teal-50/60 shadow-[inset_3px_0_0_0_#0F766E]" : ""
                 }`}
               >
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-bold text-teal-700">
-                  {c.pet?.name?.charAt(0) || "?"}
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-teal-50 text-sm font-bold text-teal-700">
+                  {c.pet?.photoUrl ? (
+                    <AuthImage src={c.pet.photoUrl} alt={c.pet.name || "Mascota"} className="h-11 w-11 object-cover" />
+                  ) : (
+                    (c.pet?.name?.charAt(0) || "?")
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
@@ -399,8 +404,12 @@ export default function MessagesSection() {
               >
                 <ArrowLeft className="h-5 w-5 text-slate-500" />
               </button>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-50 text-sm font-bold text-teal-700 shrink-0">
-                {activeCons.pet?.name?.charAt(0) || "?"}
+              <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-teal-50 text-sm font-bold text-teal-700 shrink-0">
+                {activeCons.pet?.photoUrl ? (
+                  <AuthImage src={activeCons.pet.photoUrl} alt={activeCons.pet.name || "Mascota"} className="h-10 w-10 object-cover" />
+                ) : (
+                  (activeCons.pet?.name?.charAt(0) || "?")
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-ink truncate">

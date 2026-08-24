@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { getMyConsultations, rateConsultation } from "../../services/endpoints";
+import AuthImage from "../AuthImage";
 import type { Consultation, Prescription, Review } from "../../types";
 import { ClipboardList, Clock, Pill, Star, X } from "lucide-react";
 import StarRatingInput from "./StarRatingInput";
@@ -34,6 +35,7 @@ export default function HistorySection() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch de datos al montar
     load();
   }, [load]);
 
@@ -106,8 +108,12 @@ export default function HistorySection() {
             >
               <div className="mb-3 flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-50 text-sm font-bold text-teal-700">
-                    {c.pet?.name?.charAt(0) || "?"}
+                  <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-teal-50 text-sm font-bold text-teal-700">
+                    {c.pet?.photoUrl ? (
+                      <AuthImage src={c.pet.photoUrl} alt={c.pet.name || "Mascota"} className="h-10 w-10 object-cover" />
+                    ) : (
+                      (c.pet?.name?.charAt(0) || "?")
+                    )}
                   </div>
                   <div>
                     <p className="font-bold text-ink">{c.pet?.name || "Mascota"}</p>

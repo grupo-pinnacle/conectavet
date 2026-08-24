@@ -1,4 +1,5 @@
 import { io, Socket } from "socket.io-client";
+import { getApiToken } from "./api";
 
 let socket: Socket | null = null;
 
@@ -33,6 +34,10 @@ export function connectSocket(): Promise<Socket> {
     withCredentials: true,
     path: "/socket.io",
     transports: ["websocket", "polling"],
+    // Token en el handshake además de la cookie: si la cookie access_token
+    // expiró (2h) o no viaja, el chat sigue siendo realtime porque la fábrica
+    // re-lee el token vigente en CADA intento de conexión/reconexión.
+    auth: (cb) => cb({ token: getApiToken() || "" }),
   });
   socket = sock;
 

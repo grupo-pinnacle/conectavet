@@ -1,4 +1,4 @@
-import { Response } from 'express';
+﻿import { Response } from 'express';
 import { z } from 'zod';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
 import { AppError, NotFoundError, ForbiddenError, ConflictError } from '../../shared/errors';
@@ -24,7 +24,7 @@ import {
 
 const createSchema = z.object({
   petId: z.string().min(1, 'petId es requerido'),
-  notes: z.string().min(5, 'Describí el motivo de la consulta (mín. 5 caracteres)').max(1000, 'El motivo no puede superar los 1000 caracteres'),
+  notes: z.string().min(5, 'DescribÃ­ el motivo de la consulta (mÃ­n. 5 caracteres)').max(1000, 'El motivo no puede superar los 1000 caracteres'),
   vetId: z.string().min(1).optional(),
 });
 
@@ -35,15 +35,15 @@ const completeSchema = z.object({
 const sendMessageSchema = z
   .object({
     content: z.string().max(2000, 'El mensaje no puede superar los 2000 caracteres').optional(),
-    attachmentUrl: z.string().startsWith('/uploads/', 'Imagen adjunta inválida').optional(),
+    attachmentUrl: z.string().startsWith('/uploads/', 'Imagen adjunta invÃ¡lida').optional(),
     clientMsgId: z.string().max(100).optional(),
   })
   .refine((data) => data.content || data.attachmentUrl, {
-    message: 'El mensaje no puede estar vacío',
+    message: 'El mensaje no puede estar vacÃ­o',
   });
 
 const prescriptionSchema = z.object({
-  content: z.string().trim().min(1, 'La receta no puede estar vacía').max(5000, 'La receta no puede superar los 5000 caracteres'),
+  content: z.string().trim().min(1, 'La receta no puede estar vacÃ­a').max(5000, 'La receta no puede superar los 5000 caracteres'),
   medication: z.string().trim().max(200).optional().or(z.literal('')),
   dosage: z.string().trim().max(200).optional().or(z.literal('')),
   frequency: z.string().trim().max(200).optional().or(z.literal('')),
@@ -58,7 +58,7 @@ async function assertParticipation(consultationId: string, userId: string) {
   });
   if (!consultation) throw new NotFoundError('Consulta no encontrada');
   if (consultation.clientId !== userId && consultation.vetId !== userId) {
-    throw new ForbiddenError('No participás de esta consulta');
+    throw new ForbiddenError('No participÃ¡s de esta consulta');
   }
   return consultation;
 }
@@ -96,7 +96,7 @@ export async function createController(req: RequestWithUser, res: Response) {
       await notifyVetsOnline(
         'consultation_new',
         'Nueva consulta en espera',
-        'Un cliente está esperando atención',
+        'Un cliente estÃ¡ esperando atenciÃ³n',
         { consultationId: consultation.id }
       );
     } else if (consultation.status === 'PENDING' && consultation.vetId) {
@@ -104,7 +104,7 @@ export async function createController(req: RequestWithUser, res: Response) {
         consultation.vetId,
         'consultation_offer',
         'Nueva consulta asignada',
-        'Un cliente te eligió para atender a su mascota',
+        'Un cliente te eligiÃ³ para atender a su mascota',
         { consultationId: consultation.id }
       );
     }
@@ -131,8 +131,8 @@ export async function assignVetController(req: RequestWithUser, res: Response) {
     await notifyUser(
       consultation.clientId,
       'consultation_assigned',
-      'Un veterinario tomó tu consulta',
-      'Un veterinario está listo para atenderte',
+      'Un veterinario tomÃ³ tu consulta',
+      'Un veterinario estÃ¡ listo para atenderte',
       { consultationId: consultation.id }
     );
     return res.status(200).json({ success: true, data: consultation });
@@ -158,7 +158,7 @@ export async function declineVetController(req: RequestWithUser, res: Response) 
     await notifyVetsOnline(
       'consultation_new',
       'Consulta disponible en la cola',
-      'Un veterinario rechazó una consulta y quedó disponible',
+      'Un veterinario rechazÃ³ una consulta y quedÃ³ disponible',
       { consultationId: consultation.id }
     );
     return res.status(200).json({ success: true, data: consultation });
@@ -195,7 +195,7 @@ export async function completeController(req: RequestWithUser, res: Response) {
       updated.clientId,
       'consultation_completed',
       'Consulta finalizada',
-      'Tu veterinario cerró la consulta. Podés verla en el historial.',
+      'Tu veterinario cerrÃ³ la consulta. PodÃ©s verla en el historial.',
       { consultationId: updated.id }
     );
     return res.status(200).json({ success: true, data: updated });
@@ -298,7 +298,7 @@ export async function sendMessageController(req: RequestWithUser, res: Response)
     }
     const consultation = await assertParticipation(req.params.id as string, req.user.userId);
     if (consultation.status !== 'ACTIVE') {
-      throw new ConflictError('La consulta no está activa. No podés enviar mensajes.');
+      throw new ConflictError('La consulta no estÃ¡ activa. No podÃ©s enviar mensajes.');
     }
     const message = await saveMessage({
       consultationId: req.params.id as string,
@@ -315,7 +315,7 @@ export async function sendMessageController(req: RequestWithUser, res: Response)
     } catch {
       // Socket not available, messages still reachable via polling
     }
-    await notifyConsultationMessage(req.params.id as string, req.user.userId);
+    void notifyConsultationMessage(req.params.id as string, req.user.userId).catch(() => {});
     return res.status(201).json({ success: true, data: message });
   } catch (error) {
     if (error instanceof AppError) {
@@ -377,8 +377,8 @@ export async function createPrescriptionController(req: RequestWithUser, res: Re
     await notifyUser(
       consultation.clientId,
       'prescription_new',
-      'Nueva receta médica',
-      'Tu veterinario agregó una receta a la consulta',
+      'Nueva receta mÃ©dica',
+      'Tu veterinario agregÃ³ una receta a la consulta',
       { consultationId: consultation.id }
     );
     return res.status(201).json({ success: true, data: prescription });
@@ -392,8 +392,8 @@ export async function createPrescriptionController(req: RequestWithUser, res: Re
 }
 
 const reviewSchema = z.object({
-  rating: z.coerce.number({ message: 'rating debe ser un número' }).int().min(1, 'La calificación mínima es 1').max(10, 'La calificación máxima es 10'),
-  comment: z.string().trim().min(10, 'Cuéntanos un poco más: tu opinión debe tener al menos 10 caracteres').max(500, 'El comentario no puede superar los 500 caracteres'),
+  rating: z.coerce.number({ message: 'rating debe ser un nÃºmero' }).int().min(1, 'La calificaciÃ³n mÃ­nima es 1').max(10, 'La calificaciÃ³n mÃ¡xima es 10'),
+  comment: z.string().trim().min(10, 'CuÃ©ntanos un poco mÃ¡s: tu opiniÃ³n debe tener al menos 10 caracteres').max(500, 'El comentario no puede superar los 500 caracteres'),
 });
 
 export async function createReviewController(req: RequestWithUser, res: Response) {

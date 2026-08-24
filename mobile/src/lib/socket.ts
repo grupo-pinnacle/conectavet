@@ -36,8 +36,11 @@ export async function connectSocket(): Promise<Socket> {
 
   const token = await secureStorage.getAccessToken();
   socket = io(API_URL, {
-    auth: { token },
     transports: ['websocket', 'polling'],
+    // Fábrica de auth: se re-evalúa en CADA intento de conexión/reconexión.
+    // Así un socket creado antes del login (token null) se autentica solo
+    // cuando el token aparece, sin recrear la instancia ni perder listeners.
+    auth: async (cb) => cb({ token: (await secureStorage.getAccessToken()) ?? token ?? '' }),
   });
 
   return new Promise((resolve, reject) => {

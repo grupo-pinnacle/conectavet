@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { X, Phone, AlertTriangle, Pill, Stethoscope, Clock, CheckCircle, FileText } from "lucide-react";
 import { getPetVetCard } from "../../../services/endpoints";
+import AuthImage from "../../AuthImage";
 import type { VetCard } from "../../../types";
 import Button from "../../Button";
 import { formatSex } from "../../../utils/sex";
@@ -40,7 +41,10 @@ export default function VetPatientProfile({ petId, petName, onClose }: Props) {
     }
   }, [petId]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch de datos al montar
+    load();
+  }, [load]);
 
   return (
     <>
@@ -53,7 +57,13 @@ export default function VetPatientProfile({ petId, petName, onClose }: Props) {
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border px-6 py-4">
             <div className="flex items-center gap-3">
-              <span className="text-2xl">{data ? (speciesEmoji[data.pet.species] || "🐾") : "🐾"}</span>
+              <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-amber-100 text-xl">
+                {data?.pet.photoUrl ? (
+                  <AuthImage src={data.pet.photoUrl} alt={data.pet.name || petName} className="h-10 w-10 object-cover" />
+                ) : (
+                  (data ? (speciesEmoji[data.pet.species] || "🐾") : "🐾")
+                )}
+              </span>
               <div>
                 <h2 className="text-lg font-bold text-ink">{data?.pet.name || petName}</h2>
                 <p className="text-xs text-slate-500 capitalize">{data?.pet.species?.toLowerCase()}{data?.pet.breed ? ` · ${data.pet.breed}` : ""}</p>
@@ -113,8 +123,12 @@ export default function VetPatientProfile({ petId, petName, onClose }: Props) {
                   <h3 className="mb-3 text-sm font-bold text-ink uppercase tracking-wider">Dueño</h3>
                   <div className="rounded-xl border border-border bg-[#FAFBFC] p-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-100 text-sm font-bold text-teal-700">
-                        {(data.owner.firstName || "?").charAt(0)}{(data.owner.lastName || "").charAt(0)}
+                      <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-teal-100 text-sm font-bold text-teal-700">
+                        {data.owner.photoUrl ? (
+                          <AuthImage src={data.owner.photoUrl} alt={data.owner.firstName || "Dueño"} className="h-10 w-10 object-cover" />
+                        ) : (
+                          <>{(data.owner.firstName || "?").charAt(0)}{(data.owner.lastName || "").charAt(0)}</>
+                        )}
                       </div>
                       <div>
                         <p className="font-semibold text-ink">{data.owner.firstName || ""} {data.owner.lastName || ""}</p>

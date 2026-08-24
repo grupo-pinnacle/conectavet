@@ -89,6 +89,7 @@ export interface VetCardOwner {
   firstName?: string | null;
   lastName?: string | null;
   phone?: string | null;
+  photoUrl?: string | null;
 }
 
 export interface VetCardConsultation {

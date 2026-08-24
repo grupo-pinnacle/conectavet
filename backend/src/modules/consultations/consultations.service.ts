@@ -21,6 +21,7 @@ const publicUser = {
   firstName: true,
   lastName: true,
   phone: true,
+  photoUrl: true,
   role: true,
   isOnline: true,
 } as const;

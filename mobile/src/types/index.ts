@@ -232,6 +232,7 @@ export const vetSchema = z.object({
   bio: z.string().nullable().optional(),
   ratingAvg: z.number().nullable().optional(),
   ratingCount: z.number().optional(),
+  photoUrl: z.string().nullable().optional(),
   isFavorite: z.boolean().optional(),
   createdAt: z.string(),
 });

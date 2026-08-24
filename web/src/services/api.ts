@@ -19,6 +19,12 @@ export function setApiToken(token: string | null) {
   accessToken = token;
 }
 
+// Lectura para otros módulos (p.ej. handshake del socket): evita que el chat
+// dependa exclusivamente de la cookie access_token, que expira a las 2h.
+export function getApiToken(): string | null {
+  return accessToken;
+}
+
 api.interceptors.request.use((config) => {
   if (accessToken) {
     config.headers.set("Authorization", `Bearer ${accessToken}`);

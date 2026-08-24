@@ -5,6 +5,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useVetCard } from '@/hooks/usePets';
 import { Card, Badge, Button, SkeletonCard, EmptyState } from '@/components/ui';
+import { AuthImage } from '@/components/AuthImage';
 import { useTheme, spacing, radius, fontSizes, fontWeights, speciesIcon, speciesLabel } from '@/theme';
 import { formatAge, formatDate } from '@/utils/format';
 
@@ -65,8 +66,12 @@ export default function PetDetailScreen() {
 
         <Card padding={0} style={{ overflow: 'hidden' }}>
           <View style={{ flexDirection: 'row' }}>
-            <View style={{ width: 100, height: 100, backgroundColor: c.primaryBg, borderTopLeftRadius: radius.xl, borderBottomLeftRadius: radius.xl, alignItems: 'center', justifyContent: 'center' }}>
-              <MaterialCommunityIcons name={iconName} size={50} color={c.primary} />
+            <View style={{ width: 100, height: 100, backgroundColor: c.primaryBg, borderTopLeftRadius: radius.xl, borderBottomLeftRadius: radius.xl, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+              {pet.photoUrl ? (
+                <AuthImage uri={pet.photoUrl} style={{ width: 100, height: 100 }} resizeMode="cover" accessibilityLabel={`Foto de ${pet.name}`} />
+              ) : (
+                <MaterialCommunityIcons name={iconName} size={50} color={c.primary} />
+              )}
             </View>
             <View style={{ flex: 1, padding: spacing.lg, gap: spacing.xs }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>

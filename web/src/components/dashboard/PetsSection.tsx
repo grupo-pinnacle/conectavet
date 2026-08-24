@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { getMyPets, createPet, updatePet } from "../../services/endpoints";
+import AuthImage from "../AuthImage";
 import type { Pet } from "../../types";
 import { PawPrint } from "lucide-react";
 import { formatSex } from "../../utils/sex";
@@ -245,8 +246,12 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
         {pets.map((pet, i) => (
           <div key={pet.id} className="rounded-xl border border-border bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-3xl">
-                {avatarList[i % avatarList.length]}
+              <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-amber-100 text-3xl">
+                {pet.photoUrl ? (
+                  <AuthImage src={pet.photoUrl} alt={pet.name} className="h-16 w-16 object-cover" />
+                ) : (
+                  avatarList[i % avatarList.length]
+                )}
               </div>
               <div>
                 <p className="text-xl font-bold text-ink">{pet.name}</p>

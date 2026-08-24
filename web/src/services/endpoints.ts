@@ -140,6 +140,7 @@ export interface VetSummary {
   firstName?: string;
   lastName?: string;
   specialty?: string;
+  photoUrl?: string | null;
   isOnline: boolean;
   ratingAvg: number | null;
   ratingCount: number;

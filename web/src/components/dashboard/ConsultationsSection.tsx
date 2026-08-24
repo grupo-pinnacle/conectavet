@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createConsultation, getMyPets, getMyConsultations } from "../../services/endpoints";
 import { onDataChanged } from "../../services/realtime";
+import AuthImage from "../AuthImage";
 import type { Pet } from "../../types";
 import { Calendar, PawPrint, Clock, CheckCircle } from "lucide-react";
 import Button from "../Button";
@@ -10,6 +11,7 @@ interface ConsultationStatus {
   petId: string;
   status: string;
   petName: string;
+  petPhotoUrl?: string | null;
   createdAt: string;
 }
 
@@ -38,6 +40,7 @@ export default function ConsultationsSection({ initialPetId = "" }: { initialPet
             petId: c.petId,
             status: c.status,
             petName: c.pet?.name || "Mascota",
+            petPhotoUrl: c.pet?.photoUrl,
             createdAt: c.createdAt,
           }))
       );
@@ -49,6 +52,7 @@ export default function ConsultationsSection({ initialPetId = "" }: { initialPet
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch de datos al montar
     loadData();
   }, [loadData]);
 
@@ -184,8 +188,12 @@ export default function ConsultationsSection({ initialPetId = "" }: { initialPet
               key={c.id}
               className="flex items-center gap-4 rounded-xl border border-border bg-white p-5 shadow-sm"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 text-xl">
-                <PawPrint className="h-6 w-6 text-teal-700" />
+              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-teal-50 text-xl">
+                {c.petPhotoUrl ? (
+                  <AuthImage src={c.petPhotoUrl} alt={c.petName || "Mascota"} className="h-12 w-12 object-cover" />
+                ) : (
+                  <PawPrint className="h-6 w-6 text-teal-700" />
+                )}
               </div>
               <div className="flex-1">
                 <p className="font-bold text-ink">{c.petName}</p>

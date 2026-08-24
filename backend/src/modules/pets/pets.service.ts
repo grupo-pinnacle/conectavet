@@ -1,8 +1,20 @@
 import { prisma } from '../../shared/prisma';
+import { getCached, setCache, clearCache } from '../../shared/cache';
 
 export async function getPetsByOwner(ownerId: string, page = 1, limit = 20) {
+  // Caché corta: cada query a Supabase cuesta ~1.2s desde AR y las planillas
+  // se consultan seguido. Se invalida en toda mutación de mascotas.
+  const key = `pets:owner:${ownerId}:${page}:${limit}`;
+  const hit = getCached<Awaited<ReturnType<typeof queryPetsByOwner>>>(key);
+  if (hit) return hit;
+  const result = await queryPetsByOwner(ownerId, page, limit);
+  setCache(key, result, 15);
+  return result;
+}
+
+function queryPetsByOwner(ownerId: string, page: number, limit: number) {
   const skip = (page - 1) * limit;
-  const [data, total] = await Promise.all([
+  return Promise.all([
     prisma.pet.findMany({
       where: { ownerId, deletedAt: null },
       orderBy: { createdAt: 'desc' },
@@ -10,8 +22,7 @@ export async function getPetsByOwner(ownerId: string, page = 1, limit = 20) {
       take: limit,
     }),
     prisma.pet.count({ where: { ownerId, deletedAt: null } }),
-  ]);
-  return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+  ]).then(([data, total]) => ({ data, total, page, limit, totalPages: Math.ceil(total / limit) }));
 }
 
 export async function getPetById(id: string) {
@@ -54,6 +65,9 @@ export async function createPet(data: {
       photoUrl: data.photoUrl ?? null,
       ownerId: data.ownerId,
     },
+  }).then((pet) => {
+    clearCache('pets:');
+    return pet;
   });
 }
 
@@ -92,33 +106,50 @@ export async function updatePet(
       ...(data.birthDate !== undefined && { birthDate: new Date(data.birthDate) }),
       ...(data.photoUrl !== undefined && { photoUrl: data.photoUrl }),
     },
+  }).then((pet) => {
+    clearCache('pets:');
+    return pet;
   });
 }
 
 export async function deletePet(id: string) {
-  return prisma.pet.update({
+  const pet = await prisma.pet.update({
     where: { id },
     data: { deletedAt: new Date() },
   });
+  clearCache('pets:');
+  return pet;
 }
 
 export async function restorePet(id: string, userId: string) {
   const pet = await prisma.pet.findUnique({ where: { id } });
   if (!pet || pet.ownerId !== userId) return null;
-  return prisma.pet.update({
+  const restored = await prisma.pet.update({
     where: { id },
     data: { deletedAt: null },
   });
+  clearCache('pets:');
+  return restored;
 }
 
 export async function getManagedPets(vetId: string) {
-  const consultations = await prisma.consultation.findMany({
-    where: { vetId, pet: { deletedAt: null } },
-    select: { pet: true },
-    distinct: ['petId'],
-    orderBy: { updatedAt: 'desc' },
-  });
-  return consultations.map((c) => c.pet);
+  const key = `pets:managed:${vetId}`;
+  const hit = getCached<Awaited<ReturnType<typeof loadManagedPets>>>(key);
+  if (hit) return hit;
+  const pets = await loadManagedPets(vetId);
+  setCache(key, pets, 15);
+  return pets;
+}
+
+function loadManagedPets(vetId: string) {
+  return prisma.consultation
+    .findMany({
+      where: { vetId, pet: { deletedAt: null } },
+      select: { pet: true },
+      distinct: ['petId'],
+      orderBy: { updatedAt: 'desc' },
+    })
+    .then((cs) => cs.map((c) => c.pet));
 }
 
 export async function getPetVetCard(petId: string) {

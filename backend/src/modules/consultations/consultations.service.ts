@@ -129,6 +129,9 @@ export async function createConsultation(data: {
       notes: data.notes,
     },
     select: consultationSnapshot,
+  }).then((c) => {
+    clearCache('cons:');
+    return c;
   });
 }
 
@@ -161,6 +164,7 @@ export async function assignVet(consultationId: string, vetId: string) {
     select: consultationSnapshot,
   });
   if (!consultation) throw new NotFoundError('Consulta no encontrada');
+  clearCache('cons:');
   return consultation;
 }
 
@@ -183,6 +187,9 @@ export async function declineConsultation(consultationId: string, vetId: string)
     where: { id: consultationId },
     data: { status: 'WAITING', vetId: null },
     select: consultationSnapshot,
+  }).then((c) => {
+    clearCache('cons:');
+    return c;
   });
 }
 
@@ -208,10 +215,12 @@ export async function assignNextPendingVet(vetId: string) {
       data: { vetId, status: 'PENDING' },
     });
     if (claimed.count === 1) {
-      return prisma.consultation.findUnique({
+      const offered = await prisma.consultation.findUnique({
         where: { id: pending.id },
         select: consultationSnapshot,
       });
+      clearCache('cons:');
+      return offered;
     }
   }
   return null;
@@ -236,9 +245,12 @@ export async function completeConsultation(
     if (!current) throw new NotFoundError('Consulta no encontrada');
     throw new ConflictError(`No se puede cerrar — la consulta está en estado ${current.status}`);
   }
-  return prisma.consultation.findUniqueOrThrow({
+  const consultation = await prisma.consultation.findUniqueOrThrow({
     where: { id: consultationId },
+    select: consultationSnapshot,
   });
+  clearCache('cons:');
+  return consultation;
 }
 
 export async function getConsultationById(id: string) {
@@ -257,22 +269,21 @@ export async function getConsultationsByUser(
   limit = 50
 ) {
   const cappedLimit = Math.min(limit, MAX_PAGE_SIZE);
-  const where =
+  // Caché muy corta (5s): la planilla se refresca por realtime; esto sólo
+  // absorbe los re-fetch seguidos del dashboard. Invalidada en mutaciones.
+  const cacheKey = `cons:mine:${userId}:${role}:${page}:${cappedLimit}`;
+  type Mine = Awaited<ReturnType<typeof queryConsultations>>;
+  const hit = getCached<Mine>(cacheKey);
+  if (hit) return hit;
+  const result = await queryConsultations(
     role === 'VET'
       ? { OR: [{ vetId: userId }, { status: 'WAITING' as const }] }
-      : { clientId: userId };
-  const skip = (page - 1) * cappedLimit;
-  const [data, total] = await Promise.all([
-    prisma.consultation.findMany({
-      where,
-      select: { ...consultationSnapshot, prescriptions: true },
-      orderBy: { createdAt: 'desc' },
-      skip,
-      take: cappedLimit,
-    }),
-    prisma.consultation.count({ where }),
-  ]);
-  return { data, total, page, limit: cappedLimit, totalPages: Math.ceil(total / cappedLimit) };
+      : { clientId: userId },
+    page,
+    cappedLimit
+  );
+  setCache(cacheKey, result, 5);
+  return result;
 }
 
 /**
@@ -287,8 +298,18 @@ export async function getConsultationHistory(
 ) {
   const cappedLimit = Math.min(limit, MAX_PAGE_SIZE);
   const where = role === 'VET' ? { vetId: userId } : { clientId: userId };
+  const cacheKey = `cons:hist:${userId}:${role}:${page}:${cappedLimit}`;
+  type Hist = Awaited<ReturnType<typeof queryConsultations>>;
+  const hit = getCached<Hist>(cacheKey);
+  if (hit) return hit;
+  const result = await queryConsultations(where, page, cappedLimit);
+  setCache(cacheKey, result, 30);
+  return result;
+}
+
+function queryConsultations(where: Prisma.ConsultationWhereInput, page: number, cappedLimit: number) {
   const skip = (page - 1) * cappedLimit;
-  const [data, total] = await Promise.all([
+  return Promise.all([
     prisma.consultation.findMany({
       where,
       select: { ...consultationSnapshot, prescriptions: true },
@@ -297,8 +318,13 @@ export async function getConsultationHistory(
       take: cappedLimit,
     }),
     prisma.consultation.count({ where }),
-  ]);
-  return { data, total, page, limit: cappedLimit, totalPages: Math.ceil(total / cappedLimit) };
+  ]).then(([data, total]) => ({
+    data,
+    total,
+    page,
+    limit: cappedLimit,
+    totalPages: Math.ceil(total / cappedLimit),
+  }));
 }
 
 export async function getAvailableVets(species?: string) {
@@ -398,6 +424,9 @@ export async function savePrescription(data: {
     include: {
       vet: { select: { id: true, firstName: true, lastName: true } },
     },
+  }).then((p) => {
+    clearCache('cons:');
+    return p;
   });
 }
 
@@ -459,6 +488,9 @@ export async function createReview(data: {
         clientId: data.clientId,
         vetId: consultation.vetId,
       },
+    }).then((r) => {
+      clearCache('cons:');
+      return r;
     });
   } catch (error) {
     if (

@@ -1,0 +1,100 @@
+# ═══════════════════════════════════════════════════════════════
+# VetConnect — MOBILE — Requirements / Instalación
+# ═══════════════════════════════════════════════════════════════
+# Expo SDK 54 (React Native 0.81) + expo-router + NativeWind
+#
+# ▶ CÓMO INSTALAR TODO (desde /mobile):
+#     npm install
+#
+# ⚠ IMPORTANTE: si usás el monorepo, corré `npm install` desde la
+#   RAÍZ (C:\...\conectavet). Si instalás solo en /mobile y luego
+#   instalás backend/web, podés romper dependencias. Regla:
+#     → instalar SIEMPRE desde la raíz.
+#
+# ▶ REQUISITOS PREVIOS (una sola vez):
+#   Node.js >= 20
+#   Android Studio + SDK (para correr en emulador/físico)
+#   App "Expo Go" en el celular (para probar rápido)
+#   - Para celular físico por USB: adb instalado (start.ps1 lo detecta
+#     en %LOCALAPPDATA%\Android\platform-tools\adb.exe)
+#
+# ▶ CONFIGURAR .env (mobile/.env):
+#   EXPO_PUBLIC_API_URL=http://<IP-DE-TU-PC>:3001
+#   EXPO_PUBLIC_WS_URL=ws://<IP-DE-TU-PC>:3001
+#   (start.ps1 lo configura solo: con -ADB usa localhost, sin -ADB
+#    detecta la IP automáticamente)
+#
+# ▶ LEVANTAR LA APP:
+#     npm start        → ejecuta start.ps1 (recomendado)
+#     npm run start:metro → expo start plano
+#     npm run android  → abre en emulador Android
+#
+# ═══════════════════════════════════════════════════════════════
+# DEPENDENCIAS DE RUNTIME (dependencies)
+# ═══════════════════════════════════════════════════════════════
+# Se instalan automáticamente con `npm install`. Lista para auditoría:
+#
+@expo/metro-runtime                     # ~6.1.2     metro runtime
+@hookform/resolvers                     # ^3.9.0     react-hook-form resolvers
+@react-native-async-storage/async-storage # 2.2.0    storage local
+@react-native-community/datetimepicker  # 8.4.4      datepicker nativo
+@react-native-community/netinfo         # 11.4.1     estado de red
+@tanstack/react-query                   # ^5.51.0    data fetching
+ajv                                     # ^8.17.1    validación JSON
+axios                                   # ^1.7.2     HTTP client
+expo                                    # ~54.0.0    framework
+expo-av                                 # ~16.0.8    audio/video
+expo-camera                             # ~17.0.10   cámara
+expo-constants                          # ~18.0.13  config/constantes
+expo-haptics                            # ^57.0.0    vibración
+expo-image-picker                       # ~17.0.11  galería de fotos (S12)
+expo-linking                            # ~8.0.12    deep links
+expo-notifications                      # ~0.32.17   push (S12)
+expo-permissions                        # ~14.4.0    permisos
+expo-router                             # ~6.0.24    navegación por archivos
+expo-secure-store                       # ~15.0.8    tokens seguros
+expo-status-bar                         # ~3.0.9
+nativewind                              # ^4.0.33    Tailwind para RN
+react                                   # 19.1.0
+react-dom                               # 19.1.0
+react-hook-form                         # ^7.52.1    formularios
+react-native                            # 0.81.5
+react-native-gesture-handler            # ~2.28.0    gestos
+react-native-reanimated                 # ~4.1.1     animaciones
+react-native-safe-area-context          # ~5.6.0     safe areas
+react-native-screens                    # ~4.16.0    pantallas nativas
+react-native-toast-message              # ^2.2.0     toasts
+react-native-url-polyfill               # ^2.0.0     URL polyfill
+react-native-web                        # ^0.21.0    soporte web
+socket.io-client                        # ^4.8.3     chat tiempo real
+zod                                     # ^3.23.8    validación
+zustand                                 # ^4.5.4     estado global
+
+# ── ELIMINADAS en S14 (2GB RAM) ──────────────────────────────
+# @livekit/react-native, @livekit/react-native-webrtc,
+# livekit-client, react-native-webrtc, expo-av → eran de videollamada,
+# el MVP usa chat de texto. Pesaban ~200MB de bundle y RAM.
+# react-native-worklets SE MANTIENE (lo requiere reanimated).
+
+# ═══════════════════════════════════════════════════════════════
+# DEPENDENCIAS DE DESARROLLO (devDependencies)
+# ═══════════════════════════════════════════════════════════════
+@babel/core                 # ^7.24.0
+@types/react                # ~19.1.10
+babel-plugin-module-resolver# ^5.0.3
+eslint                      # ^8.57.0
+eslint-config-expo          # ~10.0.0
+tailwindcss                 # ^3.4.4
+typescript                  # ~5.9.2
+
+# ═══════════════════════════════════════════════════════════════
+# COMANDOS ÚTILES
+# ═══════════════════════════════════════════════════════════════
+#   npm start             → start.ps1 (configura IP + ADB + abre Expo)
+#   npm run typecheck     → tsc --noEmit (verificar tipos)
+#   npm run lint          → eslint
+#   npm run build:preview → eas build APK preview
+#   npm run build:production → eas build APK firmado
+#
+# ⚠ NOTA: el .env NO se commitea. Las variables van con prefijo
+#   EXPO_PUBLIC_ para que Expo las exponga al runtime.

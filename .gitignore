@@ -1,0 +1,34 @@
+node_modules
+
+dist
+
+build
+
+.DS_Store
+
+Thumbs.db
+
+.expo
+
+*.log
+
+*.tsbuildinfo
+
+.vscode/
+
+.idea/
+
+coverage/
+
+# Subidas de imágenes (Sprint 12)
+backend/uploads/
+
+# Environment files with secrets (nunca commitear; usar .env.example)
+backend/.env
+web/.env
+mobile/.env
+.env.*.local
+.env.local
+
+# Temp files created by integration tests
+backend/.jest-schema

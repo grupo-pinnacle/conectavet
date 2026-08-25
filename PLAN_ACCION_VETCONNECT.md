@@ -195,6 +195,8 @@ Para cada fix de concurrencia/WS de esta fase, reproducir el bug original antes 
 
 ## FASE 4 — Media persistente, CI/CD gates, staging (DevOps → ≥90)
 
+> **Nota de infra (2026-08-24, ADR-015):** el deploy de backend se hace con **Coolify en VPS autohospedada** (gratis si es self-host) y la web con **Vercel**. Por eso F4-3 ya no crea `railway.json` sino `Dockerfile` + healthcheck para Coolify. Mobile queda TBD.
+
 Categorías que sube: **DevOps (63→↑)**.
 
 ### F4-1 — Media a S3/Cloudinary persistente (P2-46)
@@ -207,10 +209,11 @@ Categorías que sube: **DevOps (63→↑)**.
 - **Cómo:** `collectCoverageFrom` en jest config (cobertura real, no engañosa); renombrar job `backend-unit` correctamente; Postgres efímero como service container en CI (no depender de Postgres externo); hacer `npm audit`/gitleaks **bloqueantes** en `main` (quitar `continue-on-error`/`|| true`).
 - **Aceptación:** PR con vulnerabilidad conocida o secreto expuesto falla el CI, no solo lo reporta.
 
-### F4-3 — Deploy web + staging + rollback (P2-44, P2-47)
-- **Qué:** `ci.yml` (deploy web fuera de CI, sin `vercel.json`); `ci.yml:95-108` (deploy directo a `main`→prod sin staging).
-- **Cómo:** `vercel.json` con rewrites → `index.html` (fix SPA deep-links 404); entorno de staging + aprobación manual antes de prod; migraciones retrocompatibles; plan de rollback documentado y **probado** (no solo escrito) en `docs/PRODUCTION_DEPLOYMENT.md` / `docs/HOTFIX_PROTOCOL.md`.
-- **Aceptación:** deep-link directo a una ruta de la SPA en prod no da 404; un deploy simulado a staging requiere aprobación antes de promoverse; rollback ejecutado una vez en staging como prueba.
+### F4-3 — Deploy (Coolify + Vercel) + staging + rollback (P2-44, P2-47)
+- **Decisión de infra ya tomada (ADR-015, grupo 2026-08-24):** backend en **Coolify sobre VPS autohospedada** (gratis si es self-host), web en **Vercel**. Mobile queda TBD.
+- **Qué:** `ci.yml` (deploy web fuera de CI, sin `vercel.json`); `ci.yml:95-108` (deploy directo a `main`→prod sin staging). `railway.json` del roadmap original queda **superseded** por Coolify (no se crea `railway.json`).
+- **Cómo:** `vercel.json` con rewrites → `index.html` (fix SPA deep-links 404) para la web; en backend, `Dockerfile` + `healthcheck` para que Coolify builda/depliegue desde Git con rollback; entorno de staging + aprobación manual antes de prod; migraciones retrocompatibles; plan de rollback documentado y **probado** en `docs/PRODUCTION_DEPLOYMENT.md` / `docs/HOTFIX_PROTOCOL.md`.
+- **Aceptación:** deep-link directo a una ruta de la SPA en prod no da 404; deploy de backend vía Coolify expone `/health` tras proxy HTTPS; un deploy simulado a staging requiere aprobación antes de promoverse; rollback ejecutado una vez en staging como prueba.
 
 ### F4-4 — Observabilidad mínima (P2-48)
 - **Qué:** `Dockerfile`, `app.ts`.
@@ -269,7 +272,7 @@ Modales con `role="dialog"` + Escape + focus-trap (primitivo propio o Radix/Head
 Desconectar socket al salir del chat / en background (`AppState`); timeout de upload 120s + `onUploadProgress` + resize; imágenes médicas cacheadas sin cifrar → `cachePolicy="memory"` o cifrado + limpieza en logout.
 
 ### F6-5 — Reconciliación de documentación (P2-55, P2-56, F20 de la tabla TOP 20)
-Contar tests reales vía `jest --listTests` y actualizar todos los docs con el número correcto (no 159 ni 173 de memoria); decidir y declarar **un** deploy canónico (Koyeb vs Railway — el brief dice "Railway CI/CD activo / Koyeb recomendado", contradictorio) en `docs/DEPLOY.md`; unificar `connection_limit` (F3-8); corregir cualquier feature marcada "Hecha" que no lo estaba (P1-08, tabs de vet).
+Contar tests reales vía `jest --listTests` y actualizar todos los docs con el número correcto (no 159 ni 173 de memoria); decidir y declarar **un** deploy canónico (Coolify+Vercel — ADR-015, 2026-08-24; reemplaza la referencia contradictoria Koyeb/Railway del brief) en `docs/DEPLOY.md`; unificar `connection_limit` (F3-8); corregir cualquier feature marcada "Hecha" que no lo estaba (P1-08, tabs de vet).
 
 **Aceptación de F6:** `npx tsc --noEmit` sin errores en las 3 capas; lint limpio; ningún `as any` nuevo introducido; docs actualizados en el mismo PR que el código que describen (regla del brief §6.5).
 

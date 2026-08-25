@@ -164,3 +164,17 @@ model Message {
 **Decisión:** En `NODE_ENV=production` con `REDIS_URL` seteado se activa el adapter Redis (multi-instancia) + rate-limit/dedup distribuido. Si `REDIS_URL` falta en prod, el arranque emite WARNING y usa in-memory (NO apto para >1 instancia). El `healthcheck` no degrada por Redis caído (fallback in-memory), pero se loguea.
 
 **Consecuencias:** + Horizontal scaling seguro cuando se configura, + Fallback graceful, - Requiere que el deploy de prod setee `REDIS_URL` para >1 instancia.
+
+---
+
+## ADR-015: Despliegue — Coolify (VPS autohospedado) para backend, Vercel para web
+
+**Contexto (decisión de grupo, 2026-08-24):** Hasta ahora los docs referenciaban Railway (CI/CD activo) y recomendaban Koyeb como alternativa gratis, de forma contradictoria. El grupo decidió un esquema concreto y sin costo mientras sea autohospedado.
+
+**Decisión:**
+- **Backend (API Node):** se despliega con **Coolify** sobre una **VPS autohospedada**. Coolify es open-source y gratis si lo hosteás vos mismo (la VPS es el único costo). Coolify builda el contenedor Docker desde el repo Git, maneja env vars, healthcheck, rollback y redes. Esto reemplaza a Railway/Koyeb como proveedor canónico de backend.
+- **Web:** **Vercel** (gratis, ya listo; `vercel.json` con rewrites para SPA deep-links).
+- **Mobile:** **pendiente de definir** (EAS Build + Google Play / App Store más adelante; no se decide hoy).
+- **BD (Supabase) y Redis:** siguen fuera del alcance de esta ADR; Redis vive en la VPS o como instancia managada (ver ADR-011/014). El dominio real de producción sigue siendo del humano.
+
+**Consecuencias:** + Infra barata y controlada (sin vendor lock-in de PaaS), + Rollbacks y preview envs desde Coolify, - Requiere administrar la VPS (parches SO, uptime, backups). Coolify abstrae la mayor parte del deploy, pero alguien debe mantener la VPS. `DEPLOY.md` se actualiza para declarar Coolify como fuente única de verdad para el backend.

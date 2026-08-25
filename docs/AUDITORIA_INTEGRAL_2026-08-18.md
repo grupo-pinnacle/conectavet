@@ -9,7 +9,7 @@
 
 ## 1. Resumen Ejecutivo
 
-VetConnect es un proyecto **sorprendentemente maduro para su tamaño**: autenticación con `tokenVersion` revocable, transiciones de estado atómicas que evitan carreras (TOCTOU), validación Zod en bordes, capa de tiempo real con dedup idempotente, fuerte cobertura de tests del backend (~173 casos incluyendo authz negativa, concurrencia y chat WS), y una documentación extensa (11 ADRs, READMEs, guías de deploy).
+VetConnect es un proyecto **sorprendentemente maduro para su tamaño**: autenticación con `tokenVersion` revocable, transiciones de estado atómicas que evitan carreras (TOCTOU), validación Zod en bordes, capa de tiempo real con dedup idempotente, fuerte cobertura de tests del backend (~173 casos incluyendo authz negativa, concurrencia y chat WS), y una documentación extensa (14 ADRs, READMEs, guías de deploy).
 
 Sin embargo, **no está listo para producción tal como está**, por razones que van más allá de "faltan features":
 
@@ -332,3 +332,37 @@ Ordenadas por **impacto / esfuerzo / riesgo / valor usuario**.
 ## 12. Conclusión
 
 VetConnect tiene los cimientos de un producto serio (seguridad consciente, concurrencia bien resuelta, tests de backend robustos). El salto a "producción confiable" no requiere reescribir nada, sino **cerrar la brecha entre lo que el código hace, lo que el cliente usa y lo que los docs prometen**: arreglar el desync de deploy, cablear las features ya construidas en el backend, ponerle tests al cliente, y acotar authz/PII. Con el TOP 20 abordado en los plazos propuestos, VetConnect pasa de 66 a un perfil sólido (≥80) sin introducir complejidad innecesaria.
+
+---
+
+## 13. Actualización de estado (2026-08-24)
+
+Esta auditoría es un **snapshot de 2026-08-18**. El repositorio avanzó sustancialmente desde entonces (commit `51d9f4b` *"estable con web"*), por lo que varios hallazgos ya están resueltos **en código** y el score real hoy es superior al 66/100 original. Por eso las cifras de este documento deben tomarse como línea base histórica, no como Estado Actual.
+
+**Ya resuelto en `HEAD` (verificado contra el código real, no por los docs):**
+- **P0-01 (desync schema↔migración):** `isEmailVerified`, `lastSeen`, `Consultation.deletedAt`, `Message.deletedAt` ya llevan `@map` snake_case; `prisma validate` OK.
+- **P1-03 / ADR-012:** auto-registro de VET con `vetStatus` (`PENDING`/`APPROVED`), endpoint de aprobación `PATCH /api/users/:id/vet-status`, y `listVets`/`getAvailableVets` filtran por `APPROVED`.
+- **P1-07 / ADR-013:** un VET solo lee el detalle de una mascota si tiene/hubo consulta; el directorio (`listVets`, `getAvailableVets`) ya no expone `email`.
+- **P2-13:** `/metrics` ahora requiere `authenticate` + `authorize(ADMIN)`.
+- **P2-57:** `jwt.verify` pinnea `algorithms: ['HS256']` en los 3 puntos (middleware, refresh, socket).
+- **P2-01 (unificar send):** `sendConsultationMessage` único para REST + Socket con rate-limit y dedup por `clientMsgId` (sin 500 en retry).
+- **P1-04:** rating 1–10 coherente (backend `max(10)`, UI `RatingStars` 1–10; el schema mobile `max(5)` quedó desactualizado y debe alinearse a 10).
+- **P1-06:** `getManagedPets` usa `findMany` con relación + paginación (sin `distinct` roto).
+- **ADR-011/014:** Redis obligatorio en prod multi-instancia, con fallback in-memory documentado.
+
+**Pendiente real (no resuelto en código):**
+- **P0-02 / F1-3, F5:** sigue sin tests automatizados de cliente (web/mobile). Es el gap más grande y el que más sube el score de Testing.
+- **F2-2 (móvil):** `mobile/src/types/index.ts` `rateConsultationSchema` dice `max(5)` → debe pasar a `max(10)` para emparejar backend/UI.
+- **F2-3 / F2-6:** historial clínico en web y toggle de disponibilidad en cliente siguen por cablear.
+- **F3 / F4 / F6:** re-arquitectura de `listVets`, paginación de mensajes, media persistente firmada (S3/Coolify volume), CI gates bloqueantes, a11y, dark mode mobile, deep links.
+- **Decisión de infra (ADR-015, grupo 2026-08-24):** backend en **Coolify sobre VPS autohospedada** (gratis self-host), web en **Vercel**, mobile TBD. Reemplaza la referencia contradictoria Koyeb/Railway.
+
+**Dudas que siguen abiertas (para el dueño):**
+1. ¿`STORAGE_PROVIDER=s3` en uso real? ¿bucket privado + presigned URLs? (P2-18)
+2. ¿Prod es same-site o cross-origin? Afecta `sameSite` de cookies (P2-15).
+3. ¿>1 instancia de backend en prod + `REDIS_URL` seteado? (P2-05)
+4. ¿Verificación de email obligatoria antes del login? Hoy `login` no la chequea (P2-10).
+5. Dominio real de producción + HTTPS (es del humano).
+6. Proveedor de VPS para Coolify, y si la BD (Supabase) y Redis se mantienen managados o se mueven a la VPS.
+
+**Recomendación:** correr una **re-auditoría fresca** (las skills `systematic-debugging` + `error-handling-patterns` + `api-design-principles` sobre el `HEAD` actual) para obtener el score real antes de la próxima fase. El `PLAN_ACCION_VETCONNECT.md` derivado de esta auditoría ya está en ejecución.

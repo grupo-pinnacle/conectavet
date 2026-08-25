@@ -9,7 +9,7 @@
 
 | Servicio | Proveedor | Costo | Estado |
 |----------|-----------|-------|--------|
-| **Backend (API)** | Koyeb | Gratis (always-on 1GB RAM) | ✅ Recomendado |
+| **Backend (API)** | Coolify (VPS autohospedado) | Gratis (solo costo de la VPS) | ✅ Elegido 2026-08-24 (ADR-015) |
 | **Frontend Web** | Vercel | Gratis | ✅ Listo |
 | **Base de datos** | Supabase | Gratis (500MB) | ✅ Ya en uso |
 | **Mobile (APK/IPA)** | EAS Build | Gratis (30 builds/mes) | ✅ Listo |
@@ -19,12 +19,12 @@
 
 ## Backend — Proveedor de deploy
 
-> **Fuente única de verdad:** el backend se puede deployar en cualquier PaaS que corra Node. El pipeline documentado en `README.md` y en la sección de abajo usa **Railway vía CI/CD** como configuración activa. **Koyeb** se recomienda como alternativa gratis (always-on 1GB RAM, HTTPS automático). Ambos son válidos; no son mutuamente excluyentes.
+> **Fuente única de verdad (actualizada 2026-08-24, ADR-015):** el backend corre como contenedor Docker y se despliega con **Coolify sobre una VPS autohospedada** (gratis si lo hosteás vos; la VPS es el único costo). La **web** va por **Vercel** (gratis, ya lista). El pipeline activo builda desde Git en Coolify; el deploy de web sigue por Vercel. Railway/Koyeb quedan como alternativas históricas, no como canónicas.
 
-El pipeline activo (`backend` y docs README) deploya a **Railway** automáticamente desde GitHub Actions al pushear a `main`:
-`push a main → tests (unit + integration + tsc) → build web → railway up --service conectavet-api → smoke test /health`.
+El backend se expone tras el proxy de Coolify (HTTPS + dominio), conectado a Supabase (BD) y, en prod multi-instancia, a Redis (ADR-011/014).
+`push a main → CI (tests + tsc) → Coolify build + deploy (healthcheck) → smoke /health`.
 
-> Abajo se deja la opción **Koyeb** (alternativa gratis recomendada):
+> Histórico (no canónico): abajo queda la opción **Koyeb** (alternativa gratis) a modo de referencia:
 
 ## Backend — Opción: Koyeb (gratis)
 

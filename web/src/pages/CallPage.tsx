@@ -71,6 +71,14 @@ export default function CallPage() {
         call={{ ...call, expiresIn: 600 }}
         peerName="el otro participante"
         onLeave={() => {
+          // Avisa al WebView del mobile (postMessage) para que cierre la llamada;
+          // el fallback de deep link cubre el caso de escritorio.
+          try {
+            (window as unknown as { ReactNativeWebView?: { postMessage: (m: string) => void } })
+              .ReactNativeWebView?.postMessage(JSON.stringify({ type: "call:ended" }));
+          } catch {
+            /* sin WebView */
+          }
           window.location.href = "vetconnect://call-ended";
         }}
       />

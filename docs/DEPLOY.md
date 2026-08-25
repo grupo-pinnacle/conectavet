@@ -154,6 +154,38 @@ npx prisma migrate dev --name descripcion
 
 ---
 
+## Videollamada (LiveKit) — datos a rellenar en el deploy
+
+La feature está **100% implementada** en las 3 capas (backend `calls/`, web `CallPage`/`CallRoom`, mobile `CallScreen` con WebView + `postMessage`). No falta escribir más código: en el paso final (VPS + Coolify + Vercel listos) solo completás las variables de abajo y la videollamada queda operativa, incluso en celulares de gama baja.
+
+### 1. Crear LiveKit (elegir una opción)
+- **LiveKit Cloud** (recomendado para gama baja): gratis hasta 50 GB/mes de ancho de banda e **incluye TURN**, que es lo que permite conectar detrás de NAT/redes celulares. Crear proyecto en [livekit.cloud](https://livekit.cloud) → Project Settings → Keys. Usar el `LIVEKIT_URL` tipo `wss://<proyecto>.livekit.cloud`.
+- **Self-host en la VPS de Coolify**: instalar LiveKit Server (o el template de Coolify) + un **servidor TURN** (coturn o el TURN integrado de LiveKit) para que los celulares se conecten detrás de routers móviles. $0 pero más mantenimiento.
+
+### 2. Variables por servicio
+| Servicio | Variable | Valor a rellenar |
+|----------|----------|------------------|
+| **Backend (Coolify)** | `LIVEKIT_URL` | `wss://<proyecto>.livekit.cloud` (o tu VPS) |
+| **Backend (Coolify)** | `LIVEKIT_API_KEY` | del panel de LiveKit |
+| **Backend (Coolify)** | `LIVEKIT_API_SECRET` | del panel de LiveKit |
+| **Mobile (EAS / `eas.json` + `.env`)** | `EXPO_PUBLIC_WEB_URL` | `https://<dominio-web-de-vercel>`. Es la URL que abre el WebView de la llamada. |
+| **Web (Vercel)** | — | **Ninguna**. La web recibe el `url` dentro del token; no necesita credenciales LiveKit. |
+
+> `EXPO_PUBLIC_LIVEKIT_URL` (mobile `.env.example`) y `LIVEKIT_URL_MOBILE` (backend `.env.example`) ya **no se usan** (el mobile abre la web, no conecta directo a LiveKit). No hace falta setearlas en prod.
+> El backend ya valida: token LiveKit solo para consultas `ACTIVE`, sala = `consultation-<id>`, TTL 10 min, y tira 503 "aún no habilitadas" si falta alguna de las 3 vars de arriba.
+
+### 3. Comportamiento en gama baja (ya implementado)
+- `adaptiveStream` + `dynacast`: la **recepción** se adapta al tamaño de pantalla y a la red del dispositivo.
+- Captura acotada a **640×480** y bitrate de subida limitado (`web/src/components/call/CallRoom.tsx`): los celulares modestos no saturan CPU ni datos móviles.
+- Botones para apagar cámara/micrófono en vivo (ahorro de datos).
+- Cierre de la llamada coordinado web↔mobile vía `postMessage` (`call:ended`).
+
+### 4. Verificación rápida (recomendada, no bloqueante)
+- Abrir una consulta `ACTIVE`, pulsar "Videollamada" en web y en mobile, confirmar que ambos se ven.
+- Probar en un celular de gama baja con **datos móviles** (valida el TURN de LiveKit Cloud).
+
+---
+
 ## Notas de seguridad
 
 - ✅ **`.env` ya fuera de git** (S13): `git ls-files` ya no lista `backend/.env`, `web/.env`, `mobile/.env`. Cada capa tiene `.env.example` como template.

@@ -10,7 +10,18 @@ interface CallRoomProps {
 }
 
 export default function CallRoom({ call, peerName, onLeave }: CallRoomProps) {
-  const [room] = useState(() => new Room({ adaptiveStream: true, dynacast: true }));
+  // adaptiveStream + dynacast ya adaptan la RECEPCIÓN al dispositivo. Estas
+  // opciones acotan la CAPTURA/SUBIDA para que celulares de gama baja (poca CPU
+  // y datos móviles limitados) no se saturen: capturamos a 640x480 y limitamos
+  // el bitrate del layer superior. El simulcast sigue enviando capas inferiores.
+  const [room] = useState(() =>
+    new Room({
+      adaptiveStream: true,
+      dynacast: true,
+      videoCaptureDefaults: { resolution: { width: 640, height: 480 } },
+      publishDefaults: { simulcast: true, videoEncoding: { maxBitrate: 900_000 } },
+    }),
+  );
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState("");
   const [remoteParticipants, setRemoteParticipants] = useState<RemoteParticipant[]>([]);

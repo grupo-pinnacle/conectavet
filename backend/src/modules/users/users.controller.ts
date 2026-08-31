@@ -1,3 +1,4 @@
+import { createUserSchema } from './users.schemas';
 import { Response } from 'express';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
 import {
@@ -21,10 +22,18 @@ import { handleError } from '../../shared/errors';
 import { logger } from '../../shared/logger';
 import { parsePagination } from '../../shared/utils';
 import { asyncHandler } from "../../shared/middlewares/async.middleware.js";
-export const createUserController = asyncHandler(async (req: RequestWithUser, res: Response) => {
-const user = await createUser(req.body);
-return res.status(201).json({ success: true, data: user });
-});
+export async function createUserController(req: RequestWithUser, res: Response) {
+  try {
+    const parsed = createUserSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, message: parsed.error.issues[0].message });
+    }
+    const user = await createUser(parsed.data);
+    return res.status(201).json({ success: true, data: user });
+  } catch (error) {
+    return handleError(error, res, 'createUserController');
+  }
+}
 export const getMeController = asyncHandler(async (req: RequestWithUser, res: Response) => {
 if (!req.user) {
       return res.status(401).json({ success: false, message: 'No autenticado' });

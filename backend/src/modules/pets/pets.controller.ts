@@ -3,6 +3,8 @@ import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
 import { AppError, NotFoundError, ForbiddenError, handleError } from '../../shared/errors';
 import { getPetsByOwner, getManagedPets, getPetById, createPet, updatePet, deletePet, restorePet, getPetVetCard, vetHasConsultationForPet } from './pets.service';
 import { parsePagination } from '../../shared/utils';
+import { z } from 'zod';
+import { asyncHandler } from "../../shared/middlewares/async.middleware.js";
 
 const dateStringSchema = z
   .string()

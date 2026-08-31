@@ -1,7 +1,9 @@
 ﻿import { Router } from 'express';
 import { authenticate, authorize } from '../../shared/middlewares/auth.middleware';
 import { Role } from '@prisma/client';
+import { validate } from '../../shared/middlewares/validate.middleware';
 import {
+  sendMessageSchema,
   createController,
   assignVetController,
   declineVetController,

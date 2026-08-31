@@ -5,6 +5,7 @@ import Logo from "../components/Logo";
 import Button from "../components/Button";
 import Input from "../components/input";
 import { useAuth } from "../hooks/useAuth";
+import api from "../services/api";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -13,11 +14,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [recoveryMessage, setRecoveryMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setRecoveryMessage("");
 
     if (!email.trim()) { setError("Ingresá tu correo electrónico"); return; }
     if (!password) { setError("Ingresá tu contraseña"); return; }
@@ -32,6 +36,27 @@ export default function LoginPage() {
       return;
     }
     navigate("/");
+  };
+
+  const handleForgotPassword = async () => {
+    setError("");
+    setRecoveryMessage("");
+
+    if (!email.trim()) {
+      setError("Ingresá tu correo electrónico para recuperar la contraseña");
+      return;
+    }
+
+    setRecoveryLoading(true);
+    try {
+      const response = await api.post("/auth/forgot-password", { email });
+      setRecoveryMessage(response.data?.message || "Si el correo está registrado, te enviamos las instrucciones.");
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } } | null)?.response?.data?.message;
+      setError(msg || "Error al solicitar la recuperación de contraseña.");
+    } finally {
+      setRecoveryLoading(false);
+    }
   };
 
   return (
@@ -82,6 +107,11 @@ export default function LoginPage() {
                 {error}
               </div>
             )}
+            {recoveryMessage && (
+              <div className="mb-5 rounded-lg bg-success-bg p-4 text-sm font-semibold text-success">
+                {recoveryMessage}
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <Input
@@ -98,12 +128,11 @@ export default function LoginPage() {
                   </label>
                   <button
                     type="button"
-                    className="text-xs font-semibold text-teal-700 hover:underline"
-                    onClick={() => {
-                      /* TODO: implementar recuperación de contraseña (endpoint /auth/forgot-password) */
-                    }}
+                    className="text-xs font-semibold text-teal-700 hover:underline disabled:opacity-50"
+                    onClick={handleForgotPassword}
+                    disabled={recoveryLoading}
                   >
-                    ¿olvidaste tu contraseña?
+                    {recoveryLoading ? "enviando..." : "¿olvidaste tu contraseña?"}
                   </button>
                 </div>
                 <Input

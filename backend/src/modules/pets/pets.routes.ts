@@ -1,3 +1,5 @@
+import { createPetSchema, updatePetSchema } from './pets.schemas';
+import { validate } from '../../shared/middlewares/validate.middleware';
 ﻿import { Router } from 'express';
 import { authenticate } from '../../shared/middlewares/auth.middleware';
 import {

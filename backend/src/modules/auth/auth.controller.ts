@@ -19,7 +19,7 @@ clearAuthCookies(res);
 return res.status(200).json({ success: true, message: 'Sesión cerrada' });
 });
 export const refreshController = asyncHandler(async (req: Request, res: Response) => {
-const refreshToken = bodyToken || getRefreshTokenFromCookie(req);
+const refreshToken = req.body.refreshToken || getRefreshTokenFromCookie(req);
 if (!refreshToken) {
       return res.status(400).json({ success: false, message: 'refreshToken es requerido' });
     }

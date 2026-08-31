@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { Response } from 'express';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
 import { AppError, NotFoundError, ForbiddenError, ConflictError, handleError } from '../../shared/errors';
@@ -26,7 +27,7 @@ import { asyncHandler } from "../../shared/middlewares/async.middleware.js";
 export const sendMessageSchema = z
   .object({
     content: z.string().max(2000, 'El mensaje no puede superar los 2000 caracteres').optional(),
-    attachmentUrl: z.string().refine(val => val.startsWith('/uploads/') || val.startsWith('https://'), 'Imagen adjunta inválida').optional(),
+    attachmentUrl: z.string().refine((val: string) => val.startsWith('/uploads/') || val.startsWith('https://'), 'Imagen adjunta inválida').optional(),
     clientMsgId: z.string().max(100).optional(),
   })
   .refine((data) => data.content || data.attachmentUrl, {

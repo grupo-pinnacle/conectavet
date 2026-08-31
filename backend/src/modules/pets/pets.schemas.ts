@@ -1,4 +1,5 @@
-import { z } from "zod";
+import { z } from 'zod';
+const dateStringSchema = z.string().refine((v: string) => !Number.isNaN(Date.parse(v)), 'Invalid date');
 
 export const createPetSchema = z.object({
       name: z.string().min(1, 'El nombre es requerido'),

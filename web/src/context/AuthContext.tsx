@@ -22,6 +22,7 @@ export interface AuthContextType {
   isAuthenticated: boolean;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {

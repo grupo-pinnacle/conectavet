@@ -307,10 +307,7 @@ export default function MessagesSection() {
     () => consultations.filter((c) => c.status === "PENDING" || c.status === "WAITING"),
     [consultations]
   );
-  const completedList = useMemo(
-    () => consultations.filter((c) => c.status === "COMPLETED"),
-    [consultations]
-  );
+
 
   const messageList = useMemo(
     () => messages.slice(-INITIAL_LOAD),

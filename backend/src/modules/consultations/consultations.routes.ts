@@ -1,3 +1,5 @@
+import { sendMessageSchema } from './consultations.controller';
+import { validate } from '../../shared/middlewares/validate.middleware';
 ﻿import { Router } from 'express';
 import { authenticate, authorize } from '../../shared/middlewares/auth.middleware';
 import { Role } from '@prisma/client';

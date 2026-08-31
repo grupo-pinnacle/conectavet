@@ -43,7 +43,7 @@ export async function isDuplicate(consultationId: string, clientMsgId: string): 
   const key = `dedup:${consultationId}:${clientMsgId}`;
   if (redisClient) {
     try {
-      const result = await redisClient.set(key, '1', 'NX', 'EX', Math.ceil(MSG_DEDUP_TTL / 1000));
+      const result = await redisClient.set(key, '1', 'EX', Math.ceil(MSG_DEDUP_TTL / 1000), 'NX' as any);
       return result === null; // null => ya existía => duplicado
     } catch {
       // fallback a in-memory

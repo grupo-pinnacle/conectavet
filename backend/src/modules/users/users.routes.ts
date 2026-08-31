@@ -1,3 +1,5 @@
+import { updateProfileSchema } from './users.schemas';
+import { validate } from '../../shared/middlewares/validate.middleware';
 ﻿import { Router } from 'express';
 import {
   getMeController,

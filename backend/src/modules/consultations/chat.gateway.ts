@@ -1,3 +1,4 @@
+import type { Redis } from 'ioredis';
 import { Server as HttpServer } from 'http';
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
@@ -19,7 +20,7 @@ export async function setupChatSocket(httpServer: HttpServer) {
     .map((s) => s.trim());
   const wsAllowCredentials = !wsOrigins.includes('*');
 
-  import type { Redis } from 'ioredis';
+
 
   // Cliente Redis local a esta instancia (el estado compartido vive en
   // message-throttle vía setRedisClient). Se usa solo si REDIS_URL está seteado.
@@ -41,9 +42,9 @@ export async function setupChatSocket(httpServer: HttpServer) {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const IORedis = require('ioredis');
       redisClient = new IORedis(process.env.REDIS_URL);
-      setRedisClient(redisClient);
-      const pub = redisClient;
-      const sub = redisClient.duplicate();
+      setRedisClient(redisClient as Redis);
+      const pub = redisClient as Redis;
+      const sub = (redisClient as Redis).duplicate();
       io.adapter(createAdapter(pub, sub));
       console.info('[socket] Redis adapter activado (multi-instancia) + rate-limit/dedup distribuido');
     } catch (err) {

@@ -1,5 +1,5 @@
 import api from "./api";
-import type { User, Pet, Consultation, Message, Prescription, VetCard } from "../types";
+import type { User, Pet, Consultation, Message, Prescription, VetCard, Review } from "../types";
 
 export async function getMe(): Promise<User> {
   const res = await api.get("/api/users/me");

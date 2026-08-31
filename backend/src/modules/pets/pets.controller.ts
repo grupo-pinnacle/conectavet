@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { Response } from 'express';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
 import { AppError, NotFoundError, ForbiddenError, handleError } from '../../shared/errors';
@@ -6,7 +7,7 @@ import { parsePagination } from '../../shared/utils';
 
 const dateStringSchema = z
   .string()
-  .refine((v) => !Number.isNaN(Date.parse(v)), 'Fecha de nacimiento inválida');
+  .refine((v: string) => !Number.isNaN(Date.parse(v)), 'Fecha de nacimiento inválida');
 export const getManagedPetsController = asyncHandler(async (req: RequestWithUser, res: Response) => {
 if (!req.user) return res.status(401).json({ success: false, message: 'No autenticado' });
 if (req.user.role !== 'VET' && req.user.role !== 'ADMIN') {

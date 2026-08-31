@@ -218,6 +218,26 @@ export async function assignNextPendingVet(vetId: string) {
   return null;
 }
 
+export async function cancelConsultation(id: string, userId: string) {
+  const consultation = await getConsultationById(id);
+  if (!consultation) throw new NotFoundError('Consulta no encontrada');
+  if (consultation.clientId !== userId) throw new ForbiddenError('No puedes cancelar esta consulta');
+  
+  if (consultation.status !== 'WAITING' && consultation.status !== 'PENDING') {
+    throw new ConflictError('Solo puedes cancelar consultas en espera o pendientes');
+  }
+
+  return prisma.consultation.update({
+    where: { id },
+    data: { status: 'CANCELLED' },
+    include: {
+      pet: { select: { id: true, name: true, species: true, breed: true, photoUrl: true } },
+      client: { select: { id: true, email: true, firstName: true, lastName: true } },
+      vet: { select: { id: true, email: true, firstName: true, lastName: true } },
+    },
+  });
+}
+
 export async function completeConsultation(
   consultationId: string,
   notes?: string
@@ -246,6 +266,13 @@ export async function getConsultationById(id: string) {
   return prisma.consultation.findFirst({
     where: { id, deletedAt: null },
     select: consultationWithMessages,
+  });
+}
+
+export async function getConsultationSnapshotById(id: string) {
+  return prisma.consultation.findFirst({
+    where: { id, deletedAt: null },
+    select: consultationSnapshot,
   });
 }
 
@@ -511,10 +538,10 @@ export async function createReview(data: {
     throw new ForbiddenError('Solo el cliente de la consulta puede calificarla');
   }
   // Defensa en profundidad: el controller ya valida con Zod, pero el
-  // servicio no debe confiar en el caller. Rating entero 1–10 y comentario
+  // servicio no debe confiar en el caller. Rating entero 1–5 y comentario
   // obligatorio (mínimo 10 caracteres).
-  if (!Number.isInteger(data.rating) || data.rating < 1 || data.rating > 10) {
-    throw new ConflictError('La calificación debe ser un entero del 1 al 10');
+  if (!Number.isInteger(data.rating) || data.rating < 1 || data.rating > 5) {
+    throw new ConflictError('La calificación debe ser un entero del 1 al 5');
   }
   if (!data.comment || data.comment.trim().length < 10) {
     throw new ConflictError('El comentario es obligatorio (mínimo 10 caracteres)');

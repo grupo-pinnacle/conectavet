@@ -68,6 +68,8 @@ model User {
   favoritedBy           FavoriteVet[]  @relation("FavoriteVetVet")
 
   @@map("users")
+  @@index([emailVerifyToken])
+  @@index([passwordResetToken])
 }
 
 model Pet {

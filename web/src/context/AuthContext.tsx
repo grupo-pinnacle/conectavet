@@ -2,7 +2,7 @@ import { createContext, useState, useCallback, useEffect } from "react";
 import type { ReactNode } from "react";
 import type { User } from "../types";
 import api, { setApiToken } from "../services/api";
-import { getMe, updateAvailability, updateProfile } from "../services/endpoints";
+import { getMe, updateAvailability, updateProfile as updateProfileApi } from "../services/endpoints";
 import { disconnectSocket } from "../services/socket";
 import { clearChatStore } from "../services/chatStore";
 
@@ -106,7 +106,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const updateProfile = useCallback(async (data: import("../services/endpoints").UpdateProfilePayload) => {
-    const updated = await updateProfile(data);
+    const updated = await updateProfileApi(data);
     setUser((prev) => (prev ? { ...prev, ...normalizeUser(updated) } : prev));
   }, []);
 

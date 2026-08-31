@@ -9,8 +9,11 @@ import {
   createConsultation,
   assignVet,
   declineConsultation,
+  assignNextPendingVet,
+  cancelConsultation,
   completeConsultation,
   getConsultationById,
+  getConsultationSnapshotById,
   getConsultationsByUser,
   getConsultationHistory,
   getAvailableVets,
@@ -31,10 +34,10 @@ const completeSchema = z.object({
   notes: z.string().max(5000, 'Las notas no pueden superar los 5000 caracteres').optional(),
 });
 
-const sendMessageSchema = z
+export const sendMessageSchema = z
   .object({
     content: z.string().max(2000, 'El mensaje no puede superar los 2000 caracteres').optional(),
-    attachmentUrl: z.string().startsWith('/uploads/', 'Imagen adjunta inválida').optional(),
+    attachmentUrl: z.string().refine(val => val.startsWith('/uploads/') || val.startsWith('https://'), 'Imagen adjunta inválida').optional(),
     clientMsgId: z.string().max(100).optional(),
   })
   .refine((data) => data.content || data.attachmentUrl, {
@@ -51,7 +54,7 @@ const prescriptionSchema = z.object({
 });
 
 async function assertParticipation(consultationId: string, userId: string) {
-  const consultation = await getConsultationById(consultationId);
+  const consultation = await getConsultationSnapshotById(consultationId);
   if (!consultation) throw new NotFoundError('Consulta no encontrada');
   if (consultation.clientId !== userId && consultation.vetId !== userId) {
     throw new ForbiddenError('No participás de esta consulta');
@@ -163,6 +166,28 @@ export async function declineVetController(req: RequestWithUser, res: Response) 
       return res.status(error.statusCode).json({ success: false, message: error.message });
     }
     console.error('Error en declineVetController:', error);
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+}
+
+export async function cancelController(req: RequestWithUser, res: Response) {
+  try {
+    if (!req.user || req.user.role !== 'CLIENT') {
+      return res.status(403).json({ success: false, message: 'Acceso denegado' });
+    }
+    const updated = await cancelConsultation(req.params.id as string, req.user.userId);
+    
+    // Notificar al vet si la consulta ya estaba asignada (PENDING)
+    if (updated.vetId) {
+      getIO().to(`user:${updated.vetId}`).emit('consultation:updated', updated);
+    }
+    
+    return res.json({ success: true, data: updated });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
+    console.error('Error en cancelController:', error);
     return res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 }
@@ -385,7 +410,7 @@ export async function createPrescriptionController(req: RequestWithUser, res: Re
 }
 
 const reviewSchema = z.object({
-  rating: z.coerce.number({ message: 'rating debe ser un número' }).int().min(1, 'La calificación mínima es 1').max(10, 'La calificación máxima es 10'),
+  rating: z.coerce.number({ message: 'rating debe ser un número' }).int().min(1, 'La calificación mínima es 1').max(5, 'La calificación máxima es 5'),
   comment: z.string().trim().min(10, 'Cuéntanos un poco más: tu opinión debe tener al menos 10 caracteres').max(500, 'El comentario no puede superar los 500 caracteres'),
 });
 

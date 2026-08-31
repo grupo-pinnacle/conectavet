@@ -96,9 +96,18 @@ export async function updatePet(
 }
 
 export async function deletePet(id: string) {
-  return prisma.pet.update({
-    where: { id },
-    data: { deletedAt: new Date() },
+  return prisma.$transaction(async (tx) => {
+    const pet = await tx.pet.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+
+    await tx.consultation.updateMany({
+      where: { petId: id, status: { in: ['WAITING', 'PENDING', 'ACTIVE'] } },
+      data: { status: 'CANCELLED', updatedAt: new Date() },
+    });
+
+    return pet;
   });
 }
 
@@ -114,8 +123,8 @@ export async function restorePet(id: string, userId: string) {
 export async function getManagedPets(vetId: string, page = 1, limit = 50) {
   const cappedLimit = Math.min(Math.max(1, limit), 100);
   const skip = (page - 1) * cappedLimit;
-  // Mascotas que el vet atendió/hay en consulta (sin duplicar por consulta).
-  const where = { consultations: { some: { vetId, pet: { is: { deletedAt: null } } } } };
+  // Mascotas que el vet está atendiendo actualmente (PENDING o ACTIVE)
+  const where = { consultations: { some: { vetId, status: { in: ['PENDING', 'ACTIVE'] as const }, pet: { is: { deletedAt: null } } } } };
   const [data, total] = await Promise.all([
     prisma.pet.findMany({
       where,
@@ -130,7 +139,7 @@ export async function getManagedPets(vetId: string, page = 1, limit = 50) {
 
 export async function vetHasConsultationForPet(vetId: string, petId: string) {
   const consultation = await prisma.consultation.findFirst({
-    where: { vetId, petId, deletedAt: null },
+    where: { vetId, petId, status: { in: ['PENDING', 'ACTIVE'] as const }, deletedAt: null },
     select: { id: true },
   });
   return !!consultation;
@@ -139,11 +148,34 @@ export async function vetHasConsultationForPet(vetId: string, petId: string) {
 export async function getPetVetCard(petId: string) {
   const rows = await prisma.$queryRaw<
     Array<{
-      pet: any;
-      owner: any;
+      pet: {
+        id: string;
+        name: string;
+        species: string;
+        breed: string | null;
+        birthDate: string | null;
+        weightKg: number | null;
+        sex: string;
+        photoUrl: string | null;
+        notes: string | null;
+      };
+      owner: {
+        id: string;
+        email: string;
+        firstName: string | null;
+        lastName: string | null;
+        phone: string | null;
+        role: string;
+      };
       totalConsultations: bigint | number;
       lastConsultationDate: Date | null;
-      recent: any;
+      recent: Array<{
+        id: string;
+        notes: string | null;
+        status: string;
+        endedAt: string | null;
+        createdAt: string;
+      }>;
     }>
   >`
     SELECT
@@ -201,7 +233,13 @@ export async function getPetVetCard(petId: string) {
       ageYears,
       ageMonths,
     },
-    recentConsultations: recent.map((c: any) => ({
+    recentConsultations: recent.map((c: {
+      id: string;
+      notes: string | null;
+      status: string;
+      endedAt: string | null;
+      createdAt: string;
+    }) => ({
       id: c.id,
       reason: c.notes ?? 'Sin motivo',
       status: c.status,

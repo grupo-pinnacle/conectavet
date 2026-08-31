@@ -103,41 +103,57 @@ export async function listVets(
 ) {
   const { search, onlineOnly, viewerId, minRating, sortBy } = filters;
   const cacheKey = `vets:list:${page}:${limit}:${search?.toLowerCase()}:${onlineOnly}:${viewerId ?? 'anon'}:${minRating ?? 0}:${sortBy ?? 'recent'}`;
-  const cached = getCached<any>(cacheKey);
+  const cached = getCached<{ data: any[]; total: number; page: number; limit: number; totalPages: number }>(cacheKey);
   if (cached) return cached;
   const skip = (page - 1) * limit;
-  const where: Prisma.UserWhereInput = {
-    role: 'VET',
-    vetStatus: 'APPROVED',
-    ...(onlineOnly ? { isOnline: true } : {}),
-    ...(search
-      ? {
-          OR: [
-            { firstName: { contains: search, mode: 'insensitive' } },
-            { lastName: { contains: search, mode: 'insensitive' } },
-            { email: { contains: search, mode: 'insensitive' } },
-            { specialty: { contains: search, mode: 'insensitive' } },
-          ],
-        }
-      : {}),
-  };
-  const [allVets, total] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        specialty: true,
-        role: true,
-        isOnline: true,
-        createdAt: true,
-        reviewsAsVet: { select: { rating: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    }),
-    prisma.user.count({ where }),
-  ]);
+  const whereConditions = [Prisma.sql`u.role = 'VET'`, Prisma.sql`u."vet_status" = 'APPROVED'`];
+  if (onlineOnly) whereConditions.push(Prisma.sql`u."isOnline" = true`);
+  if (search) {
+    const term = `%${search}%`;
+    whereConditions.push(Prisma.sql`(u."firstName" ILIKE ${term} OR u."lastName" ILIKE ${term} OR u.email ILIKE ${term})`);
+  }
+
+  const whereClause = Prisma.sql`${Prisma.join(whereConditions, ' AND ')}`;
+  const havingClause = minRating && minRating > 0 ? Prisma.sql`HAVING COALESCE(AVG(r.rating), 0) >= ${minRating}` : Prisma.empty;
+  
+  const orderByClause = sortBy === 'rating' 
+    ? Prisma.sql`ORDER BY "ratingAvg" DESC, u."createdAt" DESC` 
+    : Prisma.sql`ORDER BY u."createdAt" DESC`;
+
+  // Raw query scale perfectly in DB
+  const rawVets = await prisma.$queryRaw<Array<{
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    specialty: string | null;
+    role: string;
+    isOnline: boolean;
+    createdAt: Date;
+    ratingAvg: number;
+    ratingCount: number;
+  }>>`
+    SELECT 
+      u.id, u."firstName", u."lastName", u.specialty, u.role, u."isOnline", u."createdAt",
+      ROUND(COALESCE(AVG(r.rating), 0)::numeric, 1)::float as "ratingAvg",
+      COUNT(r.id)::int as "ratingCount"
+    FROM "users" u
+    LEFT JOIN "reviews" r ON r."vetId" = u.id
+    WHERE ${whereClause}
+    GROUP BY u.id
+    ${havingClause}
+    ${orderByClause}
+    LIMIT ${limit} OFFSET ${skip}
+  `;
+
+  // Need a separate query for total count due to pagination
+  const countResult = await prisma.$queryRaw<Array<{ total: number }>>`
+    SELECT COUNT(DISTINCT u.id)::int as total
+    FROM "users" u
+    LEFT JOIN "reviews" r ON r."vetId" = u.id
+    WHERE ${whereClause}
+    ${havingClause}
+  `;
+  const total = countResult[0]?.total || 0;
 
   let favoriteIds = new Set<string>();
   if (viewerId) {
@@ -148,22 +164,11 @@ export async function listVets(
     favoriteIds = new Set(favorites.map((f) => f.vetId));
   }
 
-  const withRatings = allVets.map(({ reviewsAsVet, ...vet }) => {
-    const ratingCount = reviewsAsVet.length;
-    const ratingAvg = ratingCount > 0
-      ? Math.round((reviewsAsVet.reduce((sum, r) => sum + r.rating, 0) / ratingCount) * 10) / 10
-      : null;
-    return { ...vet, ratingAvg, ratingCount, isFavorite: favoriteIds.has(vet.id) };
-  });
+  const data = rawVets.map(vet => ({
+    ...vet,
+    isFavorite: favoriteIds.has(vet.id)
+  }));
 
-  const filtered = withRatings
-    .filter((vet) => (minRating && minRating > 0 ? (vet.ratingAvg ?? 0) >= minRating : true))
-    .sort((a, b) => {
-      if (sortBy === 'rating') return (b.ratingAvg ?? 0) - (a.ratingAvg ?? 0);
-      return b.createdAt.getTime() - a.createdAt.getTime();
-    });
-
-  const data = filtered.slice(skip, skip + limit);
   const result = { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   setCache(cacheKey, result, 30);
   return result;

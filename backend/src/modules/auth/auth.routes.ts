@@ -41,8 +41,16 @@ const forgotPasswordLimiter = rateLimit({
 });
 
 // Recuperación de contraseña y verificación de email (no requieren sesión).
+const resetPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Demasiados intentos. Intentá de nuevo más tarde.' },
+});
+
 router.post('/forgot-password', forgotPasswordLimiter, forgotPasswordController);
-router.post('/reset-password', resetPasswordController);
+router.post('/reset-password', resetPasswordLimiter, resetPasswordController);
 router.get('/verify-email', verifyEmailController);
 
 export default router;

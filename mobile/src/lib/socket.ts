@@ -34,9 +34,10 @@ export async function connectSocket(): Promise<Socket> {
     });
   }
 
-  const token = await secureStorage.getAccessToken();
   socket = io(API_URL, {
-    auth: { token },
+    auth: (cb) => {
+      secureStorage.getAccessToken().then(token => cb({ token })).catch(() => cb({ token: null }));
+    },
     transports: ['websocket', 'polling'],
   });
 
@@ -57,7 +58,6 @@ export async function connectSocket(): Promise<Socket> {
  */
 export function applySocketToken(token: string) {
   if (!socket) return;
-  socket.auth = { token };
   if (socket.connected) {
     socket.disconnect().connect();
   }

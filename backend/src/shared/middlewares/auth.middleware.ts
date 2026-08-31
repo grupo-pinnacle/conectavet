@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role } from '@prisma/client';
 import { prisma } from '../prisma';
+import { getCached, setCache } from '../cache';
 import { JwtPayload } from '../types';
 import { getAccessTokenFromCookie } from '../auth-cookies';
 
@@ -39,12 +40,22 @@ export async function authenticate(
       { algorithms: ['HS256'] }
     ) as JwtPayload;
 
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: { tokenVersion: true },
-    });
+    const cacheKey = `user:tokenVersion:${decoded.userId}`;
+    let currentVersion = getCached<number>(cacheKey);
+    
+    if (currentVersion === undefined) {
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: { tokenVersion: true },
+      });
+      if (user) {
+        currentVersion = user.tokenVersion;
+        // Cachear la versión del token por 30 segundos
+        setCache(cacheKey, currentVersion, 30);
+      }
+    }
 
-    if (!user || (decoded.tokenVersion ?? 1) !== user.tokenVersion) {
+    if (currentVersion === undefined || (decoded.tokenVersion ?? 1) !== currentVersion) {
       return res.status(401).json({
         success: false,
         message: 'Sesión cerrada. Iniciá sesión de nuevo'

@@ -4,7 +4,8 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '../../shared/prisma';
 import { JwtPayload } from '../../shared/types';
 import { sendConsultationMessage } from './consultations.service';
-import { notifyConsultationMessage } from '../notifications';
+import { notifyConsultationMessage } from '../notifications/notifications.service';
+import { sendMessageSchema } from './consultations.controller';
 import { checkRateLimit, setRedisClient } from './message-throttle';
 
 let io: Server;
@@ -114,20 +115,16 @@ export async function setupChatSocket(httpServer: HttpServer) {
       'message:send',
       async (data: { consultationId: string; content?: string; attachmentUrl?: string; clientMsgId?: string }, ack?: (r: any) => void) => {
         try {
-          const hasContent = !!data.content && data.content.trim().length > 0;
-          const hasAttachment = !!data.attachmentUrl;
           if (!data.consultationId) {
             return socket.emit('error', { message: 'consultationId requerido' });
           }
-          if (!hasContent && !hasAttachment) {
-            return socket.emit('error', { message: 'El mensaje no puede estar vacío' });
+
+          const parsed = sendMessageSchema.safeParse(data);
+          if (!parsed.success) {
+            return socket.emit('error', { message: parsed.error.issues[0].message });
           }
-          if (data.content && data.content.length > 2000) {
-            return socket.emit('error', { message: 'El mensaje no puede superar los 2000 caracteres' });
-          }
-          if (hasAttachment && !data.attachmentUrl!.startsWith('/uploads/') && !data.attachmentUrl!.startsWith('https://')) {
-            return socket.emit('error', { message: 'La imagen adjunta es inválida' });
-          }
+
+          const validData = parsed.data;
 
           // Lógica única compartida con REST: participación, estado ACTIVE,
           // rate-limit y dedup durable por clientMsgId.

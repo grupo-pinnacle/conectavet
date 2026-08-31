@@ -62,41 +62,45 @@ function NotFoundPage() {
   );
 }
 
+import { ErrorBoundary } from "./components/ErrorBoundary";
+
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<RootRedirect />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route
-            path="/call"
-            element={
-              <ProtectedRoute>
-                <CallPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute requiredRole={["owner"]}>
-                <DashboardPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/vet-dashboard"
-            element={
-              <ProtectedRoute requiredRole={["vet", "admin"]}>
-                <VetDashboardPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </BrowserRouter>
+      <ErrorBoundary>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<RootRedirect />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route
+              path="/call"
+              element={
+                <ProtectedRoute>
+                  <CallPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute requiredRole={["owner"]}>
+                  <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vet-dashboard"
+              element={
+                <ProtectedRoute requiredRole={["vet", "admin"]}>
+                  <VetDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </BrowserRouter>
+      </ErrorBoundary>
     </AuthProvider>
   );
 }

@@ -5,6 +5,7 @@ import {
   getMessages,
   sendMessage,
   getPrescriptions,
+  cancelConsultation,
 } from "../../services/endpoints";
 import {
   getCachedConsultations,
@@ -327,7 +328,7 @@ export default function MessagesSection() {
         <div className="border-b border-border px-5 py-4">
           <h2 className="text-lg font-bold text-ink">Mensajes</h2>
           <p className="mt-0.5 text-xs text-slate-500">
-            {activeList.length} activas · {pendingList.length} pendientes · {completedList.length} finalizadas
+            {activeList.length} activas · {pendingList.length} pendientes
           </p>
         </div>
         <div ref={listRef} className="overflow-y-auto" style={{ height: "calc(100% - 73px)" }}>
@@ -337,14 +338,18 @@ export default function MessagesSection() {
               Cargando...
             </div>
           )}
-          {!loading && consultations.length === 0 && (
+          {!loading && consultations
+            .filter(c => c.status !== 'COMPLETED' && c.status !== 'CANCELLED')
+            .length === 0 && (
             <div className="flex flex-col items-center justify-center py-20 text-sm text-slate-400">
               <MessageSquare className="mb-3 h-10 w-10 text-slate-300" />
-              <p className="font-semibold text-slate-500">Sin consultas todavía</p>
-              <p className="mt-1 text-xs">Solicitá una desde la sección Consultas</p>
+              <p className="font-semibold text-slate-500">Sin chats activos</p>
+              <p className="mt-1 text-xs">Las consultas finalizadas están en tu Historial</p>
             </div>
           )}
-          {!loading && consultations.map((c) => {
+          {!loading && consultations
+            .filter(c => c.status !== 'COMPLETED' && c.status !== 'CANCELLED')
+            .map((c) => {
             const isSelected = activeCons?.id === c.id;
             const cfg = statusConfig[c.status] || statusConfig.WAITING;
             return (
@@ -432,6 +437,25 @@ export default function MessagesSection() {
                   consultationId={activeCons.id}
                   peerName={activeCons.vet?.firstName || activeCons.vet?.email || "el veterinario"}
                 />
+              )}
+              {(activeCons.status === "WAITING" || activeCons.status === "PENDING") && (
+                <button
+                  onClick={async () => {
+                    try {
+                      const updated = await cancelConsultation(activeCons.id);
+                      updateCachedConsultation(updated);
+                      patchConsultations((prev) =>
+                        prev.map((c) => (c.id === updated.id ? updated : c))
+                      );
+                      setActiveCons(updated);
+                    } catch (error) {
+                      console.error("Error al cancelar la consulta", error);
+                    }
+                  }}
+                  className="rounded-full px-4 py-1.5 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+                >
+                  Cancelar
+                </button>
               )}
             </div>
 

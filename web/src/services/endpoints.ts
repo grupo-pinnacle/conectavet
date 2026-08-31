@@ -77,6 +77,11 @@ export async function declineConsultation(id: string): Promise<Consultation> {
   return res.data.data;
 }
 
+export async function cancelConsultation(id: string): Promise<Consultation> {
+  const res = await api.patch(`/api/consultations/${id}/cancel`);
+  return res.data.data;
+}
+
 export async function completeConsultation(id: string, notes?: string): Promise<Consultation> {
   const res = await api.patch(`/api/consultations/${id}/complete`, { notes });
   return res.data.data;

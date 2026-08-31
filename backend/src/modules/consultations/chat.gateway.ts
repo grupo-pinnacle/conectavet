@@ -7,6 +7,7 @@ import { sendConsultationMessage } from './consultations.service';
 import { notifyConsultationMessage } from '../notifications/notifications.service';
 import { sendMessageSchema } from './consultations.controller';
 import { checkRateLimit, setRedisClient } from './message-throttle';
+import type { Redis } from 'ioredis';
 
 let io: Server;
 
@@ -19,7 +20,6 @@ export async function setupChatSocket(httpServer: HttpServer) {
     .map((s) => s.trim());
   const wsAllowCredentials = !wsOrigins.includes('*');
 
-  import type { Redis } from 'ioredis';
 
   // Cliente Redis local a esta instancia (el estado compartido vive en
   // message-throttle vía setRedisClient). Se usa solo si REDIS_URL está seteado.

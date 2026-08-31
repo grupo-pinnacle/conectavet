@@ -4,6 +4,9 @@ import { API_CONFIG } from "../constants/api";
 const api = axios.create({
   baseURL: API_CONFIG.BASE_URL,
   timeout: API_CONFIG.TIMEOUT,
+  headers: {
+    'Bypass-Tunnel-Reminder': 'true',
+  },
   // El refresh token vive en cookie HttpOnly (la setea el backend en /login,
   // /register y /refresh) y el access token viaja en el header Authorization
   // (lo guardamos en memoria tras login/refresh). Esto permite autenticar

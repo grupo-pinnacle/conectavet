@@ -1,0 +1,23 @@
+# Compose para desplegar el backend en Coolify.
+# Coolify builda la imagen desde el Dockerfile y la corre como contenedor
+# siempre activo (soporta WebSockets / Socket.io para el chat en vivo).
+# Las variables sensibles se configuran en el dashboard de Coolify
+# (Sources > Variables), NO se commitean acá.
+services:
+  vetconnect-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    expose:
+      - "3000"
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      # DATABASE_URL, DIRECT_URL, JWT_secret, CORS_ORIGIN, etc. -> Coolify UI
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

@@ -20,6 +20,7 @@ export const api: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
     'X-Platform': 'mobile',
+    'Bypass-Tunnel-Reminder': 'true',
   },
 });
 

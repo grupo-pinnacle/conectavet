@@ -1,4 +1,7 @@
 import { z } from "zod";
+const dateStringSchema = z
+  .string()
+  .refine((v) => !Number.isNaN(Date.parse(v)), 'Fecha de nacimiento inválida');
 
 export const createPetSchema = z.object({
       name: z.string().min(1, 'El nombre es requerido'),

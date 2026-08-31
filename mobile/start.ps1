@@ -1,7 +1,8 @@
 param(
     [switch]$Tunnel,
     [switch]$ADB,
-    [switch]$Fast
+    [switch]$Fast,
+    [string]$NgrokUrl
 )
 
 $port = 8081
@@ -123,16 +124,25 @@ Push-Location $qrDir
 if (-not (Test-Path "node_modules\qrcode")) { npm install qrcode --legacy-peer-deps 2>&1 | Out-Null }
 $expUrl = "exp://${ip}:${port}"
 node -e "const QR=require('qrcode'); QR.toFile('expo-qr.png','$expUrl',{width:500})" 2>&1 | Out-Null
-Copy-Item "expo-qr.png" "$rootDir\expo-qr.png" -Force
-$desktop = [Environment]::GetFolderPath("Desktop")
-Copy-Item "expo-qr.png" "$desktop\expo-qr.png" -Force
-Pop-Location
-Invoke-Item "$rootDir\expo-qr.png"
-Write-Host "  QR: $desktop\expo-qr.png" -ForegroundColor Green
+
+if (Test-Path "expo-qr.png") {
+    Copy-Item "expo-qr.png" "$rootDir\expo-qr.png" -Force
+    $desktop = [Environment]::GetFolderPath("Desktop")
+    Copy-Item "expo-qr.png" "$desktop\expo-qr.png" -Force
+    Pop-Location
+    Invoke-Item "$rootDir\expo-qr.png"
+    Write-Host "  QR: $desktop\expo-qr.png" -ForegroundColor Green
+} else {
+    Pop-Location
+    Write-Host "  No se pudo generar la imagen del QR (probablemente falte algun modulo). Puedes escanear el que aparece mas abajo en consola." -ForegroundColor Yellow
+}
 Write-Host ""
 
 # ── Set API URL for mobile (environment override for Metro bundler) ──
-if ($useADB) {
+if ($NgrokUrl) {
+    $env:EXPO_PUBLIC_API_URL = $NgrokUrl
+    $env:EXPO_PUBLIC_WS_URL = $NgrokUrl.Replace("http://", "ws://").Replace("https://", "wss://") + "/socket.io"
+} elseif ($useADB) {
     $env:EXPO_PUBLIC_API_URL = "http://localhost:3001"
     $env:EXPO_PUBLIC_WS_URL = "ws://localhost:3001/socket.io"
 } else {

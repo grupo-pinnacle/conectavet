@@ -14,6 +14,10 @@ if "%IP%"=="" (
 )
 echo       IP detectada: %IP%
 
+:: Configure mobile/.env with LAN IP so the physical device reaches the backend
+echo       Configurando mobile/.env (API en %IP%)...
+powershell -Command "$f='mobile\.env'; $c=Get-Content $f; $c=$c -replace '^EXPO_PUBLIC_API_URL=.*','EXPO_PUBLIC_API_URL=http://%IP%:3001'; $c=$c -replace '^EXPO_PUBLIC_WS_URL=.*','EXPO_PUBLIC_WS_URL=ws://%IP%:3001'; Set-Content $f $c"
+
 :: Free ports 8081 (Expo) and 8082 (Expo fallback) — without killing other Node processes
 echo [1/5] Liberando puertos 8081 y 8082...
 for %%p in (8081 8082) do (

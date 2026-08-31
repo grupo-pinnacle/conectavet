@@ -13,7 +13,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { mediaService } from '@/services';
 import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
 import * as Theme from '@/theme';
-import { ApiError, type Prescription, type Message } from '@/types';
+import { ApiError, type Prescription, type ChatMessage } from '@/types';
 
 const SEND_BTN_SIZE = 44;
 
@@ -187,7 +187,7 @@ export default function ConsultationChatScreen() {
     }
   };
 
-  const renderMessage = useCallback(({ item }: { item: Message }) => (
+  const renderMessage = useCallback(({ item }: { item: ChatMessage }) => (
     <ChatBubble
       message={item}
       isOwn={item.senderId === user?.id || item.sender?.id === user?.id}

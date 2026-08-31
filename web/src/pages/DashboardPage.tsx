@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import type { Socket } from "socket.io-client";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { Home, PawPrint, Calendar, ClipboardList, MessageCircle, Search, User, LogOut } from "lucide-react";
+import { Home, PawPrint, Calendar,  MessageCircle, Search, User, LogOut } from "lucide-react";
 import Logo from "../components/Logo";
 import HomeSection from "../components/dashboard/HomeSection";
 import PetsHistorySection from "../components/dashboard/PetsHistorySection";

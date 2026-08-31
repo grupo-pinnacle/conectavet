@@ -6,7 +6,7 @@ import { JwtPayload } from '../../shared/types';
 import { sendConsultationMessage } from './consultations.service';
 import { notifyConsultationMessage } from '../notifications/notifications.service';
 import { sendMessageSchema } from './consultations.controller';
-import { checkRateLimit, setRedisClient } from './message-throttle';
+import { setRedisClient } from './message-throttle';
 
 let io: Server;
 

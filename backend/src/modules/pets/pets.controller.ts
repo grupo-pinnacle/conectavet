@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
-import { AppError, NotFoundError, ForbiddenError, handleError } from '../../shared/errors';
+import { NotFoundError, ForbiddenError, handleError } from '../../shared/errors';
 import { getPetsByOwner, getManagedPets, getPetById, createPet, updatePet, deletePet, restorePet, getPetVetCard, vetHasConsultationForPet } from './pets.service';
 import { parsePagination } from '../../shared/utils';
 

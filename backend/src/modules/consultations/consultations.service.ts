@@ -1,6 +1,6 @@
 import { prisma } from '../../shared/prisma';
 import { NotFoundError, ConflictError, ForbiddenError } from '../../shared/errors';
-import { getCached, setCache, clearCache } from '../../shared/cache';
+import { getCached, setCache } from '../../shared/cache';
 import { Prisma } from '@prisma/client';
 import { checkRateLimit } from './message-throttle';
 

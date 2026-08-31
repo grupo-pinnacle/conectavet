@@ -47,6 +47,8 @@ function signRefreshToken(userId: string, tokenVersion: number) {
   );
 }
 
+import { disconnectUserSockets } from '../consultations/chat.gateway.js';
+
 /**
  * Revoca todas las sesiones del usuario: se incrementa tokenVersion y
  * cualquier access/refresh emitido antes queda invalidado.
@@ -57,6 +59,8 @@ export async function logout(userId: string) {
     data: { tokenVersion: { increment: 1 } },
   });
   clearCache('vets:');
+  clearCache(`user:tokenVersion:${userId}`);
+  disconnectUserSockets(userId);
 }
 
 export async function register(input: RegisterInput) {
@@ -182,6 +186,8 @@ export async function verifyEmail(token: string) {
   return { verified: true };
 }
 
+import { createHash } from 'crypto';
+
 /**
  * Inicia el restablecimiento de contraseña. Por seguridad, SIEMPRE devuelve
  * el mismo resultado: nunca revela si el email existe (anti-enumeración).
@@ -190,10 +196,11 @@ export async function requestPasswordReset(email: string) {
   const user = await prisma.user.findUnique({ where: { email } });
   if (user) {
     const token = randomBytes(32).toString('hex');
+    const hashedToken = createHash('sha256').update(token).digest('hex');
     const expires = new Date(Date.now() + 1000 * 60 * 60); // 1 hora
     await prisma.user.update({
       where: { id: user.id },
-      data: { passwordResetToken: token, passwordResetExpires: expires },
+      data: { passwordResetToken: hashedToken, passwordResetExpires: expires },
     });
     const link = `${process.env.WEB_URL ?? ''}/reset-password?token=${token}`;
     await sendMail(
@@ -210,8 +217,9 @@ export async function requestPasswordReset(email: string) {
  * se incrementa tokenVersion para cerrar las sesiones activas del usuario.
  */
 export async function resetPassword(token: string, newPassword: string) {
+  const hashedToken = createHash('sha256').update(token).digest('hex');
   const user = await prisma.user.findFirst({
-    where: { passwordResetToken: token, passwordResetExpires: { gt: new Date() } },
+    where: { passwordResetToken: hashedToken, passwordResetExpires: { gt: new Date() } },
   });
   if (!user) throw new ConflictError('Token de restablecimiento inválido o expirado');
   const hashed = await bcrypt.hash(newPassword, SALT_ROUNDS);
@@ -224,5 +232,7 @@ export async function resetPassword(token: string, newPassword: string) {
       tokenVersion: { increment: 1 },
     },
   });
+  clearCache(`user:tokenVersion:${user.id}`);
+  disconnectUserSockets(user.id);
   return { reset: true };
 }

@@ -33,9 +33,10 @@ export const sendMessageSchema = z
     message: 'El mensaje no puede estar vacío',
   });
 
-async function assertParticipation(consultationId: string, userId: string) {
+async function assertParticipation(consultationId: string, userId: string, role?: string) {
   const consultation = await getConsultationSnapshotById(consultationId);
   if (!consultation) throw new NotFoundError('Consulta no encontrada');
+  if (role === 'ADMIN') return consultation;
   if (consultation.clientId !== userId && consultation.vetId !== userId) {
     throw new ForbiddenError('No participás de esta consulta');
   }
@@ -137,7 +138,7 @@ export const completeController = asyncHandler(async (req: RequestWithUser, res:
 if (!req.user) {
       return res.status(401).json({ success: false, message: 'No autenticado' });
     }
-const consultation = await assertParticipation(req.params.id as string, req.user.userId);
+const consultation = await assertParticipation(req.params.id as string, req.user.userId, req.user.role);
 if (req.user.role !== 'ADMIN' && consultation.vetId !== req.user.userId) {
       throw new ForbiddenError('Solo el veterinario asignado puede cerrar esta consulta');
     }
@@ -162,7 +163,7 @@ export const getByIdController = asyncHandler(async (req: RequestWithUser, res: 
 if (!req.user) {
       return res.status(401).json({ success: false, message: 'No autenticado' });
     }
-const consultation = await assertParticipation(req.params.id as string, req.user.userId);
+const consultation = await assertParticipation(req.params.id as string, req.user.userId, req.user.role);
 return res.status(200).json({ success: true, data: consultation });
 });
 
@@ -195,7 +196,7 @@ export const getMessagesController = asyncHandler(async (req: RequestWithUser, r
 if (!req.user) {
       return res.status(401).json({ success: false, message: 'No autenticado' });
     }
-await assertParticipation(req.params.id as string, req.user.userId);
+await assertParticipation(req.params.id as string, req.user.userId, req.user.role);
 const { page, limit } = parsePagination(req.query as Record<string, string>);
 const messages = await getMessages(req.params.id as string, page, limit);
 return res.status(200).json({ success: true, data: messages });
@@ -228,7 +229,7 @@ export const getPrescriptionsController = asyncHandler(async (req: RequestWithUs
 if (!req.user) {
       return res.status(401).json({ success: false, message: 'No autenticado' });
     }
-await assertParticipation(req.params.id as string, req.user.userId);
+await assertParticipation(req.params.id as string, req.user.userId, req.user.role);
 const prescriptions = await getPrescriptions(req.params.id as string);
 return res.status(200).json({ success: true, data: prescriptions });
 });
@@ -237,7 +238,7 @@ export const createPrescriptionController = asyncHandler(async (req: RequestWith
 if (!req.user) {
       return res.status(401).json({ success: false, message: 'No autenticado' });
     }
-const consultation = await assertParticipation(req.params.id as string, req.user.userId);
+const consultation = await assertParticipation(req.params.id as string, req.user.userId, req.user.role);
 if (consultation.vetId !== req.user.userId) {
       throw new ForbiddenError('Solo el veterinario asignado puede enviar recetas');
     }

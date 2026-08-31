@@ -1,4 +1,4 @@
-﻿import { Router } from 'express';
+import { Router } from 'express';
 import {
   getMeController,
   adminOnlyController,
@@ -17,7 +17,9 @@ import {
 import {
   authenticate,
   authorize
-} from '../../shared/middlewares/auth.middleware';
+} from '../../shared/middlewares/auth.middleware.js';
+import { validate } from '../../shared/middlewares/validate.middleware.js';
+import { updateProfileSchema } from './users.schemas.js';
 import { Role } from '@prisma/client';
 
 const router = Router();

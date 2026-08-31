@@ -1,4 +1,6 @@
-import { prisma } from '../../shared/prisma';
+import { prisma } from '../../shared/prisma.js';
+import { ConflictError } from '../../shared/errors/index.js';
+import { Sex } from '@prisma/client';
 
 export async function getPetsByOwner(ownerId: string, page = 1, limit = 20) {
   const skip = (page - 1) * limit;
@@ -37,6 +39,17 @@ export async function createPet(data: {
   chronicConditions?: string[];
   birthDate?: string;
 }) {
+  const existing = await prisma.pet.findFirst({
+    where: {
+      ownerId: data.ownerId,
+      name: { equals: data.name, mode: 'insensitive' },
+      deletedAt: null
+    }
+  });
+  if (existing) {
+    throw new ConflictError('Ya tenés una mascota activa con este nombre');
+  }
+
   return prisma.pet.create({
     data: {
       name: data.name,
@@ -45,7 +58,7 @@ export async function createPet(data: {
       age: data.age,
       weight: data.weight,
       weightKg: data.weightKg,
-      sex: data.sex as any,
+      sex: data.sex as Sex,
       color: data.color,
       microchip: data.microchip,
       allergies: data.allergies ?? [],
@@ -84,7 +97,7 @@ export async function updatePet(
       ...(data.age !== undefined && { age: data.age }),
       ...(data.weight !== undefined && { weight: data.weight }),
       ...(data.weightKg !== undefined && { weightKg: data.weightKg }),
-      ...(data.sex !== undefined && { sex: data.sex as any }),
+      ...(data.sex !== undefined && { sex: data.sex as Sex }),
       ...(data.color !== undefined && { color: data.color }),
       ...(data.microchip !== undefined && { microchip: data.microchip }),
       ...(data.allergies !== undefined && { allergies: data.allergies }),

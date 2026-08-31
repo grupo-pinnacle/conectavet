@@ -100,6 +100,17 @@ export async function createConsultation(data: {
     throw new ForbiddenError('La mascota no te pertenece');
   }
 
+  const existingActive = await prisma.consultation.findFirst({
+    where: {
+      petId: data.petId,
+      status: { in: ['WAITING', 'PENDING', 'ACTIVE'] },
+      deletedAt: null,
+    }
+  });
+  if (existingActive) {
+    throw new ConflictError('Ya tenés una consulta activa o en espera para esta mascota');
+  }
+
   // La consulta nunca nace ACTIVA: el veterinario siempre decide si atender.
   //  - Si el cliente eligió un vet puntual: nace como oferta (PENDING) para él,
   //    aunque esté offline la verá y decidirá al entrar a la web.

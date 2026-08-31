@@ -1,5 +1,7 @@
-﻿import { Router } from 'express';
-import { authenticate, authorize } from '../../shared/middlewares/auth.middleware';
+import { Router } from 'express';
+import { authenticate, authorize } from '../../shared/middlewares/auth.middleware.js';
+import { validate } from '../../shared/middlewares/validate.middleware.js';
+import { sendMessageSchema } from './consultations.schemas.js';
 import { Role } from '@prisma/client';
 import {
   createController,

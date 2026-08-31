@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
-import { setAuthCookies, clearAuthCookies, getRefreshTokenFromCookie } from '../../shared/auth-cookies';
-import { register, login, logout, refreshAccessToken, verifyEmail, requestPasswordReset, resetPassword, AuthError } from './auth.service';
-import { ConflictError, handleError } from '../../shared/errors';
+import { RequestWithUser } from '../../shared/middlewares/auth.middleware.js';
+import { setAuthCookies, clearAuthCookies, getRefreshTokenFromCookie } from '../../shared/auth-cookies.js';
+import { register, login, logout, refreshAccessToken, verifyEmail, requestPasswordReset, resetPassword, AuthError } from './auth.service.js';
+import { ConflictError, handleError } from '../../shared/errors/index.js';
 import { asyncHandler } from "../../shared/middlewares/async.middleware.js";
 export const registerController = asyncHandler(async (req: Request, res: Response) => {
 const user = await register(req.body);
@@ -19,6 +19,7 @@ clearAuthCookies(res);
 return res.status(200).json({ success: true, message: 'Sesión cerrada' });
 });
 export const refreshController = asyncHandler(async (req: Request, res: Response) => {
+const bodyToken = req.body && req.body.refreshToken;
 const refreshToken = bodyToken || getRefreshTokenFromCookie(req);
 if (!refreshToken) {
       return res.status(400).json({ success: false, message: 'refreshToken es requerido' });

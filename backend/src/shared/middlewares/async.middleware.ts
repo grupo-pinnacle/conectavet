@@ -1,12 +1,13 @@
-import { Request, Response, NextFunction, RequestHandler } from 'express';
+import { Request, Response, NextFunction } from 'express';
 
-/**
- * Wraps an async route handler to automatically catch rejections and pass them to next().
- */
-export const asyncHandler = (
-  fn: (req: Request | any, res: Response, next: NextFunction) => Promise<any> | any
-): RequestHandler => {
+type AsyncFunction<TReq extends Request = Request> = (
+  req: TReq,
+  res: Response,
+  next: NextFunction
+) => Promise<unknown> | void;
+
+export function asyncHandler<TReq extends Request = Request>(fn: AsyncFunction<TReq>) {
   return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
+    Promise.resolve(fn(req as TReq, res, next)).catch(next);
   };
 };

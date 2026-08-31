@@ -50,7 +50,7 @@ describe('Auth Service', () => {
       const secret = process.env.JWT_SECRET || 'test-secret';
       const payload = { userId: '123', email: 'test@test.com', role: 'CLIENT' as Role };
       const token = jwt.sign(payload, secret, { expiresIn: '7d' });
-      const decoded = jwt.verify(token, secret) as any;
+      const decoded = jwt.verify(token, secret) as jwt.JwtPayload;
       expect(decoded.userId).toBe('123');
       expect(decoded.email).toBe('test@test.com');
       expect(decoded.role).toBe('CLIENT');
@@ -71,7 +71,7 @@ describe('Auth Service', () => {
       const secret = process.env.JWT_SECRET || 'test-secret';
       const payload = { userId: '456', email: 'vet@test.com', role: 'VET' as Role };
       const token = jwt.sign(payload, secret, { expiresIn: '7d' });
-      const decoded = jwt.verify(token, secret) as any;
+      const decoded = jwt.verify(token, secret) as jwt.JwtPayload;
       expect(decoded.userId).toBe('456');
       expect(decoded.email).toBe('vet@test.com');
       expect(decoded.role).toBe('VET');

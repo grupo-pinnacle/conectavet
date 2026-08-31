@@ -63,7 +63,7 @@ export function useConsultationMessages(consultationId: string | undefined, user
 
   // NetInfo: flush outbox automatically when device goes online
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener((state: any) => {
+    const unsubscribe = NetInfo.addEventListener((state: { isConnected: boolean | null; isInternetReachable: boolean | null }) => {
       if (state.isConnected && state.isInternetReachable !== false) {
         consultationsService.flushOutbox().catch(() => undefined);
       }

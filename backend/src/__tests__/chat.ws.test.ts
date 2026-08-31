@@ -24,7 +24,7 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function connect(token: string): Promise<Socket> {
   return new Promise((resolve, reject) => {
-    const sock = ioClient(`http://localhost:${(server.address() as any).port}`, {
+    const sock = ioClient(`http://localhost:${(server.address() as { port: number }).port}`, {
       auth: { token },
       transports: ['websocket'],
       forceNew: true,

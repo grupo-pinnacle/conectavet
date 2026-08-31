@@ -108,7 +108,15 @@ api.interceptors.response.use(
         // (reconexión) use el access token válido (P3-11).
         applySocketToken(authData.accessToken);
         return api(original);
-      } catch {
+      } catch (err: unknown) {
+        const _err = err as { status?: number; response?: { status?: number } };
+        const refreshStatus = _err?.status || _err?.response?.status || 0;
+        if (refreshStatus >= 500 || refreshStatus === 0) {
+          // Error temporal (Backend caído o sin red). No destruir la sesión.
+          onTokenRefreshed(null);
+          return Promise.reject(err);
+        }
+
         onTokenRefreshed(null);
         // Hard logout — surface to the auth store via event emitter
         await secureStorage.clearAll();

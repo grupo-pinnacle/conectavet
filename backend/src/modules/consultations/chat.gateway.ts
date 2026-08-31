@@ -160,3 +160,10 @@ export async function setupChatSocket(httpServer: HttpServer) {
 export function getIO() {
   return io;
 }
+
+export function disconnectUserSockets(userId: string) {
+  if (io) {
+    io.in(`user:${userId}`).disconnectSockets(true);
+  }
+}
+

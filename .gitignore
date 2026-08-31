@@ -1,36 +1,43 @@
-node_modules
+# Dependencies
+node_modules/
+.pnpm-store/
 
-dist
-
-build
-
-.DS_Store
-
-Thumbs.db
-
-.expo
-
-*.log
-
+# Build outputs
+dist/
+build/
+.next/
+out/
 *.tsbuildinfo
 
-.vscode/
-
-.idea/
-
-coverage/
-
-.agents/
-
-# Subidas de imágenes (Sprint 12)
-backend/uploads/
-
-# Environment files with secrets (nunca commitear; usar .env.example)
-backend/.env
-web/.env
-mobile/.env
-.env.*.local
+# Env
+.env
 .env.local
+.env.*.local
+!.env.example
 
-# Temp files created by integration tests
-backend/.jest-schema
+# Prisma
+packages/db/node_modules/.prisma/
+
+# Mobile
+apps/mobile/.expo/
+apps/mobile/dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Temp
+tmp/
+.tmp/

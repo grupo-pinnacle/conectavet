@@ -1,5 +1,0 @@
-Starting project at C:\Users\Pinnacle\Downloads\vetconnect-mobile
-env: load .env
-env: export EXPO_PUBLIC_API_URL EXPO_PUBLIC_WS_URL EXPO_PUBLIC_LIVEKIT_URL
-Starting Metro Bundler
-warning: Bundler cache is empty, rebuilding (this may take a minute)

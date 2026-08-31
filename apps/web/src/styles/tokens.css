@@ -1,0 +1,17 @@
+:root {
+  --brand: #1c60f0;
+  --brand-strong: #0c4cd4;
+  --ink: #080808;
+  --ink-soft: #475569;
+  --bg: #ffffff;
+  --surface: #f8fafc;
+  --border: #e2e8f0;
+  --accent-warm: #c28e52;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  --font-body: "Inter", system-ui, -apple-system, sans-serif;
+}

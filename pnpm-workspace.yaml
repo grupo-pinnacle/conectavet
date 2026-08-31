@@ -1,0 +1,16 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+onlyBuiltDependencies:
+  - "@prisma/client"
+  - "@prisma/engines"
+  - "prisma"
+  - "react-native"
+  - "react-native-screens"
+  - "react-native-reanimated"
+  - "expo"
+  - "@expo/vector-icons"
+
+overrides:
+  "@types/react": "18.2.79"

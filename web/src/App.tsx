@@ -1,14 +1,18 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { AuthProvider } from "./context/AuthContext";
-
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import DashboardPage from "./pages/DashboardPage";
-import VetDashboardPage from "./pages/VetDashboardPage";
-import LandingPage from "./pages/LandingPage";
-import CallPage from "./pages/CallPage";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuth } from "./hooks/useAuth";
+
+// Code-split: cada página se carga solo cuando el usuario la necesita
+const LoginPage          = lazy(() => import("./pages/LoginPage"));
+const RegisterPage       = lazy(() => import("./pages/RegisterPage"));
+const DashboardPage      = lazy(() => import("./pages/DashboardPage"));
+const VetDashboardPage   = lazy(() => import("./pages/VetDashboardPage"));
+const AdminDashboardPage = lazy(() => import("./pages/AdminDashboardPage"));
+const LandingPage        = lazy(() => import("./pages/LandingPage"));
+const CallPage           = lazy(() => import("./pages/CallPage"));
 
 function SplashScreen() {
   return (
@@ -44,9 +48,8 @@ function RootRedirect() {
 
   if (!isAuthenticated) return <LandingPage />;
 
-  if (user?.role === "vet" || user?.role === "admin") {
-    return <Navigate to="/vet-dashboard" replace />;
-  }
+  if (user?.role === "admin") return <Navigate to="/admin" replace />;
+  if (user?.role === "vet")   return <Navigate to="/vet-dashboard" replace />;
   return <Navigate to="/dashboard" replace />;
 }
 
@@ -62,43 +65,51 @@ function NotFoundPage() {
   );
 }
 
-import { ErrorBoundary } from "./components/ErrorBoundary";
-
 function App() {
   return (
     <AuthProvider>
       <ErrorBoundary>
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<RootRedirect />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route
-              path="/call"
-              element={
-                <ProtectedRoute>
-                  <CallPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute requiredRole={["owner"]}>
-                  <DashboardPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/vet-dashboard"
-              element={
-                <ProtectedRoute requiredRole={["vet", "admin"]}>
-                  <VetDashboardPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
+          <Suspense fallback={<SplashScreen />}>
+            <Routes>
+              <Route path="/" element={<RootRedirect />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route
+                path="/call"
+                element={
+                  <ProtectedRoute>
+                    <CallPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute requiredRole={["owner"]}>
+                    <DashboardPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/vet-dashboard"
+                element={
+                  <ProtectedRoute requiredRole={["vet", "admin"]}>
+                    <VetDashboardPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute requiredRole={["admin"]}>
+                    <AdminDashboardPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </ErrorBoundary>
     </AuthProvider>

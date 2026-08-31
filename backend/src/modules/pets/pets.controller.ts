@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { z } from 'zod';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
-import { AppError, NotFoundError, ForbiddenError } from '../../shared/errors';
+import { AppError, NotFoundError, ForbiddenError, handleError } from '../../shared/errors';
 import { getPetsByOwner, getManagedPets, getPetById, createPet, updatePet, deletePet, restorePet, getPetVetCard, vetHasConsultationForPet } from './pets.service';
 import { parsePagination } from '../../shared/utils';
 
@@ -41,13 +41,6 @@ const updatePetSchema = z.object({
   photoUrl: z.string().optional(),
 });
 
-function handleError(error: unknown, res: Response) {
-  if (error instanceof AppError) {
-    return res.status(error.statusCode).json({ success: false, message: error.message });
-  }
-  console.error('Error en pets controller:', error);
-  return res.status(500).json({ success: false, message: 'Error interno del servidor' });
-}
 
 export async function getManagedPetsController(req: RequestWithUser, res: Response) {
   try {

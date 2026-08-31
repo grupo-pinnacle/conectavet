@@ -124,7 +124,8 @@ export async function getManagedPets(vetId: string, page = 1, limit = 50) {
   const cappedLimit = Math.min(Math.max(1, limit), 100);
   const skip = (page - 1) * cappedLimit;
   // Mascotas que el vet está atendiendo actualmente (PENDING o ACTIVE)
-  const where = { consultations: { some: { vetId, status: { in: ['PENDING', 'ACTIVE'] as const }, pet: { is: { deletedAt: null } } } } };
+  const activeStatuses = ['PENDING', 'ACTIVE'] as Array<'PENDING' | 'ACTIVE'>;
+  const where = { consultations: { some: { vetId, status: { in: activeStatuses }, pet: { is: { deletedAt: null } } } } };
   const [data, total] = await Promise.all([
     prisma.pet.findMany({
       where,
@@ -139,7 +140,7 @@ export async function getManagedPets(vetId: string, page = 1, limit = 50) {
 
 export async function vetHasConsultationForPet(vetId: string, petId: string) {
   const consultation = await prisma.consultation.findFirst({
-    where: { vetId, petId, status: { in: ['PENDING', 'ACTIVE'] as const }, deletedAt: null },
+    where: { vetId, petId, status: { in: ['PENDING', 'ACTIVE'] as Array<'PENDING' | 'ACTIVE'> }, deletedAt: null },
     select: { id: true },
   });
   return !!consultation;
@@ -158,6 +159,11 @@ export async function getPetVetCard(petId: string) {
         sex: string;
         photoUrl: string | null;
         notes: string | null;
+        ownerId: string;
+        color: string | null;
+        microchip: string | null;
+        allergies: string[] | null;
+        chronicConditions: string[] | null;
       };
       owner: {
         id: string;
@@ -175,6 +181,7 @@ export async function getPetVetCard(petId: string) {
         status: string;
         endedAt: string | null;
         createdAt: string;
+        prescriptionCount: number;
       }>;
     }>
   >`
@@ -195,11 +202,12 @@ export async function getPetVetCard(petId: string) {
       COALESCE(
         (SELECT jsonb_agg(sub ORDER BY sub."createdAt" DESC)
          FROM (
-           SELECT "id", "notes", "status", "endedAt", "createdAt"
-           FROM consultations
-           WHERE "petId" = ${petId}
-           ORDER BY "createdAt" DESC
-           LIMIT 5
+           SELECT c."id", c."notes", c."status", c."endedAt", c."createdAt",
+             (SELECT COUNT(*) FROM prescriptions pr WHERE pr."consultationId" = c."id")::int AS "prescriptionCount"
+           FROM consultations c
+           WHERE c."petId" = ${petId}
+           ORDER BY c."createdAt" DESC
+           LIMIT 20
          ) sub),
         '[]'::jsonb
       ) AS recent
@@ -239,11 +247,14 @@ export async function getPetVetCard(petId: string) {
       status: string;
       endedAt: string | null;
       createdAt: string;
+      prescriptionCount: number;
     }) => ({
       id: c.id,
       reason: c.notes ?? 'Sin motivo',
       status: c.status,
       completedAt: c.endedAt ? new Date(c.endedAt).toISOString() : null,
+      createdAt: c.createdAt,
+      prescriptionCount: c.prescriptionCount ?? 0,
     })),
     allergies: pet.allergies ?? [],
     chronicConditions: pet.chronicConditions ?? [],

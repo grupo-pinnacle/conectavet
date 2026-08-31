@@ -12,11 +12,14 @@ import {
   listFavorites,
   createUser,
   updateVetStatus,
+  listAllUsers,
+  getAdminStats,
 } from './users.service';
 import { assignNextPendingVet } from '../consultations/consultations.service';
 import { getIO } from '../consultations/chat.gateway';
 import { notifyUser } from '../notifications';
-import { AppError } from '../../shared/errors';
+import { handleError } from '../../shared/errors';
+import { logger } from '../../shared/logger';
 import { parsePagination } from '../../shared/utils';
 
 const availabilitySchema = z.object({
@@ -42,11 +45,7 @@ export async function createUserController(req: RequestWithUser, res: Response) 
     const user = await createUser(parsed.data);
     return res.status(201).json({ success: true, data: user });
   } catch (error) {
-    if (error instanceof AppError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
-    }
-    console.error('Error en createUserController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'createUserController');
   }
 }
 
@@ -63,41 +62,22 @@ const updateProfileSchema = z.object({
 export async function getMeController(req: RequestWithUser, res: Response) {
   try {
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'No autenticado'
-      });
+      return res.status(401).json({ success: false, message: 'No autenticado' });
     }
-
     const user = await getUserById(req.user.userId);
-
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'Usuario no encontrado'
-      });
+      return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
     }
-
-    return res.status(200).json({
-      success: true,
-      data: user
-    });
+    return res.status(200).json({ success: true, data: user });
   } catch (error) {
-    console.error('Error en getMeController:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Error interno del servidor'
-    });
+    return handleError(error, res, 'getMeController');
   }
 }
 
 export async function adminOnlyController(req: RequestWithUser, res: Response) {
   return res.status(200).json({
     success: true,
-    data: {
-      message: 'Acceso permitido solo para administradores',
-      user: req.user
-    }
+    data: { message: 'Acceso permitido solo para administradores', user: req.user },
   });
 }
 
@@ -123,15 +103,15 @@ export async function setAvailabilityController(req: RequestWithUser, res: Respo
         const assigned = await assignNextPendingVet(user.id);
         if (assigned) {
           try {
-            const io = getIO();
-            if (io) {
-              io.to(`consultation:${assigned.id}`).emit('consultation:updated', assigned);
-              io.to(`user:${assigned.clientId}`).emit('consultation:updated', assigned);
+            const io2 = getIO();
+            if (io2) {
+              io2.to(`consultation:${assigned.id}`).emit('consultation:updated', assigned);
+              io2.to(`user:${assigned.clientId}`).emit('consultation:updated', assigned);
               // El vet también recibe el evento en su sala personal: sin esto,
               // su web recién se enteraba de la oferta con el polling de 10s.
-              io.to(`user:${user.id}`).emit('consultation:new', assigned);
+              io2.to(`user:${user.id}`).emit('consultation:new', assigned);
             }
-          } catch {}
+          } catch { /* Socket IO error — no crítico */ }
         }
         if (assigned) {
           await notifyUser(
@@ -143,13 +123,14 @@ export async function setAvailabilityController(req: RequestWithUser, res: Respo
           );
         }
       }
-    } catch (error) {
-      console.error('Error al emitir eventos de disponibilidad:', error);
+    } catch (socketError) {
+      logger.warn('Error al emitir eventos de disponibilidad', {
+        message: (socketError as Error)?.message,
+      });
     }
     return res.status(200).json({ success: true, data: user });
   } catch (error) {
-    console.error('Error en setAvailabilityController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'setAvailabilityController');
   }
 }
 
@@ -171,8 +152,7 @@ export async function listVetsController(req: RequestWithUser, res: Response) {
     });
     return res.status(200).json({ success: true, ...result });
   } catch (error) {
-    console.error('Error en listVetsController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'listVetsController');
   }
 }
 
@@ -181,11 +161,7 @@ export async function getVetByIdController(req: RequestWithUser, res: Response) 
     const vet = await getVetById(req.params.id as string);
     return res.status(200).json({ success: true, data: vet });
   } catch (error) {
-    if (error instanceof AppError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
-    }
-    console.error('Error en getVetByIdController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'getVetByIdController');
   }
 }
 
@@ -205,11 +181,7 @@ export async function updateVetStatusController(req: RequestWithUser, res: Respo
     const user = await updateVetStatus(req.params.id as string, parsed.data.vetStatus);
     return res.status(200).json({ success: true, data: user });
   } catch (error) {
-    if (error instanceof AppError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
-    }
-    console.error('Error en updateVetStatusController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'updateVetStatusController');
   }
 }
 
@@ -225,8 +197,7 @@ export async function updateProfileController(req: RequestWithUser, res: Respons
     const user = await updateProfile(req.user.userId, parsed.data);
     return res.status(200).json({ success: true, data: user });
   } catch (error) {
-    console.error('Error en updateProfileController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'updateProfileController');
   }
 }
 
@@ -238,11 +209,7 @@ export async function addFavoriteController(req: RequestWithUser, res: Response)
     await addFavorite(req.user.userId, req.params.id as string);
     return res.status(200).json({ success: true, data: { favorited: true } });
   } catch (error) {
-    if (error instanceof AppError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
-    }
-    console.error('Error en addFavoriteController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'addFavoriteController');
   }
 }
 
@@ -254,8 +221,7 @@ export async function removeFavoriteController(req: RequestWithUser, res: Respon
     await removeFavorite(req.user.userId, req.params.id as string);
     return res.status(200).json({ success: true, data: { favorited: false } });
   } catch (error) {
-    console.error('Error en removeFavoriteController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'removeFavoriteController');
   }
 }
 
@@ -267,7 +233,27 @@ export async function listFavoritesController(req: RequestWithUser, res: Respons
     const favorites = await listFavorites(req.user.userId);
     return res.status(200).json({ success: true, data: favorites });
   } catch (error) {
-    console.error('Error en listFavoritesController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'listFavoritesController');
+  }
+}
+
+export async function listAllUsersController(req: RequestWithUser, res: Response) {
+  try {
+    if (!req.user) return res.status(401).json({ success: false, message: 'No autenticado' });
+    const { page = '1', limit = '30', search, role } = req.query as Record<string, string | undefined>;
+    const result = await listAllUsers(Number(page), Number(limit), search, role);
+    return res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    return handleError(error, res, 'listAllUsersController');
+  }
+}
+
+export async function getAdminStatsController(req: RequestWithUser, res: Response) {
+  try {
+    if (!req.user) return res.status(401).json({ success: false, message: 'No autenticado' });
+    const stats = await getAdminStats();
+    return res.status(200).json({ success: true, data: stats });
+  } catch (error) {
+    return handleError(error, res, 'getAdminStatsController');
   }
 }

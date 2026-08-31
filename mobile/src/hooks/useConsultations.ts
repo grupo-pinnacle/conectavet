@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import NetInfo from '@react-native-community/netinfo';
 import { consultationsService, type SendMessagePayload } from '@/services';
 import { connectSocket, joinConsultation, leaveConsultation, getSocket } from '@/lib/socket';
 import type { ChatMessage, Consultation, CreateConsultationPayload, Prescription, RateConsultationPayload } from '@/types';
@@ -58,9 +59,21 @@ export function useRateConsultation() {
 
 export function useConsultationMessages(consultationId: string | undefined, userId?: string) {
   const qc = useQueryClient();
-  const key = ['consultations', consultationId, 'messages'] as const;
+  const key = ['consultations', consultationId, 'messages'];
+
+  // NetInfo: flush outbox automatically when device goes online
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state: any) => {
+      if (state.isConnected && state.isInternetReachable !== false) {
+        consultationsService.flushOutbox().catch(() => undefined);
+      }
+    });
+    return unsubscribe;
+  }, []);
+  
   const connectedRef = useRef(false);
-  const pendingOptimisticRef = useRef<{ id: string; content: string; attachmentUrl?: string | null }[]>([]);  const [socketConnected, setSocketConnected] = useState(false);
+  const pendingOptimisticRef = useRef<{ id: string; content: string; attachmentUrl?: string | null }[]>([]);
+  const [socketConnected, setSocketConnected] = useState(false);
 
   const list = useQuery({
     queryKey: key,

@@ -257,3 +257,60 @@ export async function listFavorites(clientId: string) {
     return { ...f, vet: { ...vet, ratingAvg, ratingCount: totalRatings, isFavorite: true } };
   });
 }
+
+export async function listAllUsers(page = 1, limit = 30, search?: string, role?: string) {
+  const cappedLimit = Math.min(Math.max(1, limit), 100);
+  const skip = (page - 1) * cappedLimit;
+  const where: Prisma.UserWhereInput = {};
+  if (role && ['CLIENT', 'VET', 'ADMIN'].includes(role)) {
+    where.role = role as 'CLIENT' | 'VET' | 'ADMIN';
+  }
+  if (search) {
+    where.OR = [
+      { email: { contains: search, mode: 'insensitive' } },
+      { firstName: { contains: search, mode: 'insensitive' } },
+      { lastName: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      skip,
+      take: cappedLimit,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        vetStatus: true,
+        isOnline: true,
+        isEmailVerified: true,
+        createdAt: true,
+        specialty: true,
+      },
+    }),
+    prisma.user.count({ where }),
+  ]);
+  return { data: users, total, page, limit: cappedLimit, totalPages: Math.ceil(total / cappedLimit) };
+}
+
+export async function getAdminStats() {
+  const [totalUsers, totalVets, totalClients, pendingVets, totalConsultations, completedConsultations] = await Promise.all([
+    prisma.user.count(),
+    prisma.user.count({ where: { role: 'VET' } }),
+    prisma.user.count({ where: { role: 'CLIENT' } }),
+    prisma.user.count({ where: { role: 'VET', vetStatus: 'PENDING' } }),
+    prisma.consultation.count({ where: { deletedAt: null } }),
+    prisma.consultation.count({ where: { status: 'COMPLETED', deletedAt: null } }),
+  ]);
+  return {
+    totalUsers,
+    totalVets,
+    totalClients,
+    pendingVets,
+    totalConsultations,
+    completedConsultations,
+  };
+}

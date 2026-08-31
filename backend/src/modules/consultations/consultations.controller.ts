@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { z } from 'zod';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
-import { AppError, NotFoundError, ForbiddenError, ConflictError } from '../../shared/errors';
+import { AppError, NotFoundError, ForbiddenError, ConflictError, handleError } from '../../shared/errors';
 import { parsePagination } from '../../shared/utils';
 import { getIO } from './chat.gateway';
 import { notifyUser, notifyVetsOnline, notifyConsultationMessage } from '../notifications';
@@ -109,11 +109,7 @@ export async function createController(req: RequestWithUser, res: Response) {
     }
     return res.status(201).json({ success: true, data: consultation });
   } catch (error) {
-    if (error instanceof AppError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
-    }
-    console.error('Error en createController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'createController');
   }
 }
 
@@ -136,11 +132,7 @@ export async function assignVetController(req: RequestWithUser, res: Response) {
     );
     return res.status(200).json({ success: true, data: consultation });
   } catch (error) {
-    if (error instanceof AppError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
-    }
-    console.error('Error en assignVetController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'assignVetController');
   }
 }
 
@@ -162,11 +154,7 @@ export async function declineVetController(req: RequestWithUser, res: Response) 
     );
     return res.status(200).json({ success: true, data: consultation });
   } catch (error) {
-    if (error instanceof AppError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
-    }
-    console.error('Error en declineVetController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'declineVetController');
   }
 }
 
@@ -184,11 +172,7 @@ export async function cancelController(req: RequestWithUser, res: Response) {
     
     return res.json({ success: true, data: updated });
   } catch (error) {
-    if (error instanceof AppError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
-    }
-    console.error('Error en cancelController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'cancelController');
   }
 }
 
@@ -221,11 +205,7 @@ export async function completeController(req: RequestWithUser, res: Response) {
     );
     return res.status(200).json({ success: true, data: updated });
   } catch (error) {
-    if (error instanceof AppError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
-    }
-    console.error('Error en completeController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'completeController');
   }
 }
 
@@ -237,11 +217,7 @@ export async function getByIdController(req: RequestWithUser, res: Response) {
     const consultation = await assertParticipation(req.params.id as string, req.user.userId);
     return res.status(200).json({ success: true, data: consultation });
   } catch (error) {
-    if (error instanceof AppError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
-    }
-    console.error('Error en getByIdController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'getByIdController');
   }
 }
 
@@ -254,11 +230,7 @@ export async function getMyConsultationsController(req: RequestWithUser, res: Re
     const result = await getConsultationsByUser(req.user.userId, req.user.role, page, limit);
     return res.status(200).json({ success: true, ...result });
   } catch (error) {
-    if (error instanceof AppError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
-    }
-    console.error('Error en getMyConsultationsController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'getMyConsultationsController');
   }
 }
 
@@ -272,11 +244,7 @@ export async function getMyHistoryController(req: RequestWithUser, res: Response
     const result = await getConsultationHistory(req.user.userId, req.user.role, { page, limit, cursor });
     return res.status(200).json({ success: true, ...result });
   } catch (error) {
-    if (error instanceof AppError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
-    }
-    console.error('Error en getMyHistoryController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'getMyHistoryController');
   }
 }
 
@@ -286,8 +254,7 @@ export async function getAvailableVetsController(req: RequestWithUser, res: Resp
     const vets = await getAvailableVets(species);
     return res.status(200).json({ success: true, data: vets });
   } catch (error) {
-    console.error('Error en getAvailableVetsController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'getAvailableVetsController');
   }
 }
 
@@ -301,11 +268,7 @@ export async function getMessagesController(req: RequestWithUser, res: Response)
     const messages = await getMessages(req.params.id as string, page, limit);
     return res.status(200).json({ success: true, data: messages });
   } catch (error) {
-    if (error instanceof AppError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
-    }
-    console.error('Error en getMessagesController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'getMessagesController');
   }
 }
 
@@ -336,11 +299,7 @@ export async function sendMessageController(req: RequestWithUser, res: Response)
     await notifyConsultationMessage(req.params.id as string, req.user.userId);
     return res.status(201).json({ success: true, data: result.message });
   } catch (error) {
-    if (error instanceof AppError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
-    }
-    console.error('Error en sendMessageController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'sendMessageController');
   }
 }
 
@@ -353,11 +312,7 @@ export async function getPrescriptionsController(req: RequestWithUser, res: Resp
     const prescriptions = await getPrescriptions(req.params.id as string);
     return res.status(200).json({ success: true, data: prescriptions });
   } catch (error) {
-    if (error instanceof AppError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
-    }
-    console.error('Error en getPrescriptionsController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'getPrescriptionsController');
   }
 }
 
@@ -401,11 +356,7 @@ export async function createPrescriptionController(req: RequestWithUser, res: Re
     );
     return res.status(201).json({ success: true, data: prescription });
   } catch (error) {
-    if (error instanceof AppError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
-    }
-    console.error('Error en createPrescriptionController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'createPrescriptionController');
   }
 }
 
@@ -431,10 +382,6 @@ export async function createReviewController(req: RequestWithUser, res: Response
     });
     return res.status(201).json({ success: true, data: review });
   } catch (error) {
-    if (error instanceof AppError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
-    }
-    console.error('Error en createReviewController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'createReviewController');
   }
 }

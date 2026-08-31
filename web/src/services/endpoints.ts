@@ -192,3 +192,53 @@ export async function rateConsultation(consultationId: string, payload: RateCons
   const res = await api.post(`/api/consultations/${consultationId}/rating`, payload);
   return res.data.data;
 }
+
+// ─── Admin endpoints ────────────────────────────────────────────────────────
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  role: 'CLIENT' | 'VET' | 'ADMIN';
+  vetStatus: 'PENDING' | 'APPROVED' | null;
+  isOnline: boolean;
+  isEmailVerified: boolean;
+  createdAt: string;
+  specialty: string | null;
+}
+
+export interface AdminUserList {
+  data: AdminUser[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface AdminStats {
+  totalUsers: number;
+  totalVets: number;
+  totalClients: number;
+  pendingVets: number;
+  totalConsultations: number;
+  completedConsultations: number;
+}
+
+export async function adminListUsers(page = 1, limit = 30, search?: string, role?: string): Promise<AdminUserList> {
+  const params: Record<string, string> = { page: String(page), limit: String(limit) };
+  if (search) params.search = search;
+  if (role) params.role = role;
+  const res = await api.get('/api/users/admin/users', { params });
+  return res.data.data;
+}
+
+export async function adminGetStats(): Promise<AdminStats> {
+  const res = await api.get('/api/users/admin/stats');
+  return res.data.data;
+}
+
+export async function adminUpdateVetStatus(vetId: string, vetStatus: 'APPROVED' | 'PENDING'): Promise<AdminUser> {
+  const res = await api.patch(`/api/users/vets/${vetId}/vet-status`, { vetStatus });
+  return res.data.data;
+}

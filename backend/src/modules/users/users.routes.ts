@@ -11,6 +11,8 @@ import {
   listFavoritesController,
   createUserController,
   updateVetStatusController,
+  listAllUsersController,
+  getAdminStatsController,
 } from './users.controller';
 import {
   authenticate,
@@ -57,5 +59,9 @@ router.patch(
   authorize(Role.ADMIN),
   updateVetStatusController
 );
+
+// Admin routes
+router.get('/admin/users', authenticate, authorize(Role.ADMIN), listAllUsersController);
+router.get('/admin/stats', authenticate, authorize(Role.ADMIN), getAdminStatsController);
 
 export default router;

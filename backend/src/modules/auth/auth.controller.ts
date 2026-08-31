@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
 import { setAuthCookies, clearAuthCookies, getRefreshTokenFromCookie } from '../../shared/auth-cookies';
 import { register, login, logout, refreshAccessToken, verifyEmail, requestPasswordReset, resetPassword, AuthError } from './auth.service';
-import { ConflictError } from '../../shared/errors';
+import { ConflictError, handleError } from '../../shared/errors';
 
 const registerSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -47,8 +47,7 @@ export async function registerController(req: Request, res: Response) {
       }
       return res.status(error.statusCode).json({ success: false, message: error.message });
     }
-    console.error('Error en registerController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'registerController');
   }
 }
 
@@ -61,8 +60,7 @@ export async function logoutController(req: RequestWithUser, res: Response) {
     clearAuthCookies(res);
     return res.status(200).json({ success: true, message: 'Sesión cerrada' });
   } catch (error) {
-    console.error('Error en logoutController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'logoutController');
   }
 }
 
@@ -86,8 +84,7 @@ export async function refreshController(req: Request, res: Response) {
     if (error instanceof AuthError) {
       return res.status(error.statusCode).json({ success: false, message: error.message });
     }
-    console.error('Error en refreshController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'refreshController');
   }
 }
 
@@ -107,8 +104,7 @@ export async function loginController(req: Request, res: Response) {
     if (error instanceof AuthError) {
       return res.status(error.statusCode).json({ success: false, message: error.message });
     }
-    console.error('Error en loginController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'loginController');
   }
 }
 
@@ -134,8 +130,7 @@ export async function forgotPasswordController(req: Request, res: Response) {
       message: 'Si el correo está registrado, te enviamos las instrucciones.',
     });
   } catch (error) {
-    console.error('Error en forgotPasswordController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'forgotPasswordController');
   }
 }
 
@@ -151,8 +146,7 @@ export async function resetPasswordController(req: Request, res: Response) {
     if (error instanceof ConflictError) {
       return res.status(400).json({ success: false, message: error.message });
     }
-    console.error('Error en resetPasswordController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'resetPasswordController');
   }
 }
 
@@ -168,7 +162,6 @@ export async function verifyEmailController(req: Request, res: Response) {
     if (error instanceof ConflictError) {
       return res.status(400).json({ success: false, message: error.message });
     }
-    console.error('Error en verifyEmailController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    return handleError(error, res, 'verifyEmailController');
   }
 }

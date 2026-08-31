@@ -178,11 +178,14 @@ export default function VetPatientProfile({ petId, petName, onClose }: Props) {
                   </div>
                 )}
 
-                {/* Recent consultations */}
+                {/* Clinical history */}
                 <div>
                   <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-ink uppercase tracking-wider">
                     <FileText className="h-4 w-4 text-teal-600" />
-                    Últimas consultas
+                    Historial clínico
+                    <span className="ml-auto rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-bold text-teal-700">
+                      {data.recentConsultations.length} consultas
+                    </span>
                   </h3>
                   {data.recentConsultations.length === 0 ? (
                     <p className="text-sm text-slate-400 italic">Sin consultas registradas</p>
@@ -205,11 +208,18 @@ export default function VetPatientProfile({ petId, petName, onClose }: Props) {
                                c.status === "ACTIVE" ? "En curso" :
                                c.status === "CANCELLED" ? "Cancelada" : "En espera"}
                             </span>
-                            {c.completedAt && (
+                            <div className="flex items-center gap-2">
+                              {(c as { prescriptionCount?: number }).prescriptionCount != null &&
+                               (c as { prescriptionCount?: number }).prescriptionCount! > 0 && (
+                                <span className="flex items-center gap-0.5 rounded-full bg-purple-100 px-2 py-0.5 text-[11px] font-bold text-purple-700">
+                                  <Pill className="h-3 w-3" />
+                                  {(c as { prescriptionCount?: number }).prescriptionCount} receta{(c as { prescriptionCount?: number }).prescriptionCount !== 1 ? "s" : ""}
+                                </span>
+                              )}
                               <span className="text-[11px] text-slate-400">
-                                {new Date(c.completedAt).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                                {new Date((c as { createdAt?: string }).createdAt || c.completedAt || "").toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" })}
                               </span>
-                            )}
+                            </div>
                           </div>
                           <p className="text-sm text-ink leading-5">{c.reason}</p>
                         </div>

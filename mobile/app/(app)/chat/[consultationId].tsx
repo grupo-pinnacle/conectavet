@@ -13,7 +13,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { mediaService } from '@/services';
 import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
 import * as Theme from '@/theme';
-import { ApiError, type Prescription, type Message } from '@/types';
+import { ApiError, type Prescription, type ChatMessage as Message } from '@/types';
 
 const SEND_BTN_SIZE = 44;
 

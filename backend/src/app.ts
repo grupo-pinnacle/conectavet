@@ -184,6 +184,7 @@ app.use('/uploads', authenticate, async (req: RequestWithUser, res: Response, ne
 
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ success: false, message: 'Ruta no encontrada' });
+  return;
 });
 
 app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {

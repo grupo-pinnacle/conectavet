@@ -12,7 +12,7 @@ export const createPetSchema = z.object({
       microchip: z.string().optional(),
       allergies: z.array(z.string()).optional(),
       chronicConditions: z.array(z.string()).optional(),
-      birthDate: dateStringSchema.optional(),
+      birthDate: z.string().optional(),
       photoUrl: z.string().optional(),
     });
 export const updatePetSchema = z.object({
@@ -27,6 +27,6 @@ export const updatePetSchema = z.object({
       microchip: z.string().optional(),
       allergies: z.array(z.string()).optional(),
       chronicConditions: z.array(z.string()).optional(),
-      birthDate: dateStringSchema.optional(),
+      birthDate: z.string().optional(),
       photoUrl: z.string().optional(),
     });

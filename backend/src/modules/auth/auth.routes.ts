@@ -12,7 +12,7 @@ import {
   resetPasswordController,
   verifyEmailController,
 } from './auth.controller';
-import { getMeController } from '../users/users.controller';
+
 
 const router = Router();
 

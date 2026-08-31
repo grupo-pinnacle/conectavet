@@ -96,7 +96,7 @@ export async function setupChatSocket(httpServer: HttpServer) {
             OR: [{ clientId: user.userId }, { vetId: user.userId }],
           },
         });
-        if (!consultation) {
+        if (!consultation) { return; return;
           return socket.emit('error', { message: 'No pertenecés a esta consulta' });
         }
         socket.join(`consultation:${consultationId}`);

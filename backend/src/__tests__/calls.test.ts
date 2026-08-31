@@ -6,7 +6,7 @@ import app from '../app';
 import { prisma } from '../shared/prisma';
 
 let clientToken: string;
-let vetToken: string;
+
 let strangerToken: string;
 let clientUser: import('@prisma/client').User;
 let vetUser: import('@prisma/client').User;

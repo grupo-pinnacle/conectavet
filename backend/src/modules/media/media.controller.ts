@@ -2,7 +2,7 @@ import { Response } from 'express';
 import multer from 'multer';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
 import { AppError } from '../../shared/errors';
-import { logger } from '../../shared/logger';
+
 import { saveAttachment } from './media.service';
 import { asyncHandler } from "../../shared/middlewares/async.middleware.js";
 

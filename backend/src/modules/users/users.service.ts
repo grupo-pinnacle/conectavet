@@ -199,32 +199,46 @@ export async function updateVetStatus(vetId: string, vetStatus: 'PENDING' | 'APP
 }
 
 export async function getVetById(vetId: string) {
-  const vet = await prisma.user.findFirst({
-    where: { id: vetId, role: 'VET' },
-    select: {
-      id: true,
-      email: true,
-      firstName: true,
-      lastName: true,
-      phone: true,
-      bio: true,
-      specialty: true,
-      isOnline: true,
-      createdAt: true,
-      reviewsAsVet: { select: { rating: true, comment: true, createdAt: true } },
-    },
-  });
+  const [vet, aggregate] = await Promise.all([
+    prisma.user.findFirst({
+      where: { id: vetId, role: 'VET' },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        bio: true,
+        specialty: true,
+        isOnline: true,
+        createdAt: true,
+        reviewsAsVet: {
+          select: { rating: true, comment: true, createdAt: true },
+          take: 10,
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    }),
+    prisma.review.aggregate({
+      where: { vetId },
+      _count: { id: true },
+      _avg: { rating: true },
+    }),
+  ]);
+
   if (!vet) throw new NotFoundError('Veterinario no encontrado');
+
   const { reviewsAsVet, ...rest } = vet;
-  const totalRatings = reviewsAsVet.length;
-  const ratingAvg = totalRatings > 0
-    ? Math.round((reviewsAsVet.reduce((sum, r) => sum + r.rating, 0) / totalRatings) * 10) / 10
+  const totalRatings = aggregate._count.id;
+  const ratingAvg = aggregate._avg.rating !== null
+    ? Math.round(aggregate._avg.rating * 10) / 10
     : null;
+
   return {
     ...rest,
     ratingAvg,
     ratingCount: totalRatings,
-    reviews: reviewsAsVet.slice(0, 10),
+    reviews: reviewsAsVet,
   };
 }
 

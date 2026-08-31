@@ -188,7 +188,7 @@ export interface RateConsultationPayload {
   comment: string;
 }
 
-export async function rateConsultation(consultationId: string, payload: RateConsultationPayload): Promise<Review> {
+export async function rateConsultation(consultationId: string, payload: RateConsultationPayload): Promise<any> {
   const res = await api.post(`/api/consultations/${consultationId}/rating`, payload);
   return res.data.data;
 }

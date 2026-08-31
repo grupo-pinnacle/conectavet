@@ -1,167 +1,56 @@
 import { Request, Response } from 'express';
-import { z } from 'zod';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
 import { setAuthCookies, clearAuthCookies, getRefreshTokenFromCookie } from '../../shared/auth-cookies';
 import { register, login, logout, refreshAccessToken, verifyEmail, requestPasswordReset, resetPassword, AuthError } from './auth.service';
 import { ConflictError, handleError } from '../../shared/errors';
-
-const registerSchema = z.object({
-  email: z.string().email('Email inválido'),
-  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
-  firstName: z.string().max(50).optional(),
-  lastName: z.string().max(50).optional(),
-  phone: z.string().max(20).optional(),
-  // Registro público: un vet puede darse de alta, pero queda PENDING hasta
-  // aprobación de un admin (ADR-012). Nunca se permite 'ADMIN' por esta vía.
-  role: z.enum(['CLIENT', 'VET']).optional(),
-  specialty: z.string().max(100).optional(),
+import { asyncHandler } from "../../shared/middlewares/async.middleware.js";
+export const registerController = asyncHandler(async (req: Request, res: Response) => {
+const user = await register(req.body);
+setAuthCookies(res, user.accessToken, user.refreshToken);
+return res.status(201).json({ success: true, data: user });
 });
 
-const loginSchema = z.object({
-  email: z.string().email('Email inválido'),
-  password: z.string().min(1, 'Contraseña requerida'),
-});
-
-export async function registerController(req: Request, res: Response) {
-  try {
-    const parsed = registerSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({
-        success: false,
-        message: parsed.error.issues[0].message,
-      });
-    }
-    const user = await register(parsed.data);
-    setAuthCookies(res, user.accessToken, user.refreshToken);
-    return res.status(201).json({ success: true, data: user });
-  } catch (error) {
-    if (error instanceof AuthError) {
-      // Evita enumeración de cuentas: mensaje genérico (no revela que el email
-      // ya existe). NOTA: el status 409 sigue diferenciándose del 201; ocultarlo
-      // por completo requiere coordinar el flujo del front (ver PRODUCTION_DEPLOYMENT.md).
-      if (error.statusCode === 409) {
-        return res.status(409).json({
-          success: false,
-          message: 'No pudimos completar el registro con ese correo. Si ya tenés cuenta, iniciá sesión.',
-        });
-      }
-      return res.status(error.statusCode).json({ success: false, message: error.message });
-    }
-    return handleError(error, res, 'registerController');
-  }
-}
-
-export async function logoutController(req: RequestWithUser, res: Response) {
-  try {
-    if (!req.user) {
+export const logoutController = asyncHandler(async (req: RequestWithUser, res: Response) => {
+if (!req.user) {
       return res.status(401).json({ success: false, message: 'No autenticado' });
     }
-    await logout(req.user.userId);
-    clearAuthCookies(res);
-    return res.status(200).json({ success: true, message: 'Sesión cerrada' });
-  } catch (error) {
-    return handleError(error, res, 'logoutController');
-  }
-}
-
-const refreshSchema = z.object({
-  refreshToken: z.string().min(1, 'refreshToken es requerido').optional(),
+await logout(req.user.userId);
+clearAuthCookies(res);
+return res.status(200).json({ success: true, message: 'Sesión cerrada' });
 });
-
-export async function refreshController(req: Request, res: Response) {
-  try {
-    const bodyToken = refreshSchema.safeParse(req.body).success
-      ? (req.body.refreshToken as string | undefined)
-      : undefined;
-    const refreshToken = bodyToken || getRefreshTokenFromCookie(req);
-    if (!refreshToken) {
+export const refreshController = asyncHandler(async (req: Request, res: Response) => {
+const refreshToken = bodyToken || getRefreshTokenFromCookie(req);
+if (!refreshToken) {
       return res.status(400).json({ success: false, message: 'refreshToken es requerido' });
     }
-    const result = await refreshAccessToken(refreshToken);
-    setAuthCookies(res, result.accessToken, result.refreshToken);
-    return res.status(200).json({ success: true, data: result });
-  } catch (error) {
-    if (error instanceof AuthError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
-    }
-    return handleError(error, res, 'refreshController');
-  }
-}
-
-export async function loginController(req: Request, res: Response) {
-  try {
-    const parsed = loginSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({
-        success: false,
-        message: parsed.error.issues[0].message,
-      });
-    }
-    const result = await login(parsed.data);
-    setAuthCookies(res, result.accessToken, result.refreshToken);
-    return res.status(200).json({ success: true, data: result });
-  } catch (error) {
-    if (error instanceof AuthError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
-    }
-    return handleError(error, res, 'loginController');
-  }
-}
-
-const forgotPasswordSchema = z.object({
-  email: z.string().email('Email inválido'),
+const result = await refreshAccessToken(refreshToken);
+setAuthCookies(res, result.accessToken, result.refreshToken);
+return res.status(200).json({ success: true, data: result });
 });
 
-const resetPasswordSchema = z.object({
-  token: z.string().min(1, 'Token requerido'),
-  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
+export const loginController = asyncHandler(async (req: Request, res: Response) => {
+const result = await login(req.body);
+setAuthCookies(res, result.accessToken, result.refreshToken);
+return res.status(200).json({ success: true, data: result });
 });
-
-export async function forgotPasswordController(req: Request, res: Response) {
-  try {
-    const parsed = forgotPasswordSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ success: false, message: parsed.error.issues[0].message });
-    }
-    // Siempre el mismo mensaje: no revela si el email existe.
-    await requestPasswordReset(parsed.data.email);
-    return res.status(200).json({
+export const forgotPasswordController = asyncHandler(async (req: Request, res: Response) => {
+await requestPasswordReset(req.body.email);
+return res.status(200).json({
       success: true,
       message: 'Si el correo está registrado, te enviamos las instrucciones.',
     });
-  } catch (error) {
-    return handleError(error, res, 'forgotPasswordController');
-  }
-}
+});
 
-export async function resetPasswordController(req: Request, res: Response) {
-  try {
-    const parsed = resetPasswordSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ success: false, message: parsed.error.issues[0].message });
-    }
-    await resetPassword(parsed.data.token, parsed.data.password);
-    return res.status(200).json({ success: true, message: 'Contraseña actualizada. Iniciá sesión.' });
-  } catch (error) {
-    if (error instanceof ConflictError) {
-      return res.status(400).json({ success: false, message: error.message });
-    }
-    return handleError(error, res, 'resetPasswordController');
-  }
-}
+export const resetPasswordController = asyncHandler(async (req: Request, res: Response) => {
+await resetPassword(req.body.token, req.body.password);
+return res.status(200).json({ success: true, message: 'Contraseña actualizada. Iniciá sesión.' });
+});
 
-export async function verifyEmailController(req: Request, res: Response) {
-  try {
-    const token = typeof req.query.token === 'string' ? req.query.token : '';
-    if (!token) {
+export const verifyEmailController = asyncHandler(async (req: Request, res: Response) => {
+const token = typeof req.query.token === 'string' ? req.query.token : '';
+if (!token) {
       return res.status(400).json({ success: false, message: 'Token requerido' });
     }
-    await verifyEmail(token);
-    return res.status(200).json({ success: true, message: 'Email verificado. Ya podés iniciar sesión.' });
-  } catch (error) {
-    if (error instanceof ConflictError) {
-      return res.status(400).json({ success: false, message: error.message });
-    }
-    return handleError(error, res, 'verifyEmailController');
-  }
-}
+await verifyEmail(token);
+return res.status(200).json({ success: true, message: 'Email verificado. Ya podés iniciar sesión.' });
+});

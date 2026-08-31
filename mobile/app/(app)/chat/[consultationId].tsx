@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, useMemo, memo } from 'react';
-import { FlatList, Image, KeyboardAvoidingView, Platform, Pressable, TextInput, View, Text, ActivityIndicator } from 'react-native';
+import { FlatList, Image, KeyboardAvoidingView, Platform, Pressable, TextInput, View, Text, ActivityIndicator, type KeyboardAvoidingViewProps } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
@@ -13,7 +13,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { mediaService } from '@/services';
 import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
 import * as Theme from '@/theme';
-import { ApiError, type Prescription } from '@/types';
+import { ApiError, type Prescription, type Message } from '@/types';
 
 const SEND_BTN_SIZE = 44;
 
@@ -187,7 +187,7 @@ export default function ConsultationChatScreen() {
     }
   };
 
-  const renderMessage = useCallback(({ item }: { item: any }) => (
+  const renderMessage = useCallback(({ item }: { item: Message }) => (
     <ChatBubble
       message={item}
       isOwn={item.senderId === user?.id || item.sender?.id === user?.id}
@@ -195,11 +195,11 @@ export default function ConsultationChatScreen() {
     />
   ), [user?.id, vetName]);
 
-  const keyboardProps = useMemo((): any => Platform.select({
+  const keyboardProps = useMemo((): KeyboardAvoidingViewProps => Platform.select({
     ios: { behavior: 'padding', keyboardVerticalOffset: 0 },
     android: { behavior: 'height' },
     default: { behavior: 'height' },
-  }), []);
+  }) || { behavior: 'height' }, []);
 
   return (
     <KeyboardAvoidingView

@@ -12,8 +12,9 @@ module.exports = async () => {
 
   const directUrl = process.env.DIRECT_URL;
   if (!directUrl) {
-    console.error('FATAL: DIRECT_URL no está definida');
-    process.exit(1);
+    console.warn('⚠️ DIRECT_URL no está definida en .env. Se omitirá el setup de la base de datos de tests.');
+    process.env.SKIP_INTEGRATION_TESTS = 'true';
+    return;
   }
 
   const directBase = directUrl.split('?')[0];

@@ -4,30 +4,23 @@ import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
 import { AppError } from '../../shared/errors';
 import { logger } from '../../shared/logger';
 import { saveAttachment } from './media.service';
+import { asyncHandler } from "../../shared/middlewares/async.middleware.js";
 
-export async function uploadImageController(req: RequestWithUser, res: Response) {
-  try {
-    if (!req.user) {
+export const uploadImageController = asyncHandler(async (req: RequestWithUser, res: Response) => {
+if (!req.user) {
       return res.status(401).json({ success: false, message: 'No autenticado' });
     }
-    if (!req.file) {
+if (!req.file) {
       return res.status(400).json({ success: false, message: 'Adjuntá una imagen' });
     }
-    const attachment = await saveAttachment({
+const attachment = await saveAttachment({
       uploaderId: req.user.userId,
       filename: req.file.filename,
       mimeType: req.file.mimetype,
       size: req.file.size,
     });
-    return res.status(201).json({ success: true, data: attachment });
-  } catch (error) {
-    if (error instanceof AppError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
-    }
-    console.error('Error en uploadImageController:', error);
-    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
-  }
-}
+return res.status(201).json({ success: true, data: attachment });
+});
 
 export function handleUploadErrors(
   err: Error,

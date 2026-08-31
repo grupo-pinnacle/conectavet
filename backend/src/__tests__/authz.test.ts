@@ -6,9 +6,9 @@ import app from '../app';
 import { prisma } from '../shared/prisma';
 
 const prefix = `authz-${Date.now()}`;
-let clientUser: any;
-let vetUser: any;
-let adminUser: any;
+let clientUser: import('@prisma/client').User;
+let vetUser: import('@prisma/client').User;
+let adminUser: import('@prisma/client').User;
 let clientToken: string;
 let vetToken: string;
 let adminToken: string;
@@ -20,7 +20,7 @@ beforeAll(async () => {
     prisma.user.create({ data: { email: `${prefix}-vet@test.com`, password: hashed, role: 'VET' } }),
     prisma.user.create({ data: { email: `${prefix}-admin@test.com`, password: hashed, role: 'ADMIN' } }),
   ]);
-  const sign = (u: any, r: Role) =>
+  const sign = (u: import('@prisma/client').User, r: Role) =>
     jwt.sign({ userId: u.id, email: u.email, role: r }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
   clientToken = sign(clientUser, 'CLIENT');
   vetToken = sign(vetUser, 'VET');

@@ -103,7 +103,20 @@ export async function listVets(
 ) {
   const { search, onlineOnly, viewerId, minRating, sortBy } = filters;
   const cacheKey = `vets:list:${page}:${limit}:${search?.toLowerCase()}:${onlineOnly}:${viewerId ?? 'anon'}:${minRating ?? 0}:${sortBy ?? 'recent'}`;
-  const cached = getCached<{ data: any[]; total: number; page: number; limit: number; totalPages: number }>(cacheKey);
+  type VetListDTO = {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    specialty: string | null;
+    role: string;
+    isOnline: boolean;
+    createdAt: Date;
+    ratingAvg: number;
+    ratingCount: number;
+    isFavorite: boolean;
+  };
+  
+  const cached = getCached<{ data: VetListDTO[]; total: number; page: number; limit: number; totalPages: number }>(cacheKey);
   if (cached) return cached;
   const skip = (page - 1) * limit;
   const whereConditions = [Prisma.sql`u.role = 'VET'`, Prisma.sql`u."vet_status" = 'APPROVED'`];

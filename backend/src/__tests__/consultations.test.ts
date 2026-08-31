@@ -7,9 +7,9 @@ import { prisma } from '../shared/prisma';
 
 let clientToken: string;
 let vetToken: string;
-let clientUser: any;
-let vetUser: any;
-let pet: any;
+let clientUser: import('@prisma/client').User;
+let vetUser: import('@prisma/client').User;
+let pet: import('@prisma/client').Pet;
 
 const uniqueId = Date.now();
 const prefix = `consult-test-${uniqueId}`;
@@ -138,7 +138,7 @@ describe('POST /api/consultations — ownership de mascota (IDOR)', () => {
 });
 
 describe('Seguridad — password no se expone en respuestas', () => {
-  let c: any;
+  let c: import('@prisma/client').Consultation;
 
   beforeEach(async () => {
     c = await createFreshConsultation();
@@ -195,14 +195,14 @@ describe('GET /api/consultations/my-history', () => {
       .get('/api/consultations/my-history')
       .set('Authorization', `Bearer ${vetToken}`);
     expect(res.status).toBe(200);
-    const ids = res.body.data.map((c: any) => c.id);
+    const ids = res.body.data.map((c: { id: string }) => c.id);
     expect(ids).toContain(mine.id);
     expect(ids).not.toContain(waiting.id);
   });
 });
 
 describe('PATCH /api/consultations/:id/assign', () => {
-  let c: any;
+  let c: import('@prisma/client').Consultation;
 
   beforeEach(async () => {
     c = await createFreshConsultation();
@@ -314,7 +314,7 @@ describe('PATCH /api/consultations/:id/decline', () => {
 });
 
 describe('PATCH /api/consultations/:id/complete', () => {
-  let c: any;
+  let c: import('@prisma/client').Consultation;
 
   beforeEach(async () => {
     c = await createFreshConsultation();
@@ -567,7 +567,7 @@ describe('POST /api/consultations/:id/messages — solo en consulta ACTIVA', () 
 });
 
 describe('GET /api/consultations/:id/messages', () => {
-  let c: any;
+  let c: import('@prisma/client').Consultation;
 
   beforeEach(async () => {
     c = await createFreshConsultation();
@@ -595,7 +595,7 @@ describe('GET /api/consultations/:id/messages', () => {
 });
 
 describe('GET /api/consultations/:id', () => {
-  let c: any;
+  let c: import('@prisma/client').Consultation;
 
   beforeEach(async () => {
     c = await createFreshConsultation();
@@ -623,7 +623,7 @@ describe('GET /api/consultations/:id', () => {
 });
 
 describe('POST /api/consultations/:id/prescriptions', () => {
-  let c: any;
+  let c: import('@prisma/client').Consultation;
 
   beforeEach(async () => {
     c = await createFreshConsultation();
@@ -699,7 +699,7 @@ describe('POST /api/consultations/:id/prescriptions', () => {
 });
 
 describe('GET /api/consultations/:id/prescriptions', () => {
-  let c: any;
+  let c: import('@prisma/client').Consultation;
 
   beforeEach(async () => {
     c = await createFreshConsultation();

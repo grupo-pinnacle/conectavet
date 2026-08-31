@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import type { Socket } from "socket.io-client";
+
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import {
@@ -12,7 +12,7 @@ import PatientsSection from "../components/dashboard/vet/PatientsSection";
 import VetMessagesSection from "../components/dashboard/vet/VetMessagesSection";
 import ProfileSection from "../components/dashboard/ProfileSection";
 import { getMyConsultations } from "../services/endpoints";
-import { connectSocket } from "../services/socket";
+import { useVetSockets } from "../hooks/useVetSockets";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, key: "home" },
@@ -36,36 +36,7 @@ export default function VetDashboardPage() {
     }
   }, []);
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch de contadores al montar
-    refreshCounts();
-    if (!user?.id) return;
-    let cancelled = false;
-    let sock: Socket | null = null;
-    connectSocket()
-      .then((s) => {
-        if (cancelled) return;
-        sock = s;
-        const onAvailability = (payload: { vetId: string; isOnline: boolean }) => {
-          if (cancelled) return;
-          if (payload.vetId === user.id) syncOnline(payload.isOnline);
-        };
-        s.on("vet:availability", onAvailability);
-        s.on("consultation:new", refreshCounts);
-        s.on("consultation:updated", refreshCounts);
-        s.on("notification:new", refreshCounts);
-      })
-      .catch(() => {
-        // Socket opcional en dev: el proxy /socket.io lo habilita; si falla, el estado local sigue valiendo.
-      });
-    return () => {
-      cancelled = true;
-      sock?.off("vet:availability");
-      sock?.off("consultation:new", refreshCounts);
-      sock?.off("consultation:updated", refreshCounts);
-      sock?.off("notification:new", refreshCounts);
-    };
-  }, [user?.id, syncOnline, refreshCounts]);
+  useVetSockets(refreshCounts);
 
   const handleLogout = () => {
     logout();

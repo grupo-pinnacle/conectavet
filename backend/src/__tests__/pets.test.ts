@@ -8,7 +8,7 @@ import { prisma } from '../shared/prisma';
 const uniqueId = Date.now();
 let clientToken: string;
 let vetToken: string;
-let clientUser: any;
+let clientUser: import('@prisma/client').User;
 let createdPetId: string;
 
 jest.setTimeout(30000);

@@ -14,8 +14,8 @@ const prefix = `e2e-flow-${uniqueId}`;
 
 let clientToken: string;
 let vetToken: string;
-let clientUser: any;
-let vetUser: any;
+let clientUser: import('@prisma/client').User;
+let vetUser: import('@prisma/client').User;
 
 jest.setTimeout(30000);
 
@@ -91,13 +91,13 @@ describe('E2E — flujo principal cliente ↔ vet', () => {
       .set('Authorization', `Bearer ${clientToken}`);
     expect(list.status).toBe(200);
     expect(Array.isArray(list.body.data)).toBe(true);
-    expect(list.body.data.some((m: any) => m.content === 'Hola doctor E2E')).toBe(true);
+    expect(list.body.data.some((m: { content: string }) => m.content === 'Hola doctor E2E')).toBe(true);
 
     const history = await request(app)
       .get('/api/consultations/my-history')
       .set('Authorization', `Bearer ${clientToken}`);
     expect(history.status).toBe(200);
-    expect(history.body.data.some((c: any) => c.id === consultationId)).toBe(true);
+    expect(history.body.data.some((c: { id: string }) => c.id === consultationId)).toBe(true);
   });
 
   test('paginación cursor en /my-history no repite ítems', async () => {
@@ -111,8 +111,8 @@ describe('E2E — flujo principal cliente ↔ vet', () => {
         .get(`/api/consultations/my-history?limit=1&cursor=${encodeURIComponent(page1.body.nextCursor)}`)
         .set('Authorization', `Bearer ${clientToken}`);
       expect(page2.status).toBe(200);
-      const ids1 = page1.body.data.map((c: any) => c.id);
-      const ids2 = page2.body.data.map((c: any) => c.id);
+      const ids1 = page1.body.data.map((c: { id: string }) => c.id);
+      const ids2 = page2.body.data.map((c: { id: string }) => c.id);
       expect(ids2.some((id: string) => ids1.includes(id))).toBe(false);
     }
   });

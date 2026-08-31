@@ -9,7 +9,7 @@ const uniqueId = Date.now();
 let clientToken: string;
 let adminToken: string;
 let vetToken: string;
-let clientUser: any;
+let clientUser: import('@prisma/client').User;
 
 jest.setTimeout(30000);
 
@@ -128,7 +128,7 @@ describe('GET /api/users/vets', () => {
       .set('Authorization', `Bearer ${clientToken}`);
     expect(res.status).toBe(200);
     expect(res.body.data.length).toBeGreaterThanOrEqual(1);
-    expect(res.body.data.every((v: any) => v.isOnline)).toBe(true);
+    expect(res.body.data.every((v: { isOnline: boolean, password?: string, id: string, isFavorite?: boolean }) => v.isOnline)).toBe(true);
     await prisma.user.delete({ where: { id: onlineVet.id } });
   });
 
@@ -137,7 +137,7 @@ describe('GET /api/users/vets', () => {
       .get('/api/users/vets')
       .set('Authorization', `Bearer ${clientToken}`);
     expect(res.status).toBe(200);
-    expect(res.body.data.every((v: any) => !('password' in v))).toBe(true);
+    expect(res.body.data.every((v: { isOnline: boolean, password?: string, id: string, isFavorite?: boolean }) => !('password' in v))).toBe(true);
   });
 });
 
@@ -246,7 +246,7 @@ describe('GET /api/users/vets/:id — detalle de veterinario', () => {
 });
 
 describe('Favoritos — POST/DELETE /api/users/vets/:id/favorite', () => {
-  let favVet: any;
+  let favVet: import('@prisma/client').User;
 
   beforeEach(async () => {
     favVet = await prisma.user.create({
@@ -270,7 +270,7 @@ describe('Favoritos — POST/DELETE /api/users/vets/:id/favorite', () => {
       .get('/api/users/favorites')
       .set('Authorization', `Bearer ${clientToken}`);
     expect(list.status).toBe(200);
-    expect(list.body.data.some((f: any) => f.vet.id === favVet.id)).toBe(true);
+    expect(list.body.data.some((f: { vet: { id: string } }) => f.vet.id === favVet.id)).toBe(true);
   });
 
   test('200 — agregar dos veces es idempotente', async () => {
@@ -296,7 +296,7 @@ describe('Favoritos — POST/DELETE /api/users/vets/:id/favorite', () => {
     const list = await request(app)
       .get('/api/users/favorites')
       .set('Authorization', `Bearer ${clientToken}`);
-    expect(list.body.data.some((f: any) => f.vet.id === favVet.id)).toBe(false);
+    expect(list.body.data.some((f: { vet: { id: string } }) => f.vet.id === favVet.id)).toBe(false);
   });
 
   test('404 — favorito de vet inexistente', async () => {
@@ -313,7 +313,7 @@ describe('Favoritos — POST/DELETE /api/users/vets/:id/favorite', () => {
     const res = await request(app)
       .get('/api/users/vets')
       .set('Authorization', `Bearer ${clientToken}`);
-    const found = res.body.data.find((v: any) => v.id === favVet.id);
+    const found = res.body.data.find((v: { isOnline: boolean, password?: string, id: string, isFavorite?: boolean }) => v.id === favVet.id);
     expect(found.isFavorite).toBe(true);
   });
 });

@@ -1,4 +1,4 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import {
   getMeController,
   adminOnlyController,
@@ -23,7 +23,7 @@ import { Role } from '@prisma/client';
 const router = Router();
 
 router.get('/me', authenticate, getMeController);
-router.patch('/me', authenticate, updateProfileController);
+router.patch('/me', authenticate, validate(updateProfileSchema), updateProfileController);
 router.patch(
   '/me/availability',
   authenticate,
@@ -39,7 +39,7 @@ router.get(
 router.get('/vets', authenticate, listVetsController);
 
 // S-03: endpoint de debug que expone el payload del JWT. Se mantiene
-// DESACTIVADO en producción; solo se registra si se habilita explícitamente.
+// DESACTIVADO en producciÃ³n; solo se registra si se habilita explÃ­citamente.
 if (process.env.ENABLE_DEBUG_ENDPOINTS === 'true') {
   router.get('/admin-only', authenticate, authorize(Role.ADMIN), adminOnlyController);
 }
@@ -65,3 +65,4 @@ router.get('/admin/users', authenticate, authorize(Role.ADMIN), listAllUsersCont
 router.get('/admin/stats', authenticate, authorize(Role.ADMIN), getAdminStatsController);
 
 export default router;
+

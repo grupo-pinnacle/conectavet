@@ -19,9 +19,11 @@ export async function setupChatSocket(httpServer: HttpServer) {
     .map((s) => s.trim());
   const wsAllowCredentials = !wsOrigins.includes('*');
 
+  import type { Redis } from 'ioredis';
+
   // Cliente Redis local a esta instancia (el estado compartido vive en
   // message-throttle vía setRedisClient). Se usa solo si REDIS_URL está seteado.
-  let redisClient: any = null;
+  let redisClient: Redis | null = null;
 
   io = new Server(httpServer, {
     cors: {
@@ -72,7 +74,7 @@ export async function setupChatSocket(httpServer: HttpServer) {
       if (typeof decoded.tokenVersion === 'number' && decoded.tokenVersion !== dbUser.tokenVersion) {
         return next(new Error('Sesión revocada (logout en otro dispositivo)'));
       }
-      (socket as any).user = decoded;
+      socket.data.user = decoded;
       next();
     } catch {
       next(new Error('Token inválido'));
@@ -80,7 +82,7 @@ export async function setupChatSocket(httpServer: HttpServer) {
   });
 
   io.on('connection', (socket) => {
-    const user = (socket as any).user as JwtPayload;
+    const user = socket.data.user as JwtPayload;
     const limitKey = user.userId || socket.id;
 
     socket.join(`user:${user.userId}`);
@@ -113,7 +115,7 @@ export async function setupChatSocket(httpServer: HttpServer) {
 
     socket.on(
       'message:send',
-      async (data: { consultationId: string; content?: string; attachmentUrl?: string; clientMsgId?: string }, ack?: (r: any) => void) => {
+      async (data: { consultationId: string; content?: string; attachmentUrl?: string; clientMsgId?: string }, ack?: (res: { message?: unknown; duplicated?: boolean; error?: string }) => void) => {
         try {
           if (!data.consultationId) {
             return socket.emit('error', { message: 'consultationId requerido' });

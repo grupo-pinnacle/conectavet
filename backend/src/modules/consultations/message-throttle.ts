@@ -9,9 +9,10 @@ const rateLimitMap = new Map<string, number[]>();
 
 const MSG_DEDUP = new Map<string, number>();
 const MSG_DEDUP_TTL = 10_000;
+import type { Redis } from 'ioredis';
 
-let redisClient: any = null;
-export function setRedisClient(client: any): void {
+let redisClient: Redis | null = null;
+export function setRedisClient(client: Redis): void {
   redisClient = client;
 }
 

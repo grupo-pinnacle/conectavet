@@ -27,6 +27,7 @@ process.on('uncaughtException', (err) => {
   logger.error('Excepción no capturada', { message: err.message, stack: err.stack });
   gracefulShutdown('uncaughtException');
 });
-process.on('unhandledRejection', (reason: any) => {
-  logger.error('Promesa rechazada no manejada (no se detiene el proceso)', { reason: reason?.message || reason });
+process.on('unhandledRejection', (reason: unknown) => {
+  const error = reason instanceof Error ? reason : new Error(String(reason));
+  logger.error('Promesa rechazada no manejada (no se detiene el proceso)', { reason: error.message });
 });

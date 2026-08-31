@@ -6,10 +6,10 @@ import app from '../app';
 import { prisma } from '../shared/prisma';
 
 const prefix = `conc-${Date.now()}`;
-let clientUser: any;
-let vet1: any;
-let vet2: any;
-let pet: any;
+let clientUser: import('@prisma/client').User;
+let vet1: import('@prisma/client').User;
+let vet2: import('@prisma/client').User;
+let pet: import('@prisma/client').Pet;
 let clientToken: string;
 let vet1Token: string;
 let vet2Token: string;
@@ -22,7 +22,7 @@ beforeAll(async () => {
     prisma.user.create({ data: { email: `${prefix}-vet2@test.com`, password: hashed, role: 'VET' } }),
   ]);
   pet = await prisma.pet.create({ data: { name: 'TestPet', species: 'Perro', ownerId: clientUser.id } });
-  const sign = (u: any, r: Role) =>
+  const sign = (u: import('@prisma/client').User, r: Role) =>
     jwt.sign({ userId: u.id, email: u.email, role: r }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
   clientToken = sign(clientUser, 'CLIENT');
   vet1Token = sign(vet1, 'VET');

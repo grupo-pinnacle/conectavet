@@ -12,11 +12,11 @@ import { Role } from '@prisma/client';
 process.env.CORS_ORIGIN = '*';
 
 const prefix = `ws-${Date.now()}`;
-let server: any;
-let clientUser: any;
-let vetUser: any;
-let pet: any;
-let consult: any;
+let server: import('http').Server;
+let clientUser: import('@prisma/client').User;
+let vetUser: import('@prisma/client').User;
+let pet: import('@prisma/client').Pet;
+let consult: import('@prisma/client').Consultation;
 let clientToken: string;
 let vetToken: string;
 
@@ -34,9 +34,9 @@ function connect(token: string): Promise<Socket> {
   });
 }
 
-function emitMessage(sock: Socket, payload: any): Promise<any> {
+function emitMessage(sock: Socket, payload: Record<string, unknown>): Promise<unknown> {
   return new Promise((resolve) => {
-    sock.emit('message:send', payload, (ack: any) => resolve(ack));
+    sock.emit('message:send', payload, (ack: unknown) => resolve(ack));
   });
 }
 
@@ -51,7 +51,7 @@ beforeAll(async () => {
     prisma.user.create({ data: { email: `${prefix}-vet@test.com`, password: hashed, role: 'VET' } }),
   ]);
   pet = await prisma.pet.create({ data: { name: 'TestPet', species: 'Perro', ownerId: clientUser.id } });
-  const sign = (u: any, r: Role) =>
+  const sign = (u: import('@prisma/client').User, r: Role) =>
     jwt.sign({ userId: u.id, email: u.email, role: r }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
   clientToken = sign(clientUser, 'CLIENT');
   vetToken = sign(vetUser, 'VET');
@@ -80,7 +80,7 @@ describe('WebSocket: entrega en tiempo real (T-01)', () => {
     const vetSock = await connect(vetToken);
     vetSock.emit('join:consultation', consult.id);
     await delay(150);
-    const received = new Promise<any>((resolve) => vetSock.on('message:new', (m) => resolve(m)));
+    const received = new Promise<unknown>((resolve) => vetSock.on('message:new', (m) => resolve(m)));
     await request(server)
       .post(`/api/consultations/${consult.id}/messages`)
       .set('Authorization', `Bearer ${clientToken}`)
@@ -106,7 +106,7 @@ describe('WebSocket: entrega en tiempo real (T-01)', () => {
     sock.emit('join:consultation', consult.id);
     await delay(150);
     let blocked = false;
-    sock.on('error', (e: any) => {
+    sock.on('error', (e: Error) => {
       if (e && e.message && e.message.includes('Demasiados')) blocked = true;
     });
     for (let i = 0; i < 15; i++) {

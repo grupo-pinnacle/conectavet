@@ -65,7 +65,7 @@ export async function register(input: RegisterInput) {
   });
 
   if (existingUser) {
-    throw new AuthError('Este email ya está registrado', 409);
+    throw new AuthError('No pudimos completar el registro con ese correo. Si ya tenés cuenta, iniciá sesión.', 409);
   }
 
   const hashedPassword = await bcrypt.hash(input.password, SALT_ROUNDS);

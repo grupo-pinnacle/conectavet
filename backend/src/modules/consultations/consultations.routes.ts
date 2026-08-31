@@ -1,4 +1,4 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import { authenticate, authorize } from '../../shared/middlewares/auth.middleware';
 import { Role } from '@prisma/client';
 import {
@@ -30,9 +30,10 @@ router.patch('/:id/decline', authenticate, authorize(Role.VET, Role.ADMIN), decl
 router.patch('/:id/cancel', authenticate, cancelController);
 router.patch('/:id/complete', authenticate, authorize(Role.VET, Role.ADMIN), completeController);
 router.get('/:id/messages', authenticate, getMessagesController);
-router.post('/:id/messages', authenticate, sendMessageController);
+router.post('/:id/messages', authenticate, validate(sendMessageSchema), sendMessageController);
 router.get('/:id/prescriptions', authenticate, getPrescriptionsController);
 router.post('/:id/prescriptions', authenticate, authorize(Role.VET, Role.ADMIN), createPrescriptionController);
 router.post('/:id/rating', authenticate, createReviewController);
 
 export default router;
+

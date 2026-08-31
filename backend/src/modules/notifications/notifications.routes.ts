@@ -1,4 +1,6 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
+import { validate } from '../../shared/middlewares/validate.middleware';
+import { tokenSchema, deleteTokenSchema } from './notifications.schemas';
 import { authenticate } from '../../shared/middlewares/auth.middleware';
 import {
   registerTokenController,

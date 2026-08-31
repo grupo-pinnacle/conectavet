@@ -7,9 +7,9 @@ import { prisma } from '../shared/prisma';
 
 let clientToken: string;
 let vetToken: string;
-let clientUser: any;
-let vetUser: any;
-let pet: any;
+let clientUser: import('@prisma/client').User;
+let vetUser: import('@prisma/client').User;
+let pet: import('@prisma/client').Pet;
 
 const uniqueId = Date.now();
 const prefix = `notif-test-${uniqueId}`;
@@ -125,7 +125,7 @@ describe('Notificaciones por eventos', () => {
       .get('/api/notifications')
       .set('Authorization', `Bearer ${clientToken}`);
     expect(list.body.data.items.length).toBeGreaterThanOrEqual(1);
-    const notif = list.body.data.items.find((n: any) => n.type === 'consultation_assigned');
+    const notif = list.body.data.items.find((n: { type: string }) => n.type === 'consultation_assigned');
     expect(notif).toBeTruthy();
     expect(notif.title).toBe('Un veterinario tomó tu consulta');
   });
@@ -145,7 +145,7 @@ describe('Notificaciones por eventos', () => {
     const list = await request(app)
       .get('/api/notifications')
       .set('Authorization', `Bearer ${vetToken}`);
-    const notif = list.body.data.items.find((n: any) => n.type === 'message');
+    const notif = list.body.data.items.find((n: { type: string }) => n.type === 'message');
     expect(notif).toBeTruthy();
     expect(notif.title).toBe('Nuevo mensaje');
   });
@@ -159,7 +159,7 @@ describe('Notificaciones por eventos', () => {
     const list = await request(app)
       .get('/api/notifications')
       .set('Authorization', `Bearer ${clientToken}`);
-    const target = list.body.data.items.find((n: any) => n.type === 'consultation_assigned');
+    const target = list.body.data.items.find((n: { type: string }) => n.type === 'consultation_assigned');
     expect(target).toBeTruthy();
 
     const res = await request(app)

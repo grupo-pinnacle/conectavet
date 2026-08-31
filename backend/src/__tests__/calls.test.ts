@@ -8,9 +8,9 @@ import { prisma } from '../shared/prisma';
 let clientToken: string;
 let vetToken: string;
 let strangerToken: string;
-let clientUser: any;
-let vetUser: any;
-let pet: any;
+let clientUser: import('@prisma/client').User;
+let vetUser: import('@prisma/client').User;
+let pet: import('@prisma/client').Pet;
 
 const uniqueId = Date.now();
 const prefix = `call-test-${uniqueId}`;

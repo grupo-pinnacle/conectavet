@@ -19,11 +19,9 @@ export async function setupChatSocket(httpServer: HttpServer) {
     .map((s) => s.trim());
   const wsAllowCredentials = !wsOrigins.includes('*');
 
-  import type { Redis } from 'ioredis';
-
   // Cliente Redis local a esta instancia (el estado compartido vive en
   // message-throttle vía setRedisClient). Se usa solo si REDIS_URL está seteado.
-  let redisClient: Redis | null = null;
+  let redisClient: any | null = null;
 
   io = new Server(httpServer, {
     cors: {

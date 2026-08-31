@@ -18,6 +18,8 @@ import {
   authenticate,
   authorize
 } from '../../shared/middlewares/auth.middleware';
+import { validate } from '../../shared/middlewares/validate.middleware';
+import { updateProfileSchema } from './users.schemas';
 import { Role } from '@prisma/client';
 
 const router = Router();

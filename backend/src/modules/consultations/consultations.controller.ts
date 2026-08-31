@@ -23,6 +23,7 @@ import {
   createReview,
 } from './consultations.service';
 import { asyncHandler } from "../../shared/middlewares/async.middleware.js";
+import { z } from 'zod';
 export const sendMessageSchema = z
   .object({
     content: z.string().max(2000, 'El mensaje no puede superar los 2000 caracteres').optional(),

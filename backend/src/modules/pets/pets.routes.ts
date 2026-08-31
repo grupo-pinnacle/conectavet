@@ -1,5 +1,7 @@
 ﻿import { Router } from 'express';
 import { authenticate } from '../../shared/middlewares/auth.middleware';
+import { validate } from '../../shared/middlewares/validate.middleware';
+import { createPetSchema, updatePetSchema } from './pets.schemas';
 import {
   getMyPetsController,
   getManagedPetsController,

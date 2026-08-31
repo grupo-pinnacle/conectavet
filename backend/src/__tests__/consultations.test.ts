@@ -138,7 +138,7 @@ describe('POST /api/consultations — ownership de mascota (IDOR)', () => {
 });
 
 describe('Seguridad — password no se expone en respuestas', () => {
-  let c: import('@prisma/client').Consultation;
+  let c: any;
 
   beforeEach(async () => {
     c = await createFreshConsultation();

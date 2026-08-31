@@ -310,6 +310,10 @@ export async function listAllUsers(page = 1, limit = 30, search?: string, role?:
 }
 
 export async function getAdminStats() {
+  const cacheKey = 'admin:stats';
+  const cached = getCached<{ totalUsers: number, totalVets: number, totalClients: number, pendingVets: number, totalConsultations: number, completedConsultations: number }>(cacheKey);
+  if (cached) return cached;
+
   const [totalUsers, totalVets, totalClients, pendingVets, totalConsultations, completedConsultations] = await Promise.all([
     prisma.user.count(),
     prisma.user.count({ where: { role: 'VET' } }),
@@ -318,7 +322,8 @@ export async function getAdminStats() {
     prisma.consultation.count({ where: { deletedAt: null } }),
     prisma.consultation.count({ where: { status: 'COMPLETED', deletedAt: null } }),
   ]);
-  return {
+
+  const result = {
     totalUsers,
     totalVets,
     totalClients,
@@ -326,4 +331,7 @@ export async function getAdminStats() {
     totalConsultations,
     completedConsultations,
   };
+
+  setCache(cacheKey, result, 300); // cache for 5 minutes
+  return result;
 }

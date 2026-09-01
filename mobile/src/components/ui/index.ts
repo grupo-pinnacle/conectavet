@@ -6,3 +6,4 @@ export { Modal } from './Modal';
 export { Skeleton, SkeletonCard } from './Skeleton';
 export { EmptyState } from './EmptyState';
 export { Avatar } from './Avatar';
+export { GlobalDialog } from './GlobalDialog';

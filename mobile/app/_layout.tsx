@@ -4,13 +4,14 @@ import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import Toast from 'react-native-toast-message';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
 import { ThemeProvider, useTheme, fontSizes, fontWeights, spacing, radius } from '@/theme';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { GlobalDialog } from '@/components/ui';
+import { useDialogStore } from '@/stores/dialogStore';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,7 +50,7 @@ function RouteGuard() {
 
   useEffect(() => {
     if (sessionExpired) {
-      Toast.show({ type: 'error', text1: 'Sesión expirada', text2: 'Iniciá sesión nuevamente.' });
+      useDialogStore.getState().show({ type: 'error', title: 'Sesión expirada', message: 'Iniciá sesión nuevamente.' });
       clearSessionExpired();
       router.replace('/(auth)/login');
     }
@@ -77,7 +78,7 @@ export default function RootLayout() {
           <ErrorBoundary>
             <RouteGuard />
           </ErrorBoundary>
-          <Toast />
+          <GlobalDialog />
         </SafeAreaProvider>
       </ThemeProvider>
     </QueryClientProvider>

@@ -1,9 +1,9 @@
 import { useState, useRef } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Image, Pressable, ScrollView, Text, TextInput, View, Alert } from 'react-native';
+import { Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
-import Toast from 'react-native-toast-message';
+import { useDialogStore } from '@/stores/dialogStore';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button, EmptyState, SkeletonCard } from '@/components/ui';
 import { useCreateConsultation } from '@/hooks/useConsultations';
@@ -45,11 +45,11 @@ export default function QueueScreen() {
 
   const onSubmit = async () => {
     if (!selectedPetId) {
-      Toast.show({ type: 'error', text1: 'Seleccioná una mascota' });
+      useDialogStore.getState().show({ type: 'error', title: 'Atención', message: 'Seleccioná una mascota' });
       return;
     }
     if (!reason.trim()) {
-      Alert.alert('Decinos brevemente qué le pasa', '¿Cuál es el motivo de la consulta?');
+      useDialogStore.getState().show({ type: 'error', title: 'Decinos brevemente qué le pasa', message: '¿Cuál es el motivo de la consulta?' });
       return;
     }
     setSubmitting(true);
@@ -63,7 +63,7 @@ export default function QueueScreen() {
       router.replace(`/(app)/chat/${consultation.id}`);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'No pudimos crear la consulta.';
-      Alert.alert('No se pudo crear', msg, [{ text: 'Entendido' }]);
+      useDialogStore.getState().show({ type: 'error', title: 'No se pudo crear', message: msg });
     } finally {
       setSubmitting(false);
     }
@@ -272,3 +272,4 @@ export default function QueueScreen() {
     </ScrollView>
   );
 }
+

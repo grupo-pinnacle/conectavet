@@ -5,7 +5,7 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { View, Text, ScrollView, Pressable, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Toast from 'react-native-toast-message';
+import { useDialogStore } from '@/stores/dialogStore';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button, Input } from '@/components/ui';
 import { usePets } from '@/hooks/usePets';
@@ -60,11 +60,11 @@ export default function NewPetScreen() {
       if (photoUri) { setUploadingPhoto(true); photoUrl = await uploadPetPhoto(photoUri); }
       const payload: CreatePetPayload = { ...values, birthDate: new Date(values.birthDate).toISOString(), photoUrl };
       await create.mutateAsync(payload);
-      Toast.show({ type: 'success', text1: 'Mascota registrada', text2: `${values.name} fue agregado correctamente.` });
+      useDialogStore.getState().show({ type: 'success', title: 'Mascota registrada', message: `${values.name} fue agregado correctamente.` });
       router.replace('/(app)/pets');
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'No pudimos guardar la mascota. Intentá de nuevo.';
-      Toast.show({ type: 'error', text1: 'Error', text2: msg });
+      useDialogStore.getState().show({ type: 'error', title: 'Error', message: msg });
     } finally { setUploadingPhoto(false); }
   };
 
@@ -268,3 +268,4 @@ export default function NewPetScreen() {
     </KeyboardAvoidingView>
   );
 }
+

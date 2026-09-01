@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { View, Text, Pressable, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Toast from 'react-native-toast-message';
+import { useDialogStore } from '@/stores/dialogStore';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button, Input } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,11 +27,11 @@ export default function RegisterScreen() {
     setSubmitting(true);
     try {
       await register(values);
-      Toast.show({ type: 'success', text1: 'Cuenta creada con éxito', text2: 'Bienvenido a VetConnect.' });
+      useDialogStore.getState().show({ type: 'success', title: 'Cuenta creada con éxito', message: 'Bienvenido a VetConnect.' });
       router.replace('/(app)');
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'No pudimos crear tu cuenta. Intentá de nuevo.';
-      Toast.show({ type: 'error', text1: 'Error al registrarte', text2: msg });
+      useDialogStore.getState().show({ type: 'error', title: 'Error al registrarte', message: msg });
     } finally {
       setSubmitting(false);
     }
@@ -113,3 +113,4 @@ export default function RegisterScreen() {
     </KeyboardAvoidingView>
   );
 }
+

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, useMemo, memo } from 'react';
 import { FlatList, Image, KeyboardAvoidingView, Platform, Pressable, TextInput, View, Text, ActivityIndicator, type KeyboardAvoidingViewProps } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Toast from 'react-native-toast-message';
+import { useDialogStore } from '@/stores/dialogStore';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -151,7 +151,7 @@ export default function ConsultationChatScreen() {
         scrollToEnd();
       } catch (err) {
         const msg = err instanceof ApiError ? err.message : 'No pudimos adjuntar la imagen.';
-        Toast.show({ type: 'error', text1: 'Error al enviar imagen', text2: msg });
+        useDialogStore.getState().show({ type: 'error', title: 'Error al enviar imagen', message: msg });
       } finally {
         setIsUploading(false);
       }
@@ -164,7 +164,7 @@ export default function ConsultationChatScreen() {
       scrollToEnd();
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'No pudimos enviar el mensaje.';
-      Toast.show({ type: 'error', text1: 'Error al enviar', text2: msg });
+      useDialogStore.getState().show({ type: 'error', title: 'Error al enviar', message: msg });
       setDraft(nextDraft);
     }
   };
@@ -183,7 +183,7 @@ export default function ConsultationChatScreen() {
       setPendingImage({ uri: asset.uri, fileName: asset.fileName ?? undefined, mimeType: asset.mimeType ?? undefined });
       scrollToEnd();
     } catch {
-      Toast.show({ type: 'error', text1: 'No pudimos abrir la galería' });
+      useDialogStore.getState().show({ type: 'error', title: 'Error', message: 'No pudimos abrir la galería' });
     }
   };
 

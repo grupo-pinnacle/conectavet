@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { View, Text, Pressable, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Toast from 'react-native-toast-message';
+import { useDialogStore } from '@/stores/dialogStore';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 import { Button, Input } from '@/components/ui';
@@ -44,7 +44,7 @@ export default function LoginScreen() {
     setApiError(null);
     try {
       await login(values);
-      Toast.show({ type: 'success', text1: 'Bienvenido a VetConnect', text2: 'Ya podés consultar con tus mascotas.' });
+      useDialogStore.getState().show({ type: 'success', title: 'Bienvenido a VetConnect', message: 'Ya podés consultar con tus mascotas.' });
       router.replace('/(app)');
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'No pudimos iniciar sesión. Verificá tu email y contraseña.';
@@ -122,3 +122,4 @@ export default function LoginScreen() {
     </KeyboardAvoidingView>
   );
 }
+

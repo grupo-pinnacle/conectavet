@@ -39,6 +39,34 @@ export const petRouter = createTRPCRouter({
     return { success: true };
   }),
 
+  // Restaurar una mascota soft-deleted (solo el dueño, dentro de 30 días)
+  restore: protectedProcedure.input(z.object({ id: z.string().cuid() })).mutation(async ({ ctx, input }) => {
+    const pet = await prisma.pet.findFirst({
+      where: { id: input.id, ownerId: ctx.session.id, deletedAt: { not: null } },
+    });
+    if (!pet) throw new TRPCError({ code: "NOT_FOUND", message: "Mascota no encontrada en papelera" });
+    // Ventana de 30 días para restaurar
+    const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+    if (pet.deletedAt && Date.now() - pet.deletedAt.getTime() > thirtyDays) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Pasaron más de 30 días desde la baja" });
+    }
+    return prisma.pet.update({ where: { id: input.id }, data: { deletedAt: null } });
+  }),
+
+  // Listar mascotas eliminadas (papelera)
+  trash: protectedProcedure.query(async ({ ctx }) => {
+    return prisma.pet.findMany({
+      where: { ownerId: ctx.session.id, deletedAt: { not: null } },
+      orderBy: { deletedAt: "desc" },
+    });
+  }),
+
+  // Hard delete permanente (solo admin)
+  purge: authorizedProcedure("ADMIN").input(z.object({ id: z.string().cuid() })).mutation(async ({ input }) => {
+    await prisma.pet.delete({ where: { id: input.id } });
+    return { success: true };
+  }),
+
   // Vet: mascotas que ya atendió (ADR-010, mínima divulgación)
   managed: authorizedProcedure("VET", "ADMIN").query(async ({ ctx }) => {
     return prisma.pet.findMany({

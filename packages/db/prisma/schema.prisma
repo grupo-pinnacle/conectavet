@@ -111,6 +111,7 @@ model Consultation {
   petId     String
   pet       Pet                @relation(fields: [petId], references: [id])
   status    ConsultationStatus @default(WAITING)
+  reason    String?            @db.Text
   notes     String?
   startedAt DateTime?
   endedAt   DateTime?

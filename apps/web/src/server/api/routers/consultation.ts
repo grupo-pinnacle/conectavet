@@ -15,7 +15,12 @@ export const consultationRouter = createTRPCRouter({
     });
     if (!pet) throw new TRPCError({ code: "NOT_FOUND", message: "Mascota no encontrada" });
     return prisma.consultation.create({
-      data: { clientId: ctx.session.id, petId: input.petId, status: "WAITING" },
+      data: {
+        clientId: ctx.session.id,
+        petId: input.petId,
+        status: "WAITING",
+        reason: input.reason,
+      },
     });
   }),
 
@@ -62,7 +67,10 @@ export const consultationRouter = createTRPCRouter({
     return prisma.consultation.findMany({
       where: { status: "WAITING", deletedAt: null },
       orderBy: { createdAt: "asc" },
-      include: { pet: true, client: { select: { id: true, firstName: true, lastName: true } } },
+      include: {
+        pet: true,
+        client: { select: { id: true, firstName: true, lastName: true } },
+      },
     });
   }),
 

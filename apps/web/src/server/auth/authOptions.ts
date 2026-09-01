@@ -1,3 +1,6 @@
+// NextAuth v4 instance
+// Exporta `authOptions` (config) y los handlers para App Router (NextAuth 4 style).
+import NextAuth from "next-auth";
 import type { NextAuthOptions } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@conectavet/db";
@@ -38,7 +41,7 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role;
         token.vetStatus = user.vetStatus;
         token.tokenVersion = user.tokenVersion;
-      } else {
+      } else if (token.id) {
         const db = await prisma.user.findUnique({ where: { id: token.id as string } });
         if (!db || db.tokenVersion !== (token.tokenVersion as number)) {
           return {}; // sesión revocada
@@ -47,7 +50,7 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      if (!token.id) return { ...session, user: undefined };
+      if (!token.id) return { ...session, user: undefined as any };
       session.user = {
         ...session.user,
         id: token.id as string,
@@ -60,6 +63,11 @@ export const authOptions: NextAuthOptions = {
   },
   pages: { signIn: "/login" },
 };
+
+const nextAuth = NextAuth(authOptions);
+export const auth = nextAuth.auth;
+export const signIn = nextAuth.signIn;
+export const signOut = nextAuth.signOut;
 
 declare module "next-auth" {
   interface Session {

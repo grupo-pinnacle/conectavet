@@ -40,7 +40,10 @@ export const petCreateSchema = z.object({
 export const petUpdateSchema = petCreateSchema.partial();
 
 // ---- Consultations ----
-export const createConsultationSchema = z.object({ petId: z.string().cuid() });
+export const createConsultationSchema = z.object({
+  petId: z.string().cuid(),
+  reason: z.string().min(10, "Describí el motivo (mín. 10 caracteres)").max(1000),
+});
 export const completeConsultationSchema = z.object({ notes: z.string().optional() });
 export const sendMessageSchema = z.object({
   consultationId: z.string().cuid(),

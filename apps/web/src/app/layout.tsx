@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
-import "@conectavet/web/src/styles/tokens.css";
+import "@/styles/tokens.css";
 import "./globals.css";
 import { fontSans } from "~/font";
-import { TRPCProvider } from "~/trpc/provider";
-import { SessionProvider } from "next-auth/react";
+import { Providers } from "~/trpc/provider";
 
 export const metadata: Metadata = {
-  title: "ConectaVet",
-  description: "Telemedicina veterinaria",
+  title: "VetConnect — Telemedicina veterinaria",
+  description: "Conectá con veterinarios matriculados desde cualquier lugar. Atención inmediata para tu mascota.",
 };
 
 export default function RootLayout({
@@ -18,9 +17,7 @@ export default function RootLayout({
   return (
     <html lang="es" className={fontSans.variable}>
       <body className="min-h-screen bg-bg text-ink antialiased">
-        <SessionProvider>
-          <TRPCProvider>{children}</TRPCProvider>
-        </SessionProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

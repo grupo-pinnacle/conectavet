@@ -24,6 +24,8 @@ Este registro documenta todas las decisiones arquitectónicas clave tomadas dura
 | **ADR-014** | Registro Inmutable de Auditoría (`AuditLog`) | Aprobado | Seguridad / Auditoría |
 | **ADR-015** | TanStack React Query v5 para Caché y Sincronización Web | Aprobado | Frontend Web |
 | **ADR-016** | Conexión Mobile USB Directa con ADB Reverse para Redes Corporativas | Aprobado | DevOps / DX |
+| **ADR-017** | Despliegue Backend Autohosteado en Coolify (VPS) & Web en Vercel/Hostinger | Aprobado | Infraestructura / Cloud |
+| **ADR-018** | Estrategia Tripartita de Distribución Android (EAS Play Store, APK Web y Local Build) | Aprobado | Mobile / Release |
 
 ---
 
@@ -63,5 +65,15 @@ Este registro documenta todas las decisiones arquitectónicas clave tomadas dura
 - **Contexto:** Trazabilidad estricta de acciones sensibles (aprobación de médicos, reseteo de usuarios, modificaciones de roles, bajas).
 - **Decisión:** Crear tabla `AuditLog` no modificable donde se almacenan todas las mutaciones administrativas con IP y UserAgent.
 - **Consecuencias:** Capacidad de auditoría forense en tiempo real.
+
+### ADR-017: Despliegue Backend Autohosteado en Coolify (VPS) & Web en Vercel/Hostinger
+- **Contexto:** Minimizar costos recurrentes en dólares sin perder las comodidades de una plataforma moderna (CI/CD, certificados SSL automáticos, gestión de variables de entorno y servicios auxiliares).
+- **Decisión:** Desplegar el Backend Node.js y la instancia de Redis sobre un servidor VPS propio utilizando **Coolify**, y el Frontend Web SPA sobre **Vercel** (o Hosting Web estático de **Hostinger**).
+- **Consecuencias:** Costo predecible y bajo (servidor VPS fijo de ~$4-8 USD/mes), control total sobre la infraestructura de WebSockets persistentes (Traefik) y CDN global para la Web.
+
+### ADR-018: Estrategia Tripartita de Distribución Android
+- **Contexto:** La publicación inicial en Google Play Store requiere un proceso de validación y pago de cuenta de desarrollador, mientras que las pruebas piloto requieren distribución rápida.
+- **Decisión:** Soportar 3 vías de entrega: (1) EAS Build a Google Play Store (`.aab`) para lanzamiento masivo, (2) Generación directa de `.apk` descargable desde la web oficial para fase beta y tutores iniciales, y (3) Compilación nativa local con Gradle sin dependencia de cloud build.
+- **Consecuencias:** Flexibilidad total para iniciar operaciones inmediatamente sin bloqueos burocráticos.
 
 ---

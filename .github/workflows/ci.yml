@@ -1,4 +1,4 @@
-name: CI
+﻿name: CI
 
 on:
   push:
@@ -10,41 +10,39 @@ jobs:
   backend-unit:
     name: Backend - Unit Tests
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - run: npm ci
-      - run: npx jest --selectProjects unit
+      - name: Run Unit Tests
+        run: npx jest --selectProjects unit
+        working-directory: backend
         env:
           JWT_SECRET: test-secret-github-actions
 
   backend-integration:
     name: Backend - Integration Tests
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - run: npm ci
-      - run: npx tsc --noEmit
-      - run: npx jest --selectProjects integration
+      - name: Type Check
+        run: npx tsc --noEmit
+        working-directory: backend
+      - name: Run Integration Tests
+        run: npx jest --selectProjects integration
+        working-directory: backend
         env:
           JWT_SECRET: test-secret-github-actions
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -53,20 +51,18 @@ jobs:
   web:
     name: Web - Build
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: web
-
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: web/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - run: npm ci
-      - run: npm run build
+      - name: Build Web
+        run: npm run build
+        working-directory: web
 
   security:
     name: Security - Audit & Secret Scan
@@ -80,12 +76,8 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
-      - name: npm audit (backend)
-        working-directory: backend
-        run: npm audit --audit-level=high || true
-      - name: npm audit (web)
-        working-directory: web
+          cache-dependency-path: package-lock.json
+      - name: npm audit
         run: npm audit --audit-level=high || true
       - name: gitleaks secret scan
         uses: gitleaks/gitleaks-action@v2

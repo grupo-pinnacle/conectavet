@@ -122,13 +122,13 @@ export async function login(input: LoginInput) {
   });
 
   if (!user) {
-    throw new AuthError('Credenciales invÃ¡lidas', 401);
+    throw new AuthError('Credenciales inválidas', 401);
   }
 
   const passwordMatches = await bcrypt.compare(input.password, user.password);
 
   if (!passwordMatches) {
-    throw new AuthError('Credenciales invÃ¡lidas', 401);
+    throw new AuthError('Credenciales inválidas', 401);
   }
 
   const { password, ...userWithoutPassword } = user;

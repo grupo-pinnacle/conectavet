@@ -1,4 +1,4 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import {
   getMeController,
   adminOnlyController,
@@ -26,50 +26,26 @@ const router = Router();
 
 router.get('/me', authenticate, getMeController);
 router.patch('/me', authenticate, validate(updateProfileSchema), updateProfileController);
-router.patch(
-  '/me/availability',
-  authenticate,
-  authorize(Role.VET, Role.ADMIN),
-  setAvailabilityController
-);
-router.get(
-  '/admin-only',
-  authenticate,
-  authorize(Role.ADMIN),
-  adminOnlyController
-);
-router.get('/vets', authenticate, listVetsController);
+router.patch('/me/availability', authenticate, authorize(Role.VET, Role.ADMIN), setAvailabilityController);
+router.get('/admin-only', authenticate, authorize(Role.ADMIN), adminOnlyController);
+router.get('/vets', authenticate, authorize(Role.VET, Role.ADMIN), listVetsController);
 
-// S-03: endpoint de debug que expone el payload del JWT. Se mantiene
-// DESACTIVADO en producciÃ³n; solo se registra si se habilita explÃ­citamente.
 if (process.env.ENABLE_DEBUG_ENDPOINTS === 'true') {
   router.get('/admin-only', authenticate, authorize(Role.ADMIN), adminOnlyController);
 }
-router.post(
-  '/admin/users',
-  authenticate,
-  authorize(Role.ADMIN),
-  createUserController
-);
+router.post('/admin/users', authenticate, authorize(Role.ADMIN), createUserController);
 router.get('/favorites', authenticate, listFavoritesController);
 router.post('/vets/:id/favorite', authenticate, addFavoriteController);
 router.delete('/vets/:id/favorite', authenticate, removeFavoriteController);
 router.get('/vets/:id', authenticate, getVetByIdController);
-router.patch(
-  '/vets/:id/vet-status',
-  authenticate,
-  authorize(Role.ADMIN),
-  updateVetStatusController
-);
+router.patch('/vets/:id/vet-status', authenticate, authorize(Role.ADMIN), updateVetStatusController);
 
 // Admin routes
 router.get('/admin/users', authenticate, authorize(Role.ADMIN), listAllUsersController);
 router.get('/admin/stats', authenticate, authorize(Role.ADMIN), getAdminStatsController);
 
-
-
 import { batchDeleteUsersController, getAuditLogsController } from './users.controller';
-
 router.delete('/admin/users/batch', authenticate, authorize(Role.ADMIN), batchDeleteUsersController);
 router.get('/admin/audit-logs', authenticate, authorize(Role.ADMIN), getAuditLogsController);
+
 export default router;

@@ -204,7 +204,7 @@ describe('POST /api/consultations/:id/messages — imagen adjunta', () => {
     const res = await request(app)
       .post(`/api/consultations/${consultation.id}/messages`)
       .set('Authorization', `Bearer ${clientToken}`)
-      .send({ attachmentUrl: 'https://evil.com/x.png' });
+      .send({ attachmentUrl: 'http://evil.com/x.png' });
     expect(res.status).toBe(400);
   });
 });

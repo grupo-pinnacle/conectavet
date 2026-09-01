@@ -39,8 +39,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     // Validar el token contra el backend; si fue revocado/expiró (401),
     // limpiamos el storage y dejamos la sesión cerrada.
     try {
-      const me = await api.get<{ user: User }>('/auth/me');
-      set({ user: me.user, isAuthenticated: true, isHydrated: true });
+      const me = await api.get<User>('/auth/me');
+      set({ user: me, isAuthenticated: true, isHydrated: true });
     } catch (e) {
       // El interceptor normaliza el error de la API en ApiError (con .status),
       // no en un AxiosError con .response.status. Por eso chequeamos la instancia.

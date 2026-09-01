@@ -168,8 +168,8 @@ export default function MessagesSection() {
     setMessages(getCachedMessages(activeCons.id) ?? []);
     setPrescriptions(getCachedPrescriptions(activeCons.id) ?? []);
     joinConsultation(activeCons.id);
-    if (!getCachedMessages(activeCons.id)) fetchMsgs(activeCons.id);
-    if (!getCachedPrescriptions(activeCons.id)) fetchPrescriptions(activeCons.id);
+    fetchMsgs(activeCons.id);
+    fetchPrescriptions(activeCons.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- la caché evita refetches; re-sincronizar por objeto causaría bucles
   }, [activeCons?.id, fetchMsgs, fetchPrescriptions]);
 

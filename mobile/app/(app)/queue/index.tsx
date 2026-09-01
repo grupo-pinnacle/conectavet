@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, Text, TextInput, View, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
@@ -49,7 +49,7 @@ export default function QueueScreen() {
       return;
     }
     if (!reason.trim()) {
-      Toast.show({ type: 'error', text1: 'Decinos brevemente qué le pasa', text2: '¿Cuál es el motivo de la consulta?' });
+      Alert.alert('Decinos brevemente qué le pasa', '¿Cuál es el motivo de la consulta?');
       return;
     }
     setSubmitting(true);
@@ -63,7 +63,7 @@ export default function QueueScreen() {
       router.replace(`/(app)/chat/${consultation.id}`);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'No pudimos crear la consulta.';
-      Toast.show({ type: 'error', text1: 'Error', text2: msg });
+      Alert.alert('No se pudo crear', msg, [{ text: 'Entendido' }]);
     } finally {
       setSubmitting(false);
     }

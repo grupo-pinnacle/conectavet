@@ -33,7 +33,7 @@ import CallButton from "../../call/CallButton";
 import { formatSex } from "../../../utils/sex";
 import type { Consultation, Message, Prescription } from "../../../types";
 
-type Tab = "offers" | "waiting" | "active";
+type Tab = "pending" | "active";
 
 const INITIAL_LOAD = 50;
 const POLL_INTERVAL = 10000;
@@ -169,16 +169,16 @@ export default function VetMessagesSection() {
     tabRef.current = tab;
   }, [tab]);
 
-  // Si hay ofertas (PENDING) y ninguna consulta activa, mostrar la pestaña de
-  // ofertas al vet (solo hasta que cambie de pestaña manualmente).
+  // Si hay ofertas/espera (PENDING/WAITING) y ninguna consulta activa, mostrar la pestaña de
+  // pendientes al vet (solo hasta que cambie de pestaña manualmente).
   useEffect(() => {
     if (
       !tabTouchedRef.current &&
       tabRef.current === "active" &&
-      consultations.some((c) => c.status === "PENDING") &&
+      consultations.some((c) => c.status === "PENDING" || c.status === "WAITING") &&
       !consultations.some((c) => c.status === "ACTIVE")
     ) {
-      setTab("offers");
+      setTab("pending");
     }
   }, [consultations]);
 
@@ -206,8 +206,9 @@ export default function VetMessagesSection() {
     setMessages(getCachedMessages(activeCons.id) ?? []);
     setPrescriptions(getCachedPrescriptions(activeCons.id) ?? []);
     joinConsultation(activeCons.id);
-    if (!getCachedMessages(activeCons.id)) fetchMsgs(activeCons.id);
-    if (!getCachedPrescriptions(activeCons.id)) fetchPrescriptions(activeCons.id);
+    // Ensure we fetch from server in case cache is empty or stale
+    fetchMsgs(activeCons.id);
+    fetchPrescriptions(activeCons.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- la caché evita refetches; re-sincronizar por objeto causaría bucles
   }, [activeCons?.id, fetchMsgs, fetchPrescriptions]);
 
@@ -301,19 +302,15 @@ export default function VetMessagesSection() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  const offersList = useMemo(
-    () => consultations.filter((c) => c.status === "PENDING"),
-    [consultations]
-  );
-  const waitingList = useMemo(
-    () => consultations.filter((c) => c.status === "WAITING"),
+  const pendingList = useMemo(
+    () => consultations.filter((c) => c.status === "PENDING" || c.status === "WAITING"),
     [consultations]
   );
   const activeList = useMemo(
     () => consultations.filter((c) => c.status === "ACTIVE"),
     [consultations]
   );
-  const displayList = tab === "offers" ? offersList : tab === "waiting" ? waitingList : activeList;
+  const displayList = tab === "pending" ? pendingList : activeList;
 
   const messageList = useMemo(
     () => messages.slice(-INITIAL_LOAD),
@@ -465,7 +462,7 @@ export default function VetMessagesSection() {
         <div className="border-b border-border px-5 py-4">
           <h2 className="text-lg font-bold text-ink">Consultas</h2>
           <p className="mt-0.5 text-xs text-slate-500">
-            {offersList.length} ofertas · {waitingList.length} disponibles · {activeList.length} activas
+            {pendingList.length} pendientes · {activeList.length} activas
           </p>
         </div>
         <div className="flex border-b border-border">
@@ -480,29 +477,19 @@ export default function VetMessagesSection() {
             Activas ({activeList.length})
           </button>
           <button
-            onClick={() => { tabTouchedRef.current = true; setTab("offers"); setActiveCons(null); }}
+            onClick={() => { tabTouchedRef.current = true; setTab("pending"); setActiveCons(null); }}
             className={`relative flex-1 py-3 text-center text-sm font-semibold transition-colors ${
-              tab === "offers"
+              tab === "pending"
                 ? "border-b-2 border-teal-700 text-teal-700"
                 : "text-slate-400 hover:text-slate-600"
             }`}
           >
-            Ofertas ({offersList.length})
-            {offersList.length > 0 && tab !== "offers" && (
+            Pendientes ({pendingList.length})
+            {pendingList.length > 0 && tab !== "pending" && (
               <span className="absolute top-1.5 right-3 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[9px] font-bold text-white">
-                {offersList.length}
+                {pendingList.length}
               </span>
             )}
-          </button>
-          <button
-            onClick={() => { tabTouchedRef.current = true; setTab("waiting"); setActiveCons(null); }}
-            className={`flex-1 py-3 text-center text-sm font-semibold transition-colors ${
-              tab === "waiting"
-                ? "border-b-2 border-teal-700 text-teal-700"
-                : "text-slate-400 hover:text-slate-600"
-            }`}
-          >
-            Cola ({waitingList.length})
           </button>
         </div>
         <div ref={listRef} className="overflow-y-auto" style={{ height: "calc(100% - 117px)" }}>
@@ -514,17 +501,11 @@ export default function VetMessagesSection() {
           )}
           {!loadingCons && displayList.length === 0 && (
             <div className="flex flex-col items-center justify-center py-20 text-sm text-slate-400 px-6">
-              {tab === "waiting" ? (
+              {tab === "pending" ? (
                 <>
                   <Clock className="mb-3 h-10 w-10 text-slate-300" />
-                  <p className="font-semibold text-slate-500">No hay consultas en la cola</p>
-                  <p className="mt-1 text-xs text-center">Cuando un dueño solicite una consulta sin vet elegido, aparecerá aquí</p>
-                </>
-              ) : tab === "offers" ? (
-                <>
-                  <UserRound className="mb-3 h-10 w-10 text-slate-300" />
-                  <p className="font-semibold text-slate-500">No tenés ofertas pendientes</p>
-                  <p className="mt-1 text-xs text-center">Los clientes que te elijan aparecerán acá para que decidas si los atendés</p>
+                  <p className="font-semibold text-slate-500">No hay consultas pendientes</p>
+                  <p className="mt-1 text-xs text-center">Cuando los clientes soliciten una consulta, aparecerán aquí</p>
                 </>
               ) : (
                 <>

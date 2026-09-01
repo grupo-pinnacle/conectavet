@@ -78,10 +78,29 @@ export default function CallScreen() {
 
   const sendCallInit = useCallback(() => {
     if (!call) return;
-    const payload = JSON.stringify({ type: 'call:init', url: call.url, token: call.token, room: call.room });
+    const payloadObj = { type: 'call:init', url: call.url, token: call.token, room: call.room };
+    const payload = JSON.stringify(payloadObj);
+    
+    // Método 1: postMessage estándar (React Native WebView)
     webRef.current?.postMessage(payload);
-    // Re-envío diferido por si el listener de la web aún no se había montado.
-    setTimeout(() => webRef.current?.postMessage(payload), 800);
+    
+    // Método 2: Inyección de JS directa garantizada (llama a la función global o lanza el evento)
+    const js = `
+      try {
+        if (typeof window.__onCallInit === 'function') {
+          window.__onCallInit(${payload});
+        }
+        window.dispatchEvent(new MessageEvent('message', { data: ${payload} }));
+      } catch (e) {}
+      true;
+    `;
+    webRef.current?.injectJavaScript(js);
+    
+    // Re-envío diferido por si la web es lenta cargando el DOM
+    setTimeout(() => {
+      webRef.current?.postMessage(payload);
+      webRef.current?.injectJavaScript(js);
+    }, 800);
   }, [call]);
 
   // Vuelve siempre al chat de la consulta (nunca al inicio), tanto al cerrar

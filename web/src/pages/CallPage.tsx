@@ -27,9 +27,10 @@ export default function CallPage() {
   });
 
   useEffect(() => {
-    const onMessage = (e: MessageEvent) => {
+    const onMessage = (e: MessageEvent | Event) => {
       try {
-        const data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
+        const eventData = (e as MessageEvent).data || (e as any).data;
+        const data = typeof eventData === "string" ? JSON.parse(eventData) : eventData;
         if (data && data.type === "call:init" && data.url && data.room && data.token) {
           setCall({ url: data.url, room: data.room, token: data.token });
         }
@@ -38,7 +39,20 @@ export default function CallPage() {
       }
     };
     window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
+    document.addEventListener("message", onMessage as EventListener);
+    
+    // Y abrimos un hook global para que injectJavaScript pueda llamarlo directamente si falla el postMessage nativo
+    (window as any).__onCallInit = (data: any) => {
+      if (data && data.type === "call:init" && data.url && data.room && data.token) {
+        setCall({ url: data.url, room: data.room, token: data.token });
+      }
+    };
+
+    return () => {
+      window.removeEventListener("message", onMessage);
+      document.removeEventListener("message", onMessage as EventListener);
+      delete (window as any).__onCallInit;
+    };
   }, []);
 
   if (!call) {

@@ -7,24 +7,42 @@ export function useIncomingCall() {
   const router = useRouter();
 
   useEffect(() => {
-    const socket = getSocket();
-    if (!socket) return;
+    let cancelled = false;
+    let socketInstance: any = null;
 
-    const handleIncomingCall = (data: { consultationId: string; callerName?: string }) => {
-      useDialogStore.getState().show({
-        type: 'info',
-        title: 'Videollamada Entrante',
-        message: data.callerName ? `El veterinario ${data.callerName} te está llamando.` : 'El veterinario te está llamando.',
-        confirmText: 'Contestar',
-        onConfirm: () => {
-          router.push(`/(app)/call/${data.consultationId}`);
-        }
-      });
+    const init = async () => {
+      try {
+        const { connectSocket } = await import('@/lib/socket');
+        const socket = await connectSocket();
+        if (cancelled) return;
+        socketInstance = socket;
+
+        const handleIncomingCall = (data: { consultationId: string; callerName?: string }) => {
+          useDialogStore.getState().show({
+            type: 'info',
+            title: 'Videollamada Entrante',
+            message: data.callerName ? `El veterinario ${data.callerName} te está llamando.` : 'El veterinario te está llamando.',
+            confirmText: 'Contestar',
+            onConfirm: () => {
+              router.push(`/(app)/call/${data.consultationId}`);
+            }
+          });
+        };
+
+        socket.on('call:incoming', handleIncomingCall);
+      } catch (err) {
+        console.warn('Socket connection failed in useIncomingCall', err);
+      }
     };
 
-    socket.on('call:incoming', handleIncomingCall);
+    init();
+
     return () => {
-      socket.off('call:incoming', handleIncomingCall);
+      cancelled = true;
+      if (socketInstance) {
+        // Just remove the listener, do not disconnect the socket because chat might be using it.
+        socketInstance.removeAllListeners('call:incoming');
+      }
     };
   }, [router]);
 }

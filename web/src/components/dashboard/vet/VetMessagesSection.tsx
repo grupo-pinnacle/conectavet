@@ -173,8 +173,11 @@ export default function VetMessagesSection() {
     }
   }, [consultations]);
 
+  const [loadingMsgs, setLoadingMsgs] = useState(false);
+
   const fetchMsgs = useCallback(async (consultationId: string) => {
     try {
+      setLoadingMsgs(true);
       const data = await getMessages(consultationId);
       const pending = (getCachedMessages(consultationId) ?? [])
         .filter((m) => m.id.startsWith("msg-"))
@@ -184,7 +187,9 @@ export default function VetMessagesSection() {
       if (activeConsRef.current?.id === consultationId) {
         setMessages(merged);
       }
-    } catch { /* fallback handled */ }
+    } catch { /* fallback handled */ } finally {
+      setLoadingMsgs(false);
+    }
   }, []);
 
   const fetchPrescriptions = useCallback(async (consultationId: string) => {
@@ -732,11 +737,19 @@ export default function VetMessagesSection() {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-5 py-4">
-              <div className="space-y-0.5">
-                {prescriptions.map((rx) => (
-                  <PrescriptionCard key={rx.id} rx={rx} />
-                ))}
-                {messageList.map((msg, idx) => {
+              {loadingMsgs && messageList.length === 0 ? (
+                <div className="flex h-full items-center justify-center">
+                  <div className="flex flex-col items-center justify-center text-sm text-slate-400">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-teal-700 border-t-transparent mb-3" />
+                    Cargando historial de chat...
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-0.5">
+                  {prescriptions.map((rx) => (
+                    <PrescriptionCard key={rx.id} rx={rx} />
+                  ))}
+                  {messageList.map((msg, idx) => {
                   const prev = idx > 0 ? messageList[idx - 1] : null;
                   const isVet = msg.sender?.role === "VET" || msg.sender?.role === "ADMIN";
                   const showSender = !isVet && (idx === 0 || messageList[idx - 1]?.sender?.id !== msg.sender?.id);
@@ -773,9 +786,10 @@ export default function VetMessagesSection() {
                       )}
                     </div>
                   );
-                })}
-                <div ref={messagesEndRef} />
-              </div>
+                  })}
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
             </div>
 
             {/* Input */}

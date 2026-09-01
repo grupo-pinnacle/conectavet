@@ -1,4 +1,5 @@
-﻿import { useState } from "react";
+import { useState } from "react";
+import { VideoPresets } from "livekit-client";
 import {
   LiveKitRoom,
   VideoConference,
@@ -53,10 +54,23 @@ export default function CallRoom({ call, peerName, onLeave }: CallRoomProps) {
         token={call.token}
         serverUrl={call.url}
         onDisconnected={onLeave}
-        style={{ height: "100dvh" }}
+        style={{ height: "100dvh", width: "100vw" }}
         options={{
-          adaptiveStream: true,
+          adaptiveStream: { pixelDensity: 'screen' },
           dynacast: true,
+          videoCaptureDefaults: {
+            resolution: VideoPresets.h360.resolution,
+            frameRate: 20,
+          },
+          publishDefaults: {
+            videoEncoding: { maxBitrate: 400_000, maxFramerate: 20 },
+            videoSimulcastLayers: [VideoPresets.h160, VideoPresets.h360],
+          },
+          audioCaptureDefaults: {
+            autoGainControl: true,
+            echoCancellation: true,
+            noiseSuppression: true,
+          },
         }}
       >
         <VideoConference />

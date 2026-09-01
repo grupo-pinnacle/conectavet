@@ -1,4 +1,4 @@
-﻿import { Router } from 'express';
+import { Router } from 'express';
 import {
   getMeController,
   adminOnlyController,
@@ -28,7 +28,7 @@ router.get('/me', authenticate, getMeController);
 router.patch('/me', authenticate, validate(updateProfileSchema), updateProfileController);
 router.patch('/me/availability', authenticate, authorize(Role.VET, Role.ADMIN), setAvailabilityController);
 router.get('/admin-only', authenticate, authorize(Role.ADMIN), adminOnlyController);
-router.get('/vets', authenticate, authorize(Role.VET, Role.ADMIN), listVetsController);
+router.get('/vets', authenticate, listVetsController);
 
 if (process.env.ENABLE_DEBUG_ENDPOINTS === 'true') {
   router.get('/admin-only', authenticate, authorize(Role.ADMIN), adminOnlyController);

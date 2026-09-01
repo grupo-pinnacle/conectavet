@@ -152,6 +152,14 @@ export async function setupChatSocket(httpServer: HttpServer) {
       }
     );
 
+    socket.on('call:initiate', (consultationId: string, peerName: string) => {
+      socket.to(`consultation:${consultationId}`).emit('call:incoming', { consultationId, callerName: peerName });
+    });
+
+    socket.on('call:reject', (consultationId: string) => {
+      socket.to(`consultation:${consultationId}`).emit('call:rejected', { consultationId });
+    });
+
     socket.on('disconnect', () => {
       // Los maps de rate-limit/dedup viven en message-throttle (compartido).
     });

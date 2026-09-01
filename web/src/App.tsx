@@ -75,14 +75,7 @@ function App() {
               <Route path="/" element={<RootRedirect />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
-              <Route
-                path="/call"
-                element={
-                  <ProtectedRoute>
-                    <CallPage />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/call" element={<CallPage />} />
               <Route
                 path="/dashboard"
                 element={

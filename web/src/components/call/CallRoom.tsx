@@ -59,7 +59,7 @@ export default function CallRoom({ call, peerName, onLeave }: CallRoomProps) {
           adaptiveStream: { pixelDensity: 'screen' },
           dynacast: true,
           videoCaptureDefaults: {
-            resolution: VideoPresets.h360.resolution,
+            resolution: VideoPresets.h360,
             frameRate: 20,
           },
           publishDefaults: {

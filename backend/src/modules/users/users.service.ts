@@ -1,4 +1,4 @@
-﻿import { prisma } from '../../shared/prisma';
+import { prisma } from '../../shared/prisma';
 import { getCached, setCache, clearCache } from '../../shared/cache';
 import { NotFoundError, ConflictError } from '../../shared/errors';
 import { Prisma } from '@prisma/client';
@@ -348,6 +348,7 @@ export async function batchDeleteUsers(adminId: string, userIds: string[]) {
           lastName: 'Eliminado',
           deletedAt: new Date(),
           isOnline: false,
+          tokenVersion: { increment: 1 },
           pushTokens: { deleteMany: {} }
         }
       });

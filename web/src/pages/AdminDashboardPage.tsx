@@ -275,8 +275,9 @@ export default function AdminDashboardPage() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {displayUsers.map(u => {
+                    const isDeleted = u.email.startsWith('deleted-') && u.lastName === 'Eliminado';
                     const role = roleCfg[u.role] || roleCfg.CLIENT;
-                    const vetStatus = u.vetStatus ? vetStatusCfg[u.vetStatus] : null;
+                    const vetStatus = isDeleted ? null : (u.vetStatus ? vetStatusCfg[u.vetStatus] : null);
                     const isActioning = loadingAction === u.id;
                     const isSelected = selectedUsers.has(u.id);
                     return (
@@ -286,18 +287,18 @@ export default function AdminDashboardPage() {
                             type="checkbox"
                             checked={isSelected}
                             onChange={() => toggleSelectUser(u.id)}
-                            className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-600"
+                            disabled={isDeleted}
+                            className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-600 disabled:opacity-50"
                           />
                         </td>
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-teal-100 text-sm font-bold text-teal-700">
+                            <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold ${isDeleted ? 'bg-slate-200 text-slate-500' : 'bg-teal-100 text-teal-700'}`}>
                               {(u.firstName || u.email).charAt(0).toUpperCase()}
                             </div>
                             <div className="min-w-0">
-                              <p className="truncate font-semibold text-ink">
+                              <p className={`truncate font-semibold ${isDeleted ? 'text-slate-400 line-through' : 'text-ink'}`}>
                                 {u.firstName || ""} {u.lastName || ""}
-                                {(!u.firstName && !u.lastName) && <span className="text-slate-400">Sin nombre</span>}
                               </p>
                               <p className="truncate text-xs text-slate-400">{u.email}</p>
                             </div>
@@ -308,27 +309,33 @@ export default function AdminDashboardPage() {
                             <span className={`inline-flex w-fit rounded-full px-2.5 py-0.5 text-[11px] font-bold ${role.className}`}>
                               {role.label}
                             </span>
-                            {vetStatus && (
+                            {vetStatus && !isDeleted && (
                               <span className={`inline-flex w-fit rounded-full px-2.5 py-0.5 text-[11px] font-bold ${vetStatus.className}`}>
                                 {vetStatus.label}
                               </span>
                             )}
+                            {isDeleted && (
+                              <span className={`inline-flex w-fit rounded-full px-2.5 py-0.5 text-[11px] font-bold bg-red-100 text-red-700`}>
+                                Eliminado
+                              </span>
+                            )}
+                            {isDeleted && <span className="text-xs text-slate-400">—</span>}
                           </div>
                         </td>
                         <td className="hidden px-5 py-4 text-slate-500 sm:table-cell">
                           {u.specialty || "—"}
                         </td>
                         <td className="hidden px-5 py-4 sm:table-cell">
-                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${u.isEmailVerified ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
-                            {u.isEmailVerified ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
-                            {u.isEmailVerified ? "Verificado" : "Pendiente"}
+                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${isDeleted ? "bg-slate-100 text-slate-400" : (u.isEmailVerified ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500")}`}>
+                            {!isDeleted && (u.isEmailVerified ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />)}
+                            {isDeleted ? "Inactivo" : (u.isEmailVerified ? "Verificado" : "Pendiente")}
                           </span>
                         </td>
                         <td className="hidden px-5 py-4 text-xs text-slate-400 sm:table-cell">
                           {new Date(u.createdAt).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" })}
                         </td>
                         <td className="px-5 py-4">
-                          {u.role === "VET" && (
+                          {u.role === "VET" && !isDeleted && (
                             <div className="flex items-center gap-2">
                               {u.vetStatus !== "APPROVED" && (
                                 <button

@@ -113,10 +113,24 @@ export const usersService = {
 };
 
 export const mediaService = {
-  upload: (file: { uri: string; name: string; type: string }) => {
+  upload: async (file: { uri: string; name: string; type: string }) => {
     const form = new FormData();
     form.append('file', { uri: file.uri, name: file.name, type: file.type } as unknown as Blob);
-    return api.post<Attachment>('/media', form);
+    
+    // Axios FormData is buggy on React Native, using native fetch for uploads.
+    const token = await import('@/lib/secure-storage').then(m => m.secureStorage.getAccessToken());
+    const apiUrl = await import('@/lib/env').then(m => m.API_URL);
+    const res = await fetch(`${apiUrl}/api/media`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: form,
+    });
+    
+    if (!res.ok) throw new Error('Upload failed');
+    const json = await res.json();
+    return json.data as Attachment;
   },
 };
 

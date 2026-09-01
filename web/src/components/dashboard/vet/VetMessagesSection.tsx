@@ -103,10 +103,7 @@ function PrescriptionCard({ rx }: { rx: Prescription }) {
 }
 
 export default function VetMessagesSection() {
-  // Hidratación instantánea desde la caché: los inicializadores lazy corren
-  // en el primer render, así al volver a esta sección no hay spinner ni
-  // recarga — la conversación y la lista ya están en memoria.
-  const { data: consultations = [] } = useConsultations('vet');
+  const { data: consultations = [], isLoading } = useConsultations('vet');
   const [activeCons, setActiveCons] = useState<Consultation | null>(() => {
     const cached = getCachedConsultations();
     if (!cached) return null;
@@ -120,9 +117,8 @@ export default function VetMessagesSection() {
     if (!cached) return "active";
     const hasPending = cached.some((c) => c.status === "PENDING");
     const hasActive = cached.some((c) => c.status === "ACTIVE");
-    return !hasActive && hasPending ? "offers" : "active";
+    return !hasActive && hasPending ? "pending" : "active";
   });
-  const [loadingCons, setLoadingCons] = useState(() => (getCachedConsultations() ? false : true));
   const [isSending, setIsSending] = useState(false);
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [closeNotes, setCloseNotes] = useState("");
@@ -153,10 +149,7 @@ export default function VetMessagesSection() {
       queryClient.setQueryData(consultationsKey('vet'), (prev: Consultation[] | undefined) => updater(prev ?? [])),
     [queryClient]
   );
-  // fetchConsultations ahora solo invalida la query de React Query (P2-4);
-  // el socket mantiene la lista al día en tiempo real.
-  const fetchConsultations = invalidateConsultations;
-
+  
   useEffect(() => {
     activeConsRef.current = activeCons;
   });
@@ -169,8 +162,6 @@ export default function VetMessagesSection() {
     tabRef.current = tab;
   }, [tab]);
 
-  // Si hay ofertas/espera (PENDING/WAITING) y ninguna consulta activa, mostrar la pestaña de
-  // pendientes al vet (solo hasta que cambie de pestaña manualmente).
   useEffect(() => {
     if (
       !tabTouchedRef.current &&
@@ -200,19 +191,19 @@ export default function VetMessagesSection() {
     try {
       const data = await getPrescriptions(consultationId);
       setCachedPrescriptions(consultationId, data);
+      if (activeConsRef.current?.id === consultationId) {
+        setPrescriptions(data);
+      }
     } catch { /* fallback handled */ }
   }, []);
 
   useEffect(() => {
     if (!activeCons) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- hidratación desde caché
     setMessages(getCachedMessages(activeCons.id) ?? []);
     setPrescriptions(getCachedPrescriptions(activeCons.id) ?? []);
     joinConsultation(activeCons.id);
-    // Ensure we fetch from server in case cache is empty or stale
     fetchMsgs(activeCons.id);
     fetchPrescriptions(activeCons.id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- la caché evita refetches; re-sincronizar por objeto causaría bucles
   }, [activeCons?.id, fetchMsgs, fetchPrescriptions]);
 
   useEffect(() => {
@@ -225,10 +216,10 @@ export default function VetMessagesSection() {
     setCachedPrescriptions(activeCons.id, prescriptions);
   }, [prescriptions, activeCons]);
 
-  // Socket global: mensajes, consultas, notificaciones.
-  // La conexión (y el reintento si el handshake falla) vive en useChatSocket,
-  // compartido con MessagesSection (P2-6). Acá solo registramos los listeners.
-  const { socketConnected } = useChatSocket((socket) => {
+  const { connected: socketConnected } = useChatSocket("vet");
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
     const onConnect = () => {
       const active = activeConsRef.current;
       if (active) joinConsultation(active.id);
@@ -240,14 +231,10 @@ export default function VetMessagesSection() {
     };
     socket.on("connect", onConnect);
     socket.on("message:new", (msg: Message) => {
-      // Siempre guardamos el echo en la caché de esa consulta, aunque no esté
-      // abierta ahora, para que esté caliente al abrirla (P3-13).
       applyMessageEcho(msg.consultationId, msg);
       const active = activeConsRef.current;
       if (active && msg.consultationId === active.id) {
         setMessages(getCachedMessages(active.id) ?? []);
-        // El mensaje ya llegó (echo del socket): el botón deja de
-        // mostrar "enviando" aunque el POST REST todavía no responda.
         setIsSending(false);
       }
     });
@@ -278,20 +265,10 @@ export default function VetMessagesSection() {
     };
   }, []);
 
-  // Lista inicial: la caché ya la hidrató en el primer render; acá solo se
-  // refresca en segundo plano. Sin polling mientras el socket está vivo.
-  useEffect(() => {
-    fetchConsultations();
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch de datos al montar
-    setLoadingCons(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetch de datos al montar
-  }, []);
-
-  // Respaldo: solo con el socket caído.
   useEffect(() => {
     if (socketConnected) return;
     const interval = setInterval(() => {
-      fetchConsultations();
+      invalidateConsultations();
       const active = activeConsRef.current;
       if (active) {
         fetchMsgs(active.id);
@@ -299,7 +276,7 @@ export default function VetMessagesSection() {
       }
     }, POLL_INTERVAL);
     return () => clearInterval(interval);
-  }, [socketConnected, fetchConsultations, fetchMsgs]);
+  }, [socketConnected, invalidateConsultations, fetchMsgs]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -496,13 +473,13 @@ export default function VetMessagesSection() {
           </button>
         </div>
         <div ref={listRef} className="overflow-y-auto" style={{ height: "calc(100% - 117px)" }}>
-          {loadingCons && (
+          {isLoading && (
             <div className="flex items-center justify-center py-20 text-sm text-slate-400">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-teal-700 border-t-transparent mr-2" />
               Cargando...
             </div>
           )}
-          {!loadingCons && displayList.length === 0 && (
+          {!isLoading && displayList.length === 0 && (
             <div className="flex flex-col items-center justify-center py-20 text-sm text-slate-400 px-6">
               {tab === "pending" ? (
                 <>
@@ -519,7 +496,7 @@ export default function VetMessagesSection() {
               )}
             </div>
           )}
-          {!loadingCons && displayList.map((c) => {
+          {!isLoading && displayList.map((c) => {
             const isSelected = activeCons?.id === c.id;
             return (
               <div key={c.id}>

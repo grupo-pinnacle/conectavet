@@ -68,10 +68,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       id: user.id ?? "",
       name: user.name || [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "",
       email: user.email || "",
-      // Si user.phone tiene valor, se incluye. Si no, se omite completamente del objeto
       ...(user.phone ? { phone: user.phone } : {}),
       isOnline: typeof user.isOnline === "boolean" ? user.isOnline : false,
       role: roleMap[user.role as string] || "owner",
+      vetStatus: (user as any).vetStatus,
     };
   }
 

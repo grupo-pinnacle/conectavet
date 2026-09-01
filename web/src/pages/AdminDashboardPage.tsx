@@ -3,12 +3,12 @@ import { useNavigate } from "react-router-dom";
 import {
   Users, Stethoscope, ClipboardList, CheckCircle2, Clock,
   LogOut, Search, ChevronLeft, ChevronRight, ShieldCheck,
-  ShieldX, RefreshCw,
+  ShieldX, RefreshCw, Trash2,
 } from "lucide-react";
 import Logo from "../components/Logo";
 import { useAuth } from "../hooks/useAuth";
 import {
-  adminGetStats, adminListUsers, adminUpdateVetStatus,
+  adminGetStats, adminListUsers, adminUpdateVetStatus, adminBatchDeleteUsers,
   type AdminStats, type AdminUser,
 } from "../services/endpoints";
 
@@ -54,6 +54,8 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"users" | "pending">("users");
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -69,6 +71,7 @@ export default function AdminDashboardPage() {
       setUsers(res.data);
       setTotal(res.total);
       setTotalPages(res.totalPages);
+      setSelectedUsers(new Set()); // Clear selection on page change
     } catch { /* ignore */ } finally {
       setLoading(false);
     }
@@ -96,6 +99,38 @@ export default function AdminDashboardPage() {
     } catch { /* ignore */ } finally {
       setLoadingAction(null);
     }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedUsers.size === 0) return;
+    if (!window.confirm(`¿Estás seguro de que querés borrar ${selectedUsers.size} usuario(s)? Esta acción no se puede deshacer.`)) return;
+    
+    setIsDeleting(true);
+    try {
+      await adminBatchDeleteUsers(Array.from(selectedUsers));
+      setSelectedUsers(new Set());
+      fetchUsers(page, search, roleFilter);
+      fetchStats();
+    } catch (error) {
+      alert("Error al borrar usuarios");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedUsers.size === displayUsers.length && displayUsers.length > 0) {
+      setSelectedUsers(new Set());
+    } else {
+      setSelectedUsers(new Set(displayUsers.map(u => u.id)));
+    }
+  };
+
+  const toggleSelectUser = (id: string) => {
+    const next = new Set(selectedUsers);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedUsers(next);
   };
 
   const pendingVets = users.filter(u => u.role === "VET" && u.vetStatus === "PENDING");
@@ -191,6 +226,16 @@ export default function AdminDashboardPage() {
               <option value="VET">Veterinarios</option>
               <option value="ADMIN">Admins</option>
             </select>
+            {selectedUsers.size > 0 && (
+              <button
+                onClick={handleDeleteSelected}
+                disabled={isDeleting}
+                className="flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+              >
+                {isDeleting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                Borrar {selectedUsers.size}
+              </button>
+            )}
           </div>
         )}
 
@@ -212,6 +257,14 @@ export default function AdminDashboardPage() {
               <table className="w-full text-sm">
                 <thead className="border-b border-border bg-slate-50 text-left">
                   <tr>
+                    <th className="px-5 py-3 font-semibold text-slate-500">
+                      <input
+                        type="checkbox"
+                        checked={displayUsers.length > 0 && selectedUsers.size === displayUsers.length}
+                        onChange={toggleSelectAll}
+                        className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-600"
+                      />
+                    </th>
                     <th className="px-5 py-3 font-semibold text-slate-500">Usuario</th>
                     <th className="px-5 py-3 font-semibold text-slate-500">Rol</th>
                     <th className="hidden px-5 py-3 font-semibold text-slate-500 sm:table-cell">Especialidad</th>
@@ -225,8 +278,17 @@ export default function AdminDashboardPage() {
                     const role = roleCfg[u.role] || roleCfg.CLIENT;
                     const vetStatus = u.vetStatus ? vetStatusCfg[u.vetStatus] : null;
                     const isActioning = loadingAction === u.id;
+                    const isSelected = selectedUsers.has(u.id);
                     return (
-                      <tr key={u.id} className="hover:bg-slate-50 transition-colors">
+                      <tr key={u.id} className={`hover:bg-slate-50 transition-colors ${isSelected ? 'bg-teal-50/50' : ''}`}>
+                        <td className="px-5 py-4">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelectUser(u.id)}
+                            className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-600"
+                          />
+                        </td>
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3">
                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-teal-100 text-sm font-bold text-teal-700">

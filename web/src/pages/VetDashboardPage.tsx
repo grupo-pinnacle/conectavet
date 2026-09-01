@@ -43,6 +43,29 @@ export default function VetDashboardPage() {
     navigate("/login");
   };
 
+  if (user?.vetStatus === "PENDING") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-surface px-6 text-center">
+        <div className="mb-8">
+          <Logo size="lg" />
+        </div>
+        <div className="max-w-md rounded-2xl bg-white p-8 shadow-card">
+          <h1 className="text-xl font-bold text-ink">Cuenta en revisión</h1>
+          <p className="mt-4 text-sm text-slate-600">
+            Tu cuenta de veterinario se ha creado exitosamente y está pendiente de aprobación por un administrador.
+            Recibirás un correo electrónico cuando puedas acceder al dashboard.
+          </p>
+          <button
+            onClick={handleLogout}
+            className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-teal-50 px-4 py-3 text-sm font-bold text-teal-700 transition-colors hover:bg-teal-100"
+          >
+            <LogOut className="h-4 w-4" /> Cerrar sesión
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const renderSection = () => {
     switch (activeTab) {
       case "home": return <VetHomeSection />;

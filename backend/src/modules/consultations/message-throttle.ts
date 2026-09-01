@@ -1,4 +1,3 @@
-import { prisma } from '../../shared/prisma';
 
 // Rate-limit y dedup de mensajes COMPARTIDO entre REST y Socket.io.
 // Si REDIS_URL está configurado, ambos se vuelven distribuidos (multi-instancia).
@@ -43,7 +42,7 @@ export async function isDuplicate(consultationId: string, clientMsgId: string): 
   const key = `dedup:${consultationId}:${clientMsgId}`;
   if (redisClient) {
     try {
-      const result = await redisClient.set(key, '1', 'NX', 'EX', Math.ceil(MSG_DEDUP_TTL / 1000));
+      const result = await redisClient.set(key, '1', 'EX', Math.ceil(MSG_DEDUP_TTL / 1000), 'NX');
       return result === null; // null => ya existía => duplicado
     } catch {
       // fallback a in-memory

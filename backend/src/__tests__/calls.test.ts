@@ -6,7 +6,7 @@ import app from '../app';
 import { prisma } from '../shared/prisma';
 
 let clientToken: string;
-let vetToken: string;
+// let vetToken: string;
 let strangerToken: string;
 let clientUser: import('@prisma/client').User;
 let vetUser: import('@prisma/client').User;
@@ -31,7 +31,7 @@ beforeAll(async () => {
   });
 
   clientToken = jwt.sign({ userId: clientUser.id, email: clientUser.email, role: 'CLIENT' as Role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
-  vetToken = jwt.sign({ userId: vetUser.id, email: vetUser.email, role: 'VET' as Role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
+  // vetToken = jwt.sign({ userId: vetUser.id, email: vetUser.email, role: 'VET' as Role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
   strangerToken = jwt.sign({ userId: stranger.id, email: stranger.email, role: 'CLIENT' as Role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
 
   pet = await prisma.pet.create({

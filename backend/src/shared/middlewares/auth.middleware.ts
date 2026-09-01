@@ -41,18 +41,18 @@ export async function authenticate(
     ) as JwtPayload;
 
     const cacheKey = `user:tokenVersion:${decoded.userId}`;
-    let currentVersion = getCached<number>(cacheKey);
+    let currentVersion = await getCached<number>(cacheKey);
     
     if (currentVersion === undefined) {
       const user = await prisma.user.findUnique({
         where: { id: decoded.userId },
         select: { tokenVersion: true },
       });
-      if (user) {
-        currentVersion = user.tokenVersion;
-        // Cachear la versión del token por 30 segundos
-        setCache(cacheKey, currentVersion, 30);
+      if (!user) {
+        return res.status(401).json({ success: false, message: 'Usuario no encontrado' });
       }
+      currentVersion = user.tokenVersion;
+      await setCache(cacheKey, currentVersion, 30);
     }
 
     if (currentVersion === undefined || (decoded.tokenVersion ?? 1) !== currentVersion) {
@@ -63,7 +63,7 @@ export async function authenticate(
     }
 
     req.user = decoded;
-    next();
+    return next();
   } catch {
     return res.status(401).json({
       success: false,
@@ -88,6 +88,6 @@ export function authorize(...allowedRoles: Role[]) {
       });
     }
 
-    next();
+    return next();
   };
 }

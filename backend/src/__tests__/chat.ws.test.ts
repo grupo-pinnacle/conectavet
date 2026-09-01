@@ -80,7 +80,7 @@ describe('WebSocket: entrega en tiempo real (T-01)', () => {
     const vetSock = await connect(vetToken);
     vetSock.emit('join:consultation', consult.id);
     await delay(150);
-    const received = new Promise<unknown>((resolve) => vetSock.on('message:new', (m) => resolve(m)));
+    const received = new Promise<any>((resolve) => vetSock.on('message:new', (m) => resolve(m)));
     await request(server)
       .post(`/api/consultations/${consult.id}/messages`)
       .set('Authorization', `Bearer ${clientToken}`)
@@ -94,8 +94,8 @@ describe('WebSocket: entrega en tiempo real (T-01)', () => {
     const sock = await connect(clientToken);
     sock.emit('join:consultation', consult.id);
     await delay(150);
-    const first = await emitMessage(sock, { consultationId: consult.id, content: 'dup', clientMsgId: 'ws-dup-1' });
-    const second = await emitMessage(sock, { consultationId: consult.id, content: 'dup', clientMsgId: 'ws-dup-1' });
+    const first = (await emitMessage(sock, { consultationId: consult.id, content: 'dup', clientMsgId: 'ws-dup-1' })) as any;
+    const second = (await emitMessage(sock, { consultationId: consult.id, content: 'dup', clientMsgId: 'ws-dup-1' })) as any;
     expect(first.skipped).not.toBe(true);
     expect(second.skipped).toBe(true);
     sock.close();

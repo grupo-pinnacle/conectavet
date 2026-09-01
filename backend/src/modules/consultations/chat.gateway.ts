@@ -6,7 +6,7 @@ import { JwtPayload } from '../../shared/types';
 import { sendConsultationMessage } from './consultations.service';
 import { notifyConsultationMessage } from '../notifications/notifications.service';
 import { sendMessageSchema } from './consultations.controller';
-import { checkRateLimit, setRedisClient } from './message-throttle';
+import { setRedisClient } from './message-throttle';
 import type { Redis } from 'ioredis';
 
 let io: Server;
@@ -40,10 +40,10 @@ export async function setupChatSocket(httpServer: HttpServer) {
       const { createAdapter } = require('@socket.io/redis-adapter');
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const IORedis = require('ioredis');
-      redisClient = new IORedis(process.env.REDIS_URL);
-      setRedisClient(redisClient);
-      const pub = redisClient;
-      const sub = redisClient.duplicate();
+      redisClient = new IORedis(process.env.REDIS_URL) as Redis;
+      setRedisClient(redisClient!);
+      const pub = redisClient!;
+      const sub = redisClient!.duplicate();
       io.adapter(createAdapter(pub, sub));
       console.info('[socket] Redis adapter activado (multi-instancia) + rate-limit/dedup distribuido');
     } catch (err) {
@@ -83,7 +83,7 @@ export async function setupChatSocket(httpServer: HttpServer) {
 
   io.on('connection', (socket) => {
     const user = socket.data.user as JwtPayload;
-    const limitKey = user.userId || socket.id;
+    // const _limitKey = user.userId || socket.id;
 
     socket.join(`user:${user.userId}`);
 
@@ -99,9 +99,10 @@ export async function setupChatSocket(httpServer: HttpServer) {
         if (!consultation) {
           return socket.emit('error', { message: 'No pertenecés a esta consulta' });
         }
-        socket.join(`consultation:${consultationId}`);
+        socket.join(`consultation:${consultationId}`); return;
       } catch (err) {
         socket.emit('error', { message: 'Error al unirse a la consulta' });
+        return;
       }
     });
 
@@ -126,7 +127,7 @@ export async function setupChatSocket(httpServer: HttpServer) {
             return socket.emit('error', { message: parsed.error.issues[0].message });
           }
 
-          const validData = parsed.data;
+          // const _validData = parsed.data;
 
           // Lógica única compartida con REST: participación, estado ACTIVE,
           // rate-limit y dedup durable por clientMsgId.
@@ -143,8 +144,10 @@ export async function setupChatSocket(httpServer: HttpServer) {
 
           // Fire-and-forget: no bloquear el evento de socket esperando el push.
           notifyConsultationMessage(data.consultationId, user.userId).catch(() => {});
+          return;
         } catch (error) {
           socket.emit('error', { message: 'Error al guardar el mensaje' });
+          return;
         }
       }
     );

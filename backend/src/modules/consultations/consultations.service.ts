@@ -1,19 +1,19 @@
-import { prisma } from '../../shared/prisma';
+﻿import { prisma } from '../../shared/prisma';
 import { NotFoundError, ConflictError, ForbiddenError } from '../../shared/errors';
-import { getCached, setCache, clearCache } from '../../shared/cache';
+import { getCached, setCache, } from '../../shared/cache';
 import { Prisma } from '@prisma/client';
-import { checkRateLimit } from './message-throttle';
+import { checkRateLimit, isDuplicate } from './message-throttle';
 
-const VALID_TRANSITIONS: Record<string, string[]> = {
-  WAITING: ['PENDING', 'ACTIVE'],
-  PENDING: ['ACTIVE', 'WAITING'],
-  ACTIVE: ['COMPLETED'],
-  COMPLETED: [],
-  CANCELLED: [],
-};
+// const VALID_TRANSITIONS: Record<string, string[]> = {
+//   WAITING: ['PENDING', 'ACTIVE'],
+//   PENDING: ['ACTIVE', 'WAITING'],
+//   ACTIVE: ['COMPLETED'],
+//   COMPLETED: [],
+//   CANCELLED: [],
+// };
 
 /**
- * Snapshot público de usuario: nunca expone el hash de password.
+ * Snapshot pÃºblico de usuario: nunca expone el hash de password.
  * Usado en todos los selects de consulta (client/vet/sender).
  */
 const publicUser = {
@@ -27,7 +27,7 @@ const publicUser = {
 } as const;
 
 /**
- * Snapshot público de consulta (solo columnas necesarias, sin password).
+ * Snapshot pÃºblico de consulta (solo columnas necesarias, sin password).
  */
 const consultationSnapshot = {
   id: true,
@@ -63,9 +63,9 @@ const vetPublicSelect = {
 } as const;
 
 export async function findFirstAvailableVet(species?: string) {
-  // Sin caché: el pick se consume una sola vez (se asigna a una consulta).
-  // Cachearlo 30s re-servía el MISMO vet a todos los clients en esa ventana
-  // (sobrecarga del vet) y podía devolver un vet recién puesto offline.
+  // Sin cachÃ©: el pick se consume una sola vez (se asigna a una consulta).
+  // Cachearlo 30s re-servÃ­a el MISMO vet a todos los clients en esa ventana
+  // (sobrecarga del vet) y podÃ­a devolver un vet reciÃ©n puesto offline.
   // Si hay una especie, se priorizan los vets que ya atendieron mascotas de
   // esa especie; si ninguno tiene historial, se cae a cualquier vet online.
   if (species) {
@@ -108,14 +108,14 @@ export async function createConsultation(data: {
     }
   });
   if (existingActive) {
-    throw new ConflictError('Ya tenés una consulta activa o en espera para esta mascota');
+    throw new ConflictError('Ya tenÃ©s una consulta activa o en espera para esta mascota');
   }
 
   // La consulta nunca nace ACTIVA: el veterinario siempre decide si atender.
-  //  - Si el cliente eligió un vet puntual: nace como oferta (PENDING) para él,
-  //    aunque esté offline la verá y decidirá al entrar a la web.
-  //  - Si no eligió: se ofrece al primer vet online (PENDING) o queda WAITING
-  //    para el primer vet que se conecte / para tomar de la cola pública.
+  //  - Si el cliente eligiÃ³ un vet puntual: nace como oferta (PENDING) para Ã©l,
+  //    aunque estÃ© offline la verÃ¡ y decidirÃ¡ al entrar a la web.
+  //  - Si no eligiÃ³: se ofrece al primer vet online (PENDING) o queda WAITING
+  //    para el primer vet que se conecte / para tomar de la cola pÃºblica.
   let vetId: string | undefined;
   let status: 'PENDING' | 'WAITING' = 'WAITING';
 
@@ -145,9 +145,9 @@ export async function createConsultation(data: {
 }
 
 export async function assignVet(consultationId: string, vetId: string) {
-  // Claim atómico (WHERE status) para evitar la carrera TOCTOU: dos vets
+  // Claim atÃ³mico (WHERE status) para evitar la carrera TOCTOU: dos vets
   // no pueden "tomar" la misma consulta WAITING al mismo tiempo. La oferta
-  // PENDING sólo la reclama el vet al que fue ofrecida.
+  // PENDING sÃ³lo la reclama el vet al que fue ofrecida.
   const claimed = await prisma.consultation.updateMany({
     where: {
       id: consultationId,
@@ -165,7 +165,7 @@ export async function assignVet(consultationId: string, vetId: string) {
     if (consultation.status === 'PENDING' && consultation.vetId !== vetId) {
       throw new ConflictError('Esta oferta es de otro veterinario');
     }
-    throw new ConflictError(`No se puede tomar — la consulta está en estado ${consultation.status}`);
+    throw new ConflictError(`No se puede tomar â€” la consulta estÃ¡ en estado ${consultation.status}`);
   }
 
   const consultation = await prisma.consultation.findUnique({
@@ -177,8 +177,8 @@ export async function assignVet(consultationId: string, vetId: string) {
 }
 
 /**
- * Rechazo de una oferta PENDING: la consulta vuelve a la cola pública (WAITING)
- * sin vet asignado para que otro veterinario pueda tomarla u ofrecérsela.
+ * Rechazo de una oferta PENDING: la consulta vuelve a la cola pÃºblica (WAITING)
+ * sin vet asignado para que otro veterinario pueda tomarla u ofrecÃ©rsela.
  */
 export async function declineConsultation(consultationId: string, vetId: string) {
   const consultation = await prisma.consultation.findUnique({
@@ -186,7 +186,7 @@ export async function declineConsultation(consultationId: string, vetId: string)
   });
   if (!consultation) throw new NotFoundError('Consulta no encontrada');
   if (consultation.status !== 'PENDING') {
-    throw new ConflictError('La consulta no está en estado de aprobación');
+    throw new ConflictError('La consulta no estÃ¡ en estado de aprobaciÃ³n');
   }
   if (consultation.vetId && consultation.vetId !== vetId) {
     throw new ConflictError('Esta oferta es de otro veterinario');
@@ -200,14 +200,14 @@ export async function declineConsultation(consultationId: string, vetId: string)
 
 /**
  * Cola de espera: asigna al primer veterinario que se ponga online
- * la consulta WAITING más antigua como OFERTA (PENDING) — él decide aceptarla,
- * nunca arranca sola. El claim es atómico (WHERE status=WAITING) para que dos
- * vets online simultáneos nunca tomen la misma consulta.
+ * la consulta WAITING mÃ¡s antigua como OFERTA (PENDING) â€” Ã©l decide aceptarla,
+ * nunca arranca sola. El claim es atÃ³mico (WHERE status=WAITING) para que dos
+ * vets online simultÃ¡neos nunca tomen la misma consulta.
  */
 export async function assignNextPendingVet(vetId: string) {
-  // Reintenta el claim atómico: si dos vets online compiten por la misma
+  // Reintenta el claim atÃ³mico: si dos vets online compiten por la misma
   // consulta, el perdedor salta a la siguiente WAITING en vez de quedarse sin
-  // asignar hasta su próximo toggle de disponibilidad.
+  // asignar hasta su prÃ³ximo toggle de disponibilidad.
   for (let attempt = 0; attempt < 5; attempt++) {
     const pending = await prisma.consultation.findFirst({
       where: { status: 'WAITING' },
@@ -253,9 +253,9 @@ export async function completeConsultation(
   consultationId: string,
   notes?: string
 ) {
-  // Actualización atómica: cerramos la consulta SÓLO si está ACTIVE. Así
+  // ActualizaciÃ³n atÃ³mica: cerramos la consulta SÃ“LO si estÃ¡ ACTIVE. AsÃ­
   // evitamos la carrera (TOCTOU) entre leer el estado y actualizarlo, que
-  // podía pisar un estado ya finalizado. Si no había fila ACTIVE, avisamos.
+  // podÃ­a pisar un estado ya finalizado. Si no habÃ­a fila ACTIVE, avisamos.
   const result = await prisma.consultation.updateMany({
     where: { id: consultationId, status: 'ACTIVE' },
     data: { status: 'COMPLETED', notes, endedAt: new Date() },
@@ -266,7 +266,7 @@ export async function completeConsultation(
       select: { status: true },
     });
     if (!current) throw new NotFoundError('Consulta no encontrada');
-    throw new ConflictError(`No se puede cerrar — la consulta está en estado ${current.status}`);
+    throw new ConflictError(`No se puede cerrar â€” la consulta estÃ¡ en estado ${current.status}`);
   }
   return prisma.consultation.findUniqueOrThrow({
     where: { id: consultationId },
@@ -326,9 +326,9 @@ export async function getConsultationHistory(
   const cappedLimit = Math.min(opts.limit ?? 50, MAX_PAGE_SIZE);
   const where = role === 'VET' ? { vetId: userId, deletedAt: null } : { clientId: userId, deletedAt: null };
 
-  // A-03 (cursor): paginación keyset O(log n) para listas grandes. Si llega
-  // `cursor` (id_ts), usamos búsqueda por (createdAt, id) y devolvemos
-  // `nextCursor`. Sin `cursor` se mantiene la paginación por offset (compat
+  // A-03 (cursor): paginaciÃ³n keyset O(log n) para listas grandes. Si llega
+  // `cursor` (id_ts), usamos bÃºsqueda por (createdAt, id) y devolvemos
+  // `nextCursor`. Sin `cursor` se mantiene la paginaciÃ³n por offset (compat
   // con web/mobile que hoy usan page/limit).
   if (opts.cursor) {
     const [cursorId, cursorTsRaw] = opts.cursor.split('_');
@@ -382,7 +382,7 @@ export async function getAvailableVets(species?: string) {
     ? `vets:list:available:${species.toLowerCase()}`
     : 'vets:list:available';
   type VetPublic = { id: string; email: string; firstName: string; lastName: string; isOnline: boolean };
-  const cached = getCached<VetPublic[]>(cacheKey);
+  const cached = await getCached<VetPublic[]>(cacheKey);
   if (cached) return cached;
   const where: Prisma.UserWhereInput = {
     role: 'VET',
@@ -397,7 +397,7 @@ export async function getAvailableVets(species?: string) {
     select: { id: true, firstName: true, lastName: true, isOnline: true },
     orderBy: { createdAt: 'asc' },
   });
-  setCache(cacheKey, vets, 30);
+  await setCache(cacheKey, vets, 30);
   return vets;
 }
 
@@ -411,7 +411,7 @@ export async function saveMessage(data: {
   const hasContent = !!data.content && data.content.trim().length > 0;
   const hasAttachment = !!data.attachmentUrl;
   if (!hasContent && !hasAttachment) {
-    throw new ConflictError('El mensaje no puede estar vacío');
+    throw new ConflictError('El mensaje no puede estar vacÃ­o');
   }
   if (data.content && data.content.length > 2000) {
     throw new ConflictError('El mensaje no puede superar los 2000 caracteres');
@@ -421,7 +421,7 @@ export async function saveMessage(data: {
     !data.attachmentUrl!.startsWith('/uploads/') &&
     !data.attachmentUrl!.startsWith('https://')
   ) {
-    throw new ConflictError('La imagen adjunta es inválida');
+    throw new ConflictError('La imagen adjunta es invÃ¡lida');
   }
   return prisma.message.create({
     data: {
@@ -436,10 +436,10 @@ export async function saveMessage(data: {
 }
 
 /**
- * Envío de mensaje UNIFICADO para REST y Socket.io: valida participación,
+ * EnvÃ­o de mensaje UNIFICADO para REST y Socket.io: valida participaciÃ³n,
  * estado ACTIVE, aplica rate-limit compartido y dedup durable por clientMsgId.
  * Los llamadores (controller/gateway) se encargan de emitir por socket y
- * notificar; así no hay dos caminos de validación que diverjan.
+ * notificar; asÃ­ no hay dos caminos de validaciÃ³n que diverjan.
  */
 export async function sendConsultationMessage(params: {
   userId: string;
@@ -452,21 +452,26 @@ export async function sendConsultationMessage(params: {
   const consultation = await getConsultationById(consultationId);
   if (!consultation) throw new NotFoundError('Consulta no encontrada');
   if (consultation.clientId !== userId && consultation.vetId !== userId) {
-    throw new ForbiddenError('No participás de esta consulta');
+    throw new ForbiddenError('No participÃ¡s de esta consulta');
   }
   if (consultation.status !== 'ACTIVE') {
-    throw new ConflictError('La consulta no está activa. No podés enviar mensajes.');
+    throw new ConflictError('La consulta no estÃ¡ activa. No podÃ©s enviar mensajes.');
   }
   if (!(await checkRateLimit(`msg:${userId}`))) {
-    throw new ConflictError('Demasiados mensajes. Esperá un momento.');
+    throw new ConflictError('Demasiados mensajes. EsperÃ¡ un momento.');
   }
-  // Dedup durable por clientMsgId (cubre reintentos y multi-instancia).
+  // Dedup durable por clientMsgId usando Redis (previene double-submission race conditions)
   if (clientMsgId) {
-    const existing = await prisma.message.findFirst({
-      where: { consultationId, clientMsgId },
-      include: { sender: { select: { id: true, email: true, role: true } } },
-    });
-    if (existing) return { message: existing, duplicated: true };
+    const dup = await isDuplicate(consultationId, clientMsgId);
+    if (dup) {
+      // Si es un duplicado en vuelo (estÃ¡ en Redis), buscamos si ya se guardÃ³ en DB
+      const existing = await prisma.message.findFirst({
+        where: { consultationId, clientMsgId },
+        include: { sender: { select: { id: true, email: true, role: true } } },
+      });
+      if (existing) return { message: existing, duplicated: true };
+      throw new ConflictError('Mensaje en proceso. Por favor esperÃ¡.');
+    }
   }
   const message = await saveMessage({
     consultationId,
@@ -503,7 +508,7 @@ export async function savePrescription(data: {
   indications?: string;
 }) {
   if (!data.content || data.content.trim().length === 0) {
-    throw new ConflictError('La receta no puede estar vacía');
+    throw new ConflictError('La receta no puede estar vacÃ­a');
   }
   if (data.content.length > 5000) {
     throw new ConflictError('La receta no puede superar los 5000 caracteres');
@@ -549,13 +554,13 @@ export async function createReview(data: {
     throw new ForbiddenError('Solo el cliente de la consulta puede calificarla');
   }
   // Defensa en profundidad: el controller ya valida con Zod, pero el
-  // servicio no debe confiar en el caller. Rating entero 1–5 y comentario
-  // obligatorio (mínimo 10 caracteres).
+  // servicio no debe confiar en el caller. Rating entero 1â€“5 y comentario
+  // obligatorio (mÃ­nimo 10 caracteres).
   if (!Number.isInteger(data.rating) || data.rating < 1 || data.rating > 5) {
-    throw new ConflictError('La calificación debe ser un entero del 1 al 5');
+    throw new ConflictError('La calificaciÃ³n debe ser un entero del 1 al 5');
   }
   if (!data.comment || data.comment.trim().length < 10) {
-    throw new ConflictError('El comentario es obligatorio (mínimo 10 caracteres)');
+    throw new ConflictError('El comentario es obligatorio (mÃ­nimo 10 caracteres)');
   }
   if (consultation.status !== 'COMPLETED') {
     throw new ConflictError('Solo se pueden calificar consultas finalizadas');
@@ -571,9 +576,9 @@ export async function createReview(data: {
     throw new ConflictError('Esta consulta ya fue calificada');
   }
 
-  // Carrera (TOCTOU): dos requests pueden pasar la verificación de "ya
+  // Carrera (TOCTOU): dos requests pueden pasar la verificaciÃ³n de "ya
   // calificada" a la vez. Si llegan concurrentes, el unique en consultationId
-  // lanza P2002. En vez de un 500 genérico, devolvemos 409 claro (ConflictError).
+  // lanza P2002. En vez de un 500 genÃ©rico, devolvemos 409 claro (ConflictError).
   try {
     return await prisma.review.create({
       data: {
@@ -594,3 +599,4 @@ export async function createReview(data: {
     throw error;
   }
 }
+

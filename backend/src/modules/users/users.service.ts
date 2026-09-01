@@ -1,4 +1,4 @@
-import { prisma } from '../../shared/prisma';
+﻿import { prisma } from '../../shared/prisma';
 import { getCached, setCache, clearCache } from '../../shared/cache';
 import { NotFoundError, ConflictError } from '../../shared/errors';
 import { Prisma } from '@prisma/client';
@@ -21,7 +21,7 @@ const SALT_ROUNDS = 12;
 
 /**
  * Alta de usuario por un ADMIN (vets, clientes o admins). Nunca se expone
- * vía el registro público, que solo crea CLIENT. Valida unicidad de email
+ * vÃ­a el registro pÃºblico, que solo crea CLIENT. Valida unicidad de email
  * y hashea la password con el mismo costo que el registro.
  */
 export async function createUser(data: {
@@ -35,7 +35,7 @@ export async function createUser(data: {
 }) {
   const existing = await prisma.user.findUnique({ where: { email: data.email } });
   if (existing) {
-    throw new ConflictError('Este email ya está registrado');
+    throw new ConflictError('Este email ya estÃ¡ registrado');
   }
   const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
   const user = await prisma.user.create({
@@ -46,7 +46,7 @@ export async function createUser(data: {
       firstName: data.firstName,
       lastName: data.lastName,
       phone: data.phone,
-      // La matrícula/especialidad solo aplica a veterinarios.
+      // La matrÃ­cula/especialidad solo aplica a veterinarios.
       specialty: data.role === 'VET' ? data.specialty || null : null,
     },
   });
@@ -77,14 +77,14 @@ export async function updateAvailability(userId: string, isOnline: boolean) {
   const user = await prisma.user.update({
     where: { id: userId },
     // Al ponerse online registramos lastSeen para que la presencia no quede
-    // "pegada" si se cae la conexión (P3-4).
+    // "pegada" si se cae la conexiÃ³n (P3-4).
     data: { isOnline, lastSeen: isOnline ? new Date() : undefined },
   });
 
   // Invalidar caches de vets disponibles/lista al cambiar el estado
-  clearCache('vets:available');
-  clearCache('vets:list:available');
-  clearCache('vets:list:');
+  await clearCache('vets:available');
+  await clearCache('vets:list:available');
+  await clearCache('vets:list:');
 
   const { password, ...userWithoutPassword } = user;
   return userWithoutPassword;
@@ -116,7 +116,7 @@ export async function listVets(
     isFavorite: boolean;
   };
   
-  const cached = getCached<{ data: VetListDTO[]; total: number; page: number; limit: number; totalPages: number }>(cacheKey);
+  const cached = await getCached<{ data: VetListDTO[]; total: number; page: number; limit: number; totalPages: number }>(cacheKey);
   if (cached) return cached;
   const skip = (page - 1) * limit;
   const whereConditions = [Prisma.sql`u.role = 'VET'`, Prisma.sql`u."vet_status" = 'APPROVED'`];
@@ -183,7 +183,7 @@ export async function listVets(
   }));
 
   const result = { data, total, page, limit, totalPages: Math.ceil(total / limit) };
-  setCache(cacheKey, result, 30);
+  await setCache(cacheKey, result, 30);
   return result;
 }
 
@@ -236,12 +236,12 @@ export async function addFavorite(clientId: string, vetId: string) {
     create: { clientId, vetId },
     update: {},
   });
-  clearCache(`vets:list:`);
+  await clearCache(`vets:list:`);
 }
 
 export async function removeFavorite(clientId: string, vetId: string) {
   await prisma.favoriteVet.deleteMany({ where: { clientId, vetId } });
-  clearCache(`vets:list:`);
+  await clearCache(`vets:list:`);
 }
 
 export async function listFavorites(clientId: string) {
@@ -381,3 +381,4 @@ export async function listAuditLogs(page = 1, limit = 50) {
 
   return { data: logs, total, page, limit: cappedLimit, totalPages: Math.ceil(total / cappedLimit) };
 }
+

@@ -1,8 +1,9 @@
-import 'dotenv/config';
+﻿import 'dotenv/config';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { CustomRedisStore } from './shared/rate-limit-store.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import usersRoutes from './modules/users/users.routes.js';
 import petsRoutes from './modules/pets/pets.routes.js';
@@ -24,7 +25,7 @@ interface AppRequest extends Request {
 }
 
 if (!process.env.JWT_SECRET) {
-  logger.error('JWT_SECRET no está definido en las variables de entorno');
+  logger.error('JWT_SECRET no estÃ¡ definido en las variables de entorno');
   process.exit(1);
 }
 
@@ -63,9 +64,9 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
   next();
 });
 
-// O-02: métricas mínimas en memoria (suficiente para alertas básicas en prod
+// O-02: mÃ©tricas mÃ­nimas en memoria (suficiente para alertas bÃ¡sicas en prod
 // sin dependencias externas). Para observabilidad profunda se puede conectar
-// Prometheus/OpenTelemetry más adelante.
+// Prometheus/OpenTelemetry mÃ¡s adelante.
 const metrics = { total: 0, errors: 0, startTime: Date.now() };
 app.use((_req: Request, res: Response, next: NextFunction) => {
   metrics.total++;
@@ -98,35 +99,38 @@ app.get('/health', async (_req: Request, res: Response) => {
 });
 
 // Rate limit global: solo mutaciones (POST/PATCH/DELETE).
-// El front tiene polling GET (consultas/mensajes c/10s) y varias pestañas:
+// El front tiene polling GET (consultas/mensajes c/10s) y varias pestaÃ±as:
 // exentamos GET/HEAD para que el 429 global no tumbe el dashboard.
 const limiter = rateLimit({
+  store: new CustomRedisStore('rl:global:'),
   windowMs: 15 * 60 * 1000,
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => req.method === 'GET' || req.method === 'HEAD',
-  message: { success: false, message: 'Demasiadas solicitudes, intentá de nuevo más tarde' },
+  message: { success: false, message: 'Demasiadas solicitudes, intentÃ¡ de nuevo mÃ¡s tarde' },
 });
 app.use(limiter);
 
 const authLimiter = rateLimit({
+  store: new CustomRedisStore('rl:auth:'),
   windowMs: 15 * 60 * 1000,
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, message: 'Demasiados intentos de login, intentá de nuevo más tarde' },
+  message: { success: false, message: 'Demasiados intentos de login, intentÃ¡ de nuevo mÃ¡s tarde' },
 });
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/refresh', authLimiter);
 
 const callsLimiter = rateLimit({
+  store: new CustomRedisStore('rl:calls:'),
   windowMs: 60 * 1000,
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, message: 'Demasiadas solicitudes de llamada, intentá de nuevo más tarde' },
+  message: { success: false, message: 'Demasiadas solicitudes de llamada, intentÃ¡ de nuevo mÃ¡s tarde' },
 });
 app.use('/api/calls', callsLimiter);
 
@@ -137,8 +141,8 @@ app.use('/api/consultations', consultationsRoutes);
 app.use('/api/calls', callsRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/notifications', notificationsRoutes);
-// Archivos subidos: requieren autenticación y participación en la consulta
-// propietaria (o ser el uploader / admin). Evita exposición de PII médica.
+// Archivos subidos: requieren autenticaciÃ³n y participaciÃ³n en la consulta
+// propietaria (o ser el uploader / admin). Evita exposiciÃ³n de PII mÃ©dica.
 app.get('/metrics', authenticate, authorize(Role.ADMIN), (_req: RequestWithUser, res: Response) => {
   res.json({
     uptimeSeconds: Math.round((Date.now() - metrics.startTime) / 1000),
@@ -153,7 +157,7 @@ app.use('/uploads', authenticate, async (req: RequestWithUser, res: Response, ne
   try {
     const rel = (req.path || '').replace(/^\/+/, '');
     if (!/^[\w.\-]+$/.test(rel)) {
-      return res.status(400).json({ success: false, message: 'Nombre de archivo inválido' });
+      return res.status(400).json({ success: false, message: 'Nombre de archivo invÃ¡lido' });
     }
     const fileUrl = '/uploads/' + rel;
     let allowed = false;
@@ -172,13 +176,15 @@ app.use('/uploads', authenticate, async (req: RequestWithUser, res: Response, ne
       allowed = !!att || req.user!.role === 'ADMIN';
     }
     if (!allowed) {
-      return res.status(403).json({ success: false, message: 'No tenés acceso a este archivo' });
+      return res.status(403).json({ success: false, message: 'No tenÃ©s acceso a este archivo' });
     }
     res.sendFile(join(UPLOADS_DIR, rel), { headers: { 'X-Content-Type-Options': 'nosniff' } }, (err) => {
-      if (err) res.status(404).json({ success: false, message: 'Archivo no encontrado' });
+      if (err) return res.status(404).json({ success: false, message: 'Archivo no encontrado' });
+      return;
     });
+    return;
   } catch (e) {
-    next(e);
+    return next(e);
   }
 });
 
@@ -200,3 +206,4 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
 });
 
 export default app;
+

@@ -26,14 +26,7 @@ const MIME_EXT: Record<string, string> = {
 mkdirSync(UPLOADS_DIR, { recursive: true });
 
 export const upload = multer({
-  storage: multer.diskStorage({
-    destination: UPLOADS_DIR,
-    filename: (_req, file, cb) => {
-      const ext = MIME_EXT[file.mimetype];
-      if (!ext) return cb(new AppError('Tipo de archivo no permitido', 400), '');
-      cb(null, `${Date.now()}-${randomBytes(6).toString('hex')}.${ext}`);
-    },
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: MAX_FILE_SIZE, files: 1 },
   fileFilter: (_req, file, cb) => {
     if (ALLOWED_MIME.includes(file.mimetype)) {
@@ -43,11 +36,24 @@ export const upload = multer({
   },
 });
 
+function validateMagicBytes(buffer: Buffer): boolean {
+  const hex = buffer.toString('hex', 0, 12).toUpperCase();
+  // JPEG: FFD8FF
+  if (hex.startsWith('FFD8FF')) return true;
+  // PNG: 89504E47
+  if (hex.startsWith('89504E47')) return true;
+  // GIF: GIF87a or GIF89a -> 47494638
+  if (hex.startsWith('47494638')) return true;
+  // WEBP: RIFF....WEBP -> Starts with 52494646 and bytes 8-11 are 57454250
+  if (hex.startsWith('52494646') && hex.substring(16, 24) === '57454250') return true;
+  return false;
+}
+
 export async function saveAttachment(data: {
   uploaderId: string;
-  filename: string;
   mimeType: string;
   size: number;
+  buffer: Buffer;
 }) {
   // Cuota diaria por usuario (P3-18): cualquier usuario autenticado podía
   // subir sin límite. Contamos las subidas de las últimas 24h y rechazamos
@@ -65,7 +71,13 @@ export async function saveAttachment(data: {
     throw new AppError('Tipo de archivo no permitido', 400);
   }
 
-  const url = await persistUpload(data.filename, data.mimeType);
+  if (!validateMagicBytes(data.buffer)) {
+    throw new AppError('El archivo no es una imagen válida o está corrupto (MIME Spoofing detectado)', 400);
+  }
+
+  const ext = MIME_EXT[data.mimeType];
+  const filename = `${Date.now()}-${randomBytes(6).toString('hex')}.${ext}`;
+  const url = await persistUpload(data.buffer, filename, data.mimeType);
 
   return prisma.attachment.create({
     data: {

@@ -1,4 +1,4 @@
-import api from "./api";
+﻿import api from "./api";
 import type { User, Pet, Consultation, Message, Prescription, VetCard } from "../types";
 
 export async function getMe(): Promise<User> {
@@ -193,7 +193,7 @@ export async function rateConsultation(consultationId: string, payload: RateCons
   return res.data.data;
 }
 
-// ─── Admin endpoints ────────────────────────────────────────────────────────
+// â”€â”€â”€ Admin endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export interface AdminUser {
   id: string;
@@ -242,3 +242,9 @@ export async function adminUpdateVetStatus(vetId: string, vetStatus: 'APPROVED' 
   const res = await api.patch(`/api/users/vets/${vetId}/vet-status`, { vetStatus });
   return res.data.data;
 }
+
+export async function adminBatchDeleteUsers(userIds: string[]) {
+  const res = await api.delete('/api/users/admin/users/batch', { data: { userIds } });
+  return res.data;
+}
+

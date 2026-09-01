@@ -72,7 +72,7 @@ describe('asyncHandler', () => {
     const mockRes = {} as Response;
     const mockNext = jest.fn();
 
-    const handler = asyncHandler(async (req: import('express').Request, res: import('express').Response, next: import('express').NextFunction) => {
+    const handler = asyncHandler(async (_req: import('express').Request, _res: import('express').Response, _next: import('express').NextFunction) => {
       throw new Error('test error');
     });
 
@@ -85,7 +85,7 @@ describe('asyncHandler', () => {
     const mockRes = {} as Response;
     const mockNext = jest.fn();
 
-    const handler = asyncHandler(async (req: import('express').Request, res: import('express').Response, next: import('express').NextFunction) => {
+    const handler = asyncHandler(async (_req: import('express').Request, _res: import('express').Response, next: import('express').NextFunction) => {
       next();
     });
 

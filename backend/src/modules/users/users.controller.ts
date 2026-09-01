@@ -17,7 +17,7 @@ import {
 import { assignNextPendingVet } from '../consultations/consultations.service';
 import { getIO } from '../consultations/chat.gateway';
 import { notifyUser } from '../notifications';
-import { handleError } from '../../shared/errors';
+
 import { logger } from '../../shared/logger';
 import { parsePagination } from '../../shared/utils';
 import { asyncHandler } from "../../shared/middlewares/async.middleware.js";

@@ -1,4 +1,4 @@
-import { readFile, unlink } from 'fs/promises';
+import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import { UPLOADS_DIR } from './media.service';
 
@@ -12,13 +12,12 @@ import { UPLOADS_DIR } from './media.service';
  *   del objeto (el disco local se usa solo como paso temporal). Requiere
  *   `@aws-sdk/client-s3` y las vars AWS_*.
  */
-export async function persistUpload(filename: string, mimeType: string): Promise<string> {
+export async function persistUpload(buffer: Buffer, filename: string, mimeType: string): Promise<string> {
   if (process.env.STORAGE_PROVIDER === 's3') {
-    const buffer = await readFile(join(UPLOADS_DIR, filename));
     const url = await uploadToS3(buffer, filename, mimeType);
-    await unlink(join(UPLOADS_DIR, filename)).catch(() => undefined);
     return url;
   }
+  await writeFile(join(UPLOADS_DIR, filename), buffer);
   return `/uploads/${filename}`;
 }
 

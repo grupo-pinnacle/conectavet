@@ -145,7 +145,7 @@ describe('Seguridad — password no se expone en respuestas', () => {
   });
 
   test('create, detail y /mine no incluyen password', async () => {
-    for (const obj of [c.client, c.vet].filter(Boolean)) {
+    for (const obj of [(c as any).client, (c as any).vet].filter(Boolean)) {
       expect(obj).not.toHaveProperty('password');
     }
 

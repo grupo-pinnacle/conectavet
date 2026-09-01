@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { z } from 'zod';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
-import { AppError, NotFoundError, ForbiddenError, ConflictError, handleError } from '../../shared/errors';
+import { NotFoundError, ForbiddenError } from '../../shared/errors';
 import { parsePagination } from '../../shared/utils';
 import { getIO } from './chat.gateway';
 import { notifyUser, notifyVetsOnline, notifyConsultationMessage } from '../notifications';
@@ -9,10 +9,8 @@ import {
   createConsultation,
   assignVet,
   declineConsultation,
-  assignNextPendingVet,
   cancelConsultation,
   completeConsultation,
-  getConsultationById,
   getConsultationSnapshotById,
   getConsultationsByUser,
   getConsultationHistory,

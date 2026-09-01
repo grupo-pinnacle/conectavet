@@ -1,34 +1,34 @@
-import { getCached, setCache, clearCache } from '../shared/cache';
+﻿import { getCached, setCache, clearCache } from '../shared/cache';
 
 describe('Cache', () => {
-  afterEach(() => {
-    clearCache();
+  afterEach(async () => {
+    await clearCache();
   });
 
-  test('set y get funcionan', () => {
-    setCache('test:key', { foo: 'bar' });
-    const result = getCached<{ foo: string }>('test:key');
+  test('set y get funcionan', async () => {
+    await setCache('test:key', { foo: 'bar' });
+    const result = await getCached<{ foo: string }>('test:key');
     expect(result).toEqual({ foo: 'bar' });
   });
 
-  test('get de key inexistente devuelve undefined', () => {
-    const result = getCached('test:nonexistent');
+  test('get de key inexistente devuelve undefined', async () => {
+    const result = await getCached('test:nonexistent');
     expect(result).toBeUndefined();
   });
 
-  test('clearCache sin patrón limpia todo', () => {
-    setCache('a:1', 'value1');
-    setCache('b:2', 'value2');
-    clearCache();
-    expect(getCached('a:1')).toBeUndefined();
-    expect(getCached('b:2')).toBeUndefined();
+  test('clearCache sin patrón limpia todo', async () => {
+    await setCache('a:1', 'value1');
+    await setCache('b:2', 'value2');
+    await clearCache();
+    expect(await getCached('a:1')).toBeUndefined();
+    expect(await getCached('b:2')).toBeUndefined();
   });
 
-  test('clearCache con patrón limpia solo keys que coinciden', () => {
-    setCache('vets:available', 'vets');
-    setCache('other:key', 'other');
-    clearCache('vets:');
-    expect(getCached('vets:available')).toBeUndefined();
-    expect(getCached('other:key')).toBe('other');
+  test('clearCache con patrón limpia solo keys que coinciden', async () => {
+    await setCache('vets:available', 'vets');
+    await setCache('other:key', 'other');
+    await clearCache('vets:');
+    expect(await getCached('vets:available')).toBeUndefined();
+    expect(await getCached('other:key')).toBe('other');
   });
 });

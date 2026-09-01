@@ -1,8 +1,7 @@
 import { Request, Response } from 'express';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware.js';
 import { setAuthCookies, clearAuthCookies, getRefreshTokenFromCookie } from '../../shared/auth-cookies.js';
-import { register, login, logout, refreshAccessToken, verifyEmail, requestPasswordReset, resetPassword, AuthError } from './auth.service.js';
-import { ConflictError, handleError } from '../../shared/errors/index.js';
+import { register, login, logout, refreshAccessToken, verifyEmail, requestPasswordReset, resetPassword } from './auth.service.js';
 import { asyncHandler } from "../../shared/middlewares/async.middleware.js";
 export const registerController = asyncHandler(async (req: Request, res: Response) => {
 const user = await register(req.body);

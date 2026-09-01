@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
-import { AppError, NotFoundError, ForbiddenError, handleError } from '../../shared/errors';
+import {  NotFoundError, ForbiddenError, } from '../../shared/errors';
 import { getPetsByOwner, getManagedPets, getPetById, createPet, updatePet, deletePet, restorePet, getPetVetCard, vetHasConsultationForPet } from './pets.service';
 import { parsePagination } from '../../shared/utils';
 import { asyncHandler } from "../../shared/middlewares/async.middleware.js";
@@ -67,7 +67,7 @@ return res.status(201).json({ success: true, data: pet });
 });
 
 import { Pet } from '@prisma/client';
-import { asyncHandler } from "../../shared/middlewares/async.middleware.js";
+
 
 async function verifyPetOwnership(petId: string, userId: string): Promise<{ allowed: boolean; pet: Pet | null }> {
   const pet = await getPetById(petId) as Pet | null;

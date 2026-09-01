@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
-import { AppError } from '../../shared/errors';
+
 import { createCallToken } from './calls.service';
 import { asyncHandler } from "../../shared/middlewares/async.middleware.js";
 

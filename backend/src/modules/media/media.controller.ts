@@ -2,7 +2,7 @@ import { Response } from 'express';
 import multer from 'multer';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
 import { AppError } from '../../shared/errors';
-import { logger } from '../../shared/logger';
+// import { logger } from '../../shared/logger';
 import { saveAttachment } from './media.service';
 import { asyncHandler } from "../../shared/middlewares/async.middleware.js";
 
@@ -15,9 +15,9 @@ if (!req.file) {
     }
 const attachment = await saveAttachment({
       uploaderId: req.user.userId,
-      filename: req.file.filename,
       mimeType: req.file.mimetype,
       size: req.file.size,
+      buffer: req.file.buffer,
     });
 return res.status(201).json({ success: true, data: attachment });
 });

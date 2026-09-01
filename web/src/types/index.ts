@@ -7,6 +7,7 @@ export interface User {
   phone?: string;
   isOnline?: boolean;
   role: "owner" | "vet" | "admin";
+  vetStatus?: "PENDING" | "APPROVED";
 }
 
 export interface Pet {

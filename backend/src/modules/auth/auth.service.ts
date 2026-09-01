@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { randomUUID, randomBytes } from 'crypto';
 import { prisma } from '../../shared/prisma';
-import { clearCache } from '../../shared/cache';
+import { clearCache, getCached, setCache } from '../../shared/cache';
 import { sendMail } from '../../shared/mailer';
 import { ConflictError, AppError } from '../../shared/errors';
 
@@ -41,7 +41,7 @@ function signRefreshToken(userId: string, tokenVersion: number) {
   return jwt.sign(
     { userId, type: 'refresh', tokenVersion, jti: randomUUID() },
     process.env.JWT_SECRET as string,
-    // 7 días (era 30d). Ventana de exposición menor si un refresh se filtra;
+    // 7 dÃ­as (era 30d). Ventana de exposiciÃ³n menor si un refresh se filtra;
     // el usuario sigue logueado y el refresh rota en cada uso.
     { algorithm: 'HS256', expiresIn: '7d' }
   );
@@ -58,8 +58,8 @@ export async function logout(userId: string) {
     where: { id: userId },
     data: { tokenVersion: { increment: 1 } },
   });
-  clearCache('vets:');
-  clearCache(`user:tokenVersion:${userId}`);
+  await clearCache('vets:');
+  await clearCache(`user:tokenVersion:${userId}`);
   disconnectUserSockets(userId);
 }
 
@@ -69,18 +69,18 @@ export async function register(input: RegisterInput) {
   });
 
   if (existingUser) {
-    throw new AuthError('No pudimos completar el registro con ese correo. Si ya tenés cuenta, iniciá sesión.', 409);
+    throw new AuthError('No pudimos completar el registro con ese correo. Si ya tenÃ©s cuenta, iniciÃ¡ sesiÃ³n.', 409);
   }
 
   const hashedPassword = await bcrypt.hash(input.password, SALT_ROUNDS);
 
-  // Token de verificación de email (válido 24h). El envío es best-effort.
+  // Token de verificaciÃ³n de email (vÃ¡lido 24h). El envÃ­o es best-effort.
   const emailVerifyToken = randomBytes(32).toString('hex');
   const emailVerifyExpires = new Date(Date.now() + 1000 * 60 * 60 * 24);
 
-  // Registro público: CLIENT siempre, o VET con aprobación posterior
+  // Registro pÃºblico: CLIENT siempre, o VET con aprobaciÃ³n posterior
   // (vetStatus = PENDING, ver ADR-012). El alta de ADMIN solo la hace un
-  // ADMIN vía POST /api/users/admin/users.
+  // ADMIN vÃ­a POST /api/users/admin/users.
   const role = input.role === 'VET' ? 'VET' : 'CLIENT';
   const vetStatus = role === 'VET' ? 'PENDING' : 'APPROVED';
 
@@ -99,11 +99,11 @@ export async function register(input: RegisterInput) {
     }
   });
 
-  // Verificación por email (no bloquea el registro si el mail falla).
+  // VerificaciÃ³n por email (no bloquea el registro si el mail falla).
   void sendMail(
     user.email,
-    'Verificá tu email en VetConnect',
-    `<p>Confirmá tu cuenta haciendo clic aquí: <a href="${process.env.WEB_URL ?? ''}/verify-email?token=${emailVerifyToken}">${process.env.WEB_URL ?? ''}/verify-email?token=${emailVerifyToken}</a></p>`
+    'VerificÃ¡ tu email en VetConnect',
+    `<p>ConfirmÃ¡ tu cuenta haciendo clic aquÃ­: <a href="${process.env.WEB_URL ?? ''}/verify-email?token=${emailVerifyToken}">${process.env.WEB_URL ?? ''}/verify-email?token=${emailVerifyToken}</a></p>`
   ).catch(() => undefined);
 
   const { password, ...userWithoutPassword } = user;
@@ -122,13 +122,13 @@ export async function login(input: LoginInput) {
   });
 
   if (!user) {
-    throw new AuthError('Credenciales inválidas', 401);
+    throw new AuthError('Credenciales invÃ¡lidas', 401);
   }
 
   const passwordMatches = await bcrypt.compare(input.password, user.password);
 
   if (!passwordMatches) {
-    throw new AuthError('Credenciales inválidas', 401);
+    throw new AuthError('Credenciales invÃ¡lidas', 401);
   }
 
   const { password, ...userWithoutPassword } = user;
@@ -149,6 +149,7 @@ export async function refreshAccessToken(refreshTokenValue: string) {
       userId: string;
       type: string;
       tokenVersion: number;
+      jti?: string;
     };
     if (decoded.type !== 'refresh') {
       throw new AuthError('Token de refresco inválido', 401);
@@ -160,9 +161,25 @@ export async function refreshAccessToken(refreshTokenValue: string) {
     if (decoded.tokenVersion !== user.tokenVersion) {
       throw new AuthError('Sesión cerrada. Iniciá sesión de nuevo', 401);
     }
+    
+    // Refresh Token Rotation (RTR) - FAANG Standard:
+    // Evita ataques de replay de refresh tokens robados.
+    if (decoded.jti) {
+      const isUsed = await getCached<boolean>(`rtr:${decoded.jti}`);
+      if (isUsed) {
+        // Alerta crítica: El token ya fue usado. Esto implica que fue robado
+        // y alguien intenta usarlo. Revocamos toda la familia de tokens al instante.
+        await logout(user.id);
+        throw new AuthError('Alerta de seguridad: Sesión comprometida. Por favor, vuelva a iniciar sesión.', 401);
+      }
+      // Marcar el token como usado (ttl = 7 días = 604800 seg, misma expiración del token)
+      await setCache(`rtr:${decoded.jti}`, true, 604800);
+    }
+
     const { password, ...userWithoutPassword } = user;
     try { const io = getIO(); if (io) io.to('admin:room').emit('admin:event', userWithoutPassword); } catch(e) {}
-  return {
+    
+    return {
       accessToken: signAccessToken(user),
       refreshToken: signRefreshToken(user.id, user.tokenVersion),
       user: userWithoutPassword,
@@ -181,7 +198,7 @@ export async function verifyEmail(token: string) {
   const user = await prisma.user.findFirst({
     where: { emailVerifyToken: token, emailVerifyExpires: { gt: new Date() } },
   });
-  if (!user) throw new ConflictError('Token de verificación inválido o expirado');
+  if (!user) throw new ConflictError('Token de verificaciÃ³n invÃ¡lido o expirado');
   await prisma.user.update({
     where: { id: user.id },
     data: { isEmailVerified: true, emailVerifyToken: null, emailVerifyExpires: null },
@@ -192,8 +209,8 @@ export async function verifyEmail(token: string) {
 import { createHash } from 'crypto';
 
 /**
- * Inicia el restablecimiento de contraseña. Por seguridad, SIEMPRE devuelve
- * el mismo resultado: nunca revela si el email existe (anti-enumeración).
+ * Inicia el restablecimiento de contraseÃ±a. Por seguridad, SIEMPRE devuelve
+ * el mismo resultado: nunca revela si el email existe (anti-enumeraciÃ³n).
  */
 export async function requestPasswordReset(email: string) {
   const user = await prisma.user.findUnique({ where: { email } });
@@ -208,15 +225,15 @@ export async function requestPasswordReset(email: string) {
     const link = `${process.env.WEB_URL ?? ''}/reset-password?token=${token}`;
     await sendMail(
       email,
-      'Restablecer tu contraseña',
-      `<p>Restablecé tu contraseña aquí: <a href="${link}">${link}</a></p><p>Si no fuiste vos, ignorá este mensaje.</p>`
+      'Restablecer tu contraseÃ±a',
+      `<p>RestablecÃ© tu contraseÃ±a aquÃ­: <a href="${link}">${link}</a></p><p>Si no fuiste vos, ignorÃ¡ este mensaje.</p>`
     ).catch(() => undefined);
   }
   return { requested: true };
 }
 
 /**
- * Cambia la contraseña usando un token de restablecimiento válido. Al hacerlo,
+ * Cambia la contraseÃ±a usando un token de restablecimiento vÃ¡lido. Al hacerlo,
  * se incrementa tokenVersion para cerrar las sesiones activas del usuario.
  */
 export async function resetPassword(token: string, newPassword: string) {
@@ -224,7 +241,7 @@ export async function resetPassword(token: string, newPassword: string) {
   const user = await prisma.user.findFirst({
     where: { passwordResetToken: hashedToken, passwordResetExpires: { gt: new Date() } },
   });
-  if (!user) throw new ConflictError('Token de restablecimiento inválido o expirado');
+  if (!user) throw new ConflictError('Token de restablecimiento invÃ¡lido o expirado');
   const hashed = await bcrypt.hash(newPassword, SALT_ROUNDS);
   await prisma.user.update({
     where: { id: user.id },
@@ -235,7 +252,8 @@ export async function resetPassword(token: string, newPassword: string) {
       tokenVersion: { increment: 1 },
     },
   });
-  clearCache(`user:tokenVersion:${user.id}`);
+  await clearCache(`user:tokenVersion:${user.id}`);
   disconnectUserSockets(user.id);
   return { reset: true };
 }
+

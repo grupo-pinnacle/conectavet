@@ -35,20 +35,6 @@ function HeaderRight() {
   const { user, logout } = useAuth();
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: spacing.sm }}>
-      <Pressable
-        onPress={() => logout()}
-        style={{ width: 48, aspectRatio: 1, justifyContent: 'center', alignItems: 'center' }}
-        accessibilityRole="button"
-        accessibilityLabel="Cerrar sesión"
-        accessibilityHint="Presioná para cerrar tu sesión actual"
-      >
-        <MaterialCommunityIcons
-          name="logout-variant"
-          size={24}
-          color="red"
-        />
-      </Pressable>
       <Pressable
         onPress={() => router.push('/(app)/profile')}
         style={{ width: 48, aspectRatio: 1, justifyContent: 'center', alignItems: 'center' }}
@@ -61,7 +47,6 @@ function HeaderRight() {
           size={32}
         />
       </Pressable>
-    </View>
   );
 }
 

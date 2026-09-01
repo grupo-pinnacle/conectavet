@@ -12,7 +12,7 @@ import {
   createUser,
   updateVetStatus,
   listAllUsers,
-  getAdminStats,
+  getAdminStats, batchDeleteUsers, listAuditLogs,
 } from './users.service';
 import { assignNextPendingVet } from '../consultations/consultations.service';
 import { getIO } from '../consultations/chat.gateway';
@@ -158,4 +158,24 @@ export const getAdminStatsController = asyncHandler(async (req: RequestWithUser,
 if (!req.user) return res.status(401).json({ success: false, message: 'No autenticado' });
 const stats = await getAdminStats();
 return res.status(200).json({ success: true, data: stats });
+});
+export const batchDeleteUsersController = asyncHandler(async (req: RequestWithUser, res: Response) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    return res.status(401).json({ success: false, message: 'No autorizado' });
+  }
+  const { userIds } = req.body;
+  if (!Array.isArray(userIds)) {
+    return res.status(400).json({ success: false, message: 'userIds debe ser un array' });
+  }
+  await batchDeleteUsers(req.user.userId, userIds);
+  return res.status(200).json({ success: true, message: 'Usuarios eliminados/anonimizados correctamente' });
+});
+
+export const getAuditLogsController = asyncHandler(async (req: RequestWithUser, res: Response) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    return res.status(401).json({ success: false, message: 'No autorizado' });
+  }
+  const { page = '1', limit = '50' } = req.query as Record<string, string>;
+  const result = await listAuditLogs(Number(page), Number(limit));
+  return res.status(200).json({ success: true, data: result });
 });

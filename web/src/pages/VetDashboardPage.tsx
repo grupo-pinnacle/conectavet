@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -22,7 +22,7 @@ const navItems = [
 ];
 
 export default function VetDashboardPage() {
-  const { logout, user, isOnline, syncOnline } = useAuth();
+  const { logout, user, isOnline } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("home");
   const [offerCount, setOfferCount] = useState(0);

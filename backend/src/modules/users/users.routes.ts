@@ -66,5 +66,10 @@ router.patch(
 router.get('/admin/users', authenticate, authorize(Role.ADMIN), listAllUsersController);
 router.get('/admin/stats', authenticate, authorize(Role.ADMIN), getAdminStatsController);
 
-export default router;
 
+
+import { batchDeleteUsersController, getAuditLogsController } from './users.controller';
+
+router.delete('/admin/users/batch', authenticate, authorize(Role.ADMIN), batchDeleteUsersController);
+router.get('/admin/audit-logs', authenticate, authorize(Role.ADMIN), getAuditLogsController);
+export default router;

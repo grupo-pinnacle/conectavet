@@ -327,3 +327,57 @@ export async function getAdminStats() {
     completedConsultations,
   };
 }
+export async function batchDeleteUsers(adminId: string, userIds: string[]) {
+  const users = await prisma.user.findMany({ where: { id: { in: userIds } } });
+  
+  for (const user of users) {
+    if (user.id === adminId) continue;
+
+    const hasConsultations = await prisma.consultation.findFirst({
+      where: {
+        OR: [{ clientId: user.id }, { vetId: user.id }]
+      }
+    });
+
+    if (hasConsultations) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          email: 'deleted-' + user.id + '@anonymized.com',
+          firstName: 'Usuario',
+          lastName: 'Eliminado',
+          deletedAt: new Date(),
+          isOnline: false,
+          pushTokens: { deleteMany: {} }
+        }
+      });
+    } else {
+      await prisma.user.delete({ where: { id: user.id } });
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        adminId,
+        action: 'DELETE_USER',
+        targetId: user.id,
+        details: { softDeleted: !!hasConsultations }
+      }
+    });
+  }
+}
+
+export async function listAuditLogs(page = 1, limit = 50) {
+  const cappedLimit = Math.min(Math.max(1, limit), 100);
+  const skip = (page - 1) * cappedLimit;
+  
+  const [logs, total] = await Promise.all([
+    prisma.auditLog.findMany({
+      skip,
+      take: cappedLimit,
+      orderBy: { createdAt: 'desc' }
+    }),
+    prisma.auditLog.count()
+  ]);
+
+  return { data: logs, total, page, limit: cappedLimit, totalPages: Math.ceil(total / cappedLimit) };
+}

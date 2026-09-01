@@ -32,7 +32,7 @@ interface Props {
 
 export const MessageBubble = memo(function MessageBubble({ message, isOwn, senderLabel, showSender = true, showDateSeparator = false }: Props) {
   const isOptimistic = message.id.startsWith("msg-");
-  const [imageError, setImageError] = useState(false);
+  const [imageError] = useState(false);
   const [showViewer, setShowViewer] = useState(false);
   const hasImage = !!message.attachmentUrl;
 

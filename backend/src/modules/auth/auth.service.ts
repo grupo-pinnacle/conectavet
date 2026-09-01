@@ -47,7 +47,7 @@ function signRefreshToken(userId: string, tokenVersion: number) {
   );
 }
 
-import { disconnectUserSockets } from '../consultations/chat.gateway.js';
+import { disconnectUserSockets, getIO } from '../consultations/chat.gateway.js';
 
 /**
  * Revoca todas las sesiones del usuario: se incrementa tokenVersion y
@@ -108,6 +108,7 @@ export async function register(input: RegisterInput) {
 
   const { password, ...userWithoutPassword } = user;
 
+  try { const io = getIO(); if (io) io.to('admin:room').emit('admin:event', userWithoutPassword); } catch(e) {}
   return {
     accessToken: signAccessToken(user),
     refreshToken: signRefreshToken(user.id, user.tokenVersion),
@@ -132,6 +133,7 @@ export async function login(input: LoginInput) {
 
   const { password, ...userWithoutPassword } = user;
 
+  try { const io = getIO(); if (io) io.to('admin:room').emit('admin:event', userWithoutPassword); } catch(e) {}
   return {
     accessToken: signAccessToken(user),
     refreshToken: signRefreshToken(user.id, user.tokenVersion),
@@ -159,7 +161,8 @@ export async function refreshAccessToken(refreshTokenValue: string) {
       throw new AuthError('Sesión cerrada. Iniciá sesión de nuevo', 401);
     }
     const { password, ...userWithoutPassword } = user;
-    return {
+    try { const io = getIO(); if (io) io.to('admin:room').emit('admin:event', userWithoutPassword); } catch(e) {}
+  return {
       accessToken: signAccessToken(user),
       refreshToken: signRefreshToken(user.id, user.tokenVersion),
       user: userWithoutPassword,

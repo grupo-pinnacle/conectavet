@@ -1,0 +1,29 @@
+# Dockerfile para correr migraciones de Prisma en CI o como job standalone.
+# Uso: docker build -t conectavet-migrate -f Dockerfile.migrate .
+#      docker run --rm --env-file .env.production conectavet-migrate
+FROM node:20-alpine AS base
+RUN corepack enable && corepack prepare pnpm@11.24.0 --activate
+
+WORKDIR /repo
+
+# Copiar manifests primero para cachear capas
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY packages/db/package.json ./packages/db/
+COPY apps/web/package.json ./apps/web/
+COPY apps/mobile/package.json ./apps/mobile/
+COPY packages/api/package.json ./packages/api/
+
+# Instalar solo deps de prod (más rápido)
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm fetch --frozen-lockfile && \
+    pnpm install --offline --frozen-lockfile --filter @conectavet/db... --prod=false
+
+# Copiar el schema
+COPY packages/db/prisma ./packages/db/prisma
+
+WORKDIR /repo/packages/db
+
+# El entrypoint se puede overridear para distintas operaciones:
+#   - default: corre `prisma migrate deploy`
+#   - status:  corre `prisma migrate status`
+CMD ["pnpm", "exec", "prisma", "migrate", "deploy"]

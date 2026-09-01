@@ -1,0 +1,82 @@
+name: Deploy
+
+on:
+  push:
+    branches: [better]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Vercel environment"
+        required: true
+        type: choice
+        default: production
+        options:
+          - production
+          - preview
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-web:
+    name: Deploy Web to Vercel
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: ${{ github.event.inputs.environment || 'production' }}
+      url: ${{ steps.vercel.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      # Pull Vercel env vars (necesarias para el build).
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        working-directory: apps/web
+
+      # Build el proyecto.
+      - name: Build Project Artifacts
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        working-directory: apps/web
+
+      # Deploy a producción (o preview según input).
+      - name: Deploy to Vercel
+        id: vercel
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "preview" ]; then
+            vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
+          else
+            vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+          fi
+        working-directory: apps/web
+
+  migrate-db:
+    name: Apply Prisma Migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: deploy-web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.24.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply migrations (deploy)
+        run: pnpm --filter @conectavet/db db:migrate:deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}

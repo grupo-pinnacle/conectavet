@@ -5,10 +5,18 @@
     "dev": "pnpm --filter @conectavet/web dev",
     "build": "pnpm --filter @conectavet/web build",
     "start": "pnpm --filter @conectavet/web start",
+    "lint": "pnpm -r typecheck",
     "typecheck": "pnpm -r typecheck",
     "db:push": "pnpm --filter @conectavet/db db:push",
     "db:generate": "pnpm --filter @conectavet/db db:generate",
-    "db:studio": "pnpm --filter @conectavet/web db:studio"
+    "db:migrate": "pnpm --filter @conectavet/db db:migrate",
+    "db:migrate:deploy": "pnpm --filter @conectavet/db db:migrate:deploy",
+    "db:migrate:status": "pnpm --filter @conectavet/db db:migrate:status",
+    "db:studio": "pnpm --filter @conectavet/web db:studio",
+    "ci:install": "pnpm install --frozen-lockfile",
+    "mobile:build:ios": "pnpm --filter @conectavet/mobile exec eas build --platform ios",
+    "mobile:build:android": "pnpm --filter @conectavet/mobile exec eas build --platform android",
+    "mobile:submit": "pnpm --filter @conectavet/mobile exec eas submit"
   },
   "devDependencies": {
     "prettier": "^3.3.3",

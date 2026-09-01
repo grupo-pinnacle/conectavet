@@ -18,8 +18,8 @@ module.exports = async () => {
   }
 
   const directBase = directUrl.split('?')[0];
-  process.env.DATABASE_URL = `${directBase}?schema=${schemaName}`;
-  process.env.DIRECT_URL = `${directBase}?schema=${schemaName}`;
+  process.env.DATABASE_URL = `${directBase}?schema=${schemaName}&connection_limit=5`;
+  process.env.DIRECT_URL = `${directBase}?schema=${schemaName}&connection_limit=5`;
 
   execSync('npx prisma db push --skip-generate', {
     stdio: 'inherit',

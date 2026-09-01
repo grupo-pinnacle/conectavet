@@ -1,4 +1,4 @@
-﻿name: CI
+name: CI
 
 on:
   push:
@@ -28,6 +28,16 @@ jobs:
   backend-integration:
     name: Backend - Integration Tests
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,7 +51,7 @@ jobs:
         run: npx tsc --noEmit
         working-directory: backend
       - name: Run Integration Tests
-        run: npx jest --selectProjects integration
+        run: npx jest --selectProjects integration --runInBand
         working-directory: backend
         env:
           JWT_SECRET: test-secret-github-actions

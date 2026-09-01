@@ -11,7 +11,7 @@ process.env.EXPO_PUSH_DISABLED = 'true';
   const directUrl = process.env.DIRECT_URL;
   if (directUrl) {
     const base = directUrl.split('?')[0];
-    process.env.DATABASE_URL = `${base}?schema=${schema}`;
-    process.env.DIRECT_URL = `${base}?schema=${schema}`;
+    process.env.DATABASE_URL = `${base}?schema=${schema}&connection_limit=5`;
+    process.env.DIRECT_URL = `${base}?schema=${schema}&connection_limit=5`;
   }
 })();

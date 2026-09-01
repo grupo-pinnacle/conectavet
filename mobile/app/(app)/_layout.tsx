@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
 import { usePushToken } from '@/hooks/usePushToken';
+import { useIncomingCall } from '@/hooks/useIncomingCall';
 import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
 import { Avatar } from '@/components/ui';
 
@@ -55,6 +56,7 @@ export default function AppLayout() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   usePushToken(Boolean(user));
+  useIncomingCall();
 
   return (
     <Tabs

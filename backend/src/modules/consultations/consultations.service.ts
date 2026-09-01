@@ -1,4 +1,4 @@
-﻿import { prisma } from '../../shared/prisma';
+import { prisma } from '../../shared/prisma';
 import { NotFoundError, ConflictError, ForbiddenError } from '../../shared/errors';
 import { getCached, setCache, } from '../../shared/cache';
 import { Prisma } from '@prisma/client';
@@ -276,7 +276,7 @@ export async function completeConsultation(
 export async function getConsultationById(id: string) {
   return prisma.consultation.findFirst({
     where: { id, deletedAt: null },
-    select: consultationWithMessages,
+    select: consultationSnapshot,
   });
 }
 

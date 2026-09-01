@@ -78,11 +78,14 @@ if ($useADB) {
     if ($LASTEXITCODE -ne 0) { Write-Host "  Error en puerto 8081" -ForegroundColor Red; exit 1 }
     & $adbPath -s $serial reverse tcp:3001 tcp:3001
     if ($LASTEXITCODE -ne 0) { Write-Host "  Error en puerto 3001" -ForegroundColor Red; exit 1 }
+    & $adbPath -s $serial reverse tcp:5173 tcp:5173
+    if ($LASTEXITCODE -ne 0) { Write-Host "  Error en puerto 5173" -ForegroundColor Red; exit 1 }
     $reverseList = & $adbPath -s $serial reverse --list 2>$null
     $ok8081 = $reverseList -match 'tcp:8081'
     $ok3001 = $reverseList -match 'tcp:3001'
-    if ($ok8081 -and $ok3001) {
-        Write-Host "  Puertos 8081 y 3001 redirigidos por USB" -ForegroundColor Green
+    $ok5173 = $reverseList -match 'tcp:5173'
+    if ($ok8081 -and $ok3001 -and $ok5173) {
+        Write-Host "  Puertos 8081, 3001 y 5173 redirigidos por USB" -ForegroundColor Green
         Write-Host "  (No necesita WiFi ni red: usa el cable USB)" -ForegroundColor Green
     } else {
         Write-Host "  Advertencia: el reverse no se verifico, intentando igual..." -ForegroundColor Yellow
@@ -138,16 +141,19 @@ if (Test-Path "expo-qr.png") {
 }
 Write-Host ""
 
-# ── Set API URL for mobile (environment override for Metro bundler) ──
+# 🌐 Set API URL for mobile (environment override for Metro bundler) 🌐
 if ($NgrokUrl) {
     $env:EXPO_PUBLIC_API_URL = $NgrokUrl
     $env:EXPO_PUBLIC_WS_URL = $NgrokUrl.Replace("http://", "ws://").Replace("https://", "wss://") + "/socket.io"
+    $env:EXPO_PUBLIC_WEB_URL = $NgrokUrl.Replace("3001", "5173")
 } elseif ($useADB) {
     $env:EXPO_PUBLIC_API_URL = "http://localhost:3001"
     $env:EXPO_PUBLIC_WS_URL = "ws://localhost:3001/socket.io"
+    $env:EXPO_PUBLIC_WEB_URL = "http://localhost:5173"
 } else {
     $env:EXPO_PUBLIC_API_URL = "http://${ip}:3001"
     $env:EXPO_PUBLIC_WS_URL = "ws://${ip}:3001/socket.io"
+    $env:EXPO_PUBLIC_WEB_URL = "http://${ip}:5173"
 }
 
 # ── Start Expo ──

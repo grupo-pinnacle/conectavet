@@ -5,6 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView, type WebView as WebViewType } from 'react-native-webview';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { callsService, type CallToken } from '@/services';
+import { getSocket } from '@/lib/socket';
+import { useAuth } from '@/hooks/useAuth';
 import { WEB_URL } from '@/lib/env';
 import { useTheme, spacing, fontSizes, fontWeights, radius } from '@/theme';
 import { ApiError } from '@/types';
@@ -28,6 +30,7 @@ async function requestCallPermissions(): Promise<boolean> {
 export default function CallScreen() {
   const { consultationId } = useLocalSearchParams<{ consultationId: string }>();
   const router = useRouter();
+  const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const { colors: c } = useTheme();
   const [call, setCall] = useState<CallToken | null>(null);
@@ -51,7 +54,11 @@ export default function CallScreen() {
       }
       try {
         const data = await callsService.getToken(consultationId);
-        if (!cancelled) setCall(data);
+        if (!cancelled) {
+          setCall(data);
+          const socket = getSocket();
+          if (socket) socket.emit('call:initiate', consultationId, `${user?.firstName || 'El'} ${user?.lastName || 'cliente'}`);
+        }
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof ApiError ? err.message : 'No pudimos iniciar la videollamada.');

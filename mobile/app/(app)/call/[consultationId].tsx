@@ -167,7 +167,11 @@ export default function CallScreen() {
             }}
             onHttpError={(syntheticEvent) => {
               const status = syntheticEvent.nativeEvent.statusCode;
-              if (status >= 400) setError('La web de videollamada no está disponible. Verificá que la web esté corriendo.');
+              if (status >= 400) setError(`La web de videollamada no está disponible (HTTP ${status}). Verificá que la web esté corriendo en ${WEB_URL}.`);
+            }}
+            onError={(syntheticEvent) => {
+              const { code, description } = syntheticEvent.nativeEvent;
+              setError(`Error de red en la videollamada (${code}): ${description}.\n\nSi usas USB, intentá reiniciar la app con "R" o reconectar el cable para restaurar los puertos.`);
             }}
           />
           <Pressable

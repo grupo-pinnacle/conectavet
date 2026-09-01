@@ -50,14 +50,17 @@ export default function HomeSection({ onNavigate }: HomeSectionProps) {
       ) : (
         <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
           {[
-            { label: "Mascotas", value: String(petsCount), color: "text-teal-700" },
-            { label: "Consultas activas", value: String(activeCons), color: "text-success" },
+            { label: "Mascotas", value: String(petsCount), color: "text-teal-700", icon: PawPrint },
+            { label: "Consultas activas", value: String(activeCons), color: "text-success", icon: MessageCircle },
           ].map((stat) => (
-            <div key={stat.label} className="rounded-xl border border-border bg-white p-5 shadow-sm">
-              <p className={`text-3xl font-bold ${stat.color}`}>{stat.value}</p>
-              <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                {stat.label}
-              </p>
+            <div key={stat.label} className="rounded-xl border border-slate-100 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-shadow hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  {stat.label}
+                </p>
+                <stat.icon className={`h-5 w-5 ${stat.color} opacity-80`} />
+              </div>
+              <p className={`text-3xl font-bold tracking-tight tabular-nums ${stat.color}`}>{stat.value}</p>
             </div>
           ))}
         </div>

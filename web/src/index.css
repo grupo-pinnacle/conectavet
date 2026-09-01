@@ -7,14 +7,23 @@
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   body {
     @apply bg-surface text-ink font-sans;
   }
 
+  h1, h2, h3, h4, h5, h6 {
+    text-wrap: balance;
+  }
+  
+  p, caption {
+    text-wrap: pretty;
+  }
+
   *:focus-visible {
-    @apply outline-2 outline-offset-2 outline-teal-600;
+    @apply outline-none ring-2 ring-teal-500 ring-offset-2 ring-offset-surface transition-shadow duration-fast ease-ui;
   }
 }
 

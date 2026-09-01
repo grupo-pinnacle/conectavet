@@ -43,8 +43,8 @@ export default {
           muted: "#64748B",
         },
         border: {
-          DEFAULT: "#E2E8F0",
-          light: "#F1F5F9",
+          DEFAULT: "rgba(15, 23, 42, 0.08)",
+          light: "rgba(15, 23, 42, 0.04)",
         },
         surface: {
           DEFAULT: "#F8FAFC",
@@ -66,16 +66,16 @@ export default {
         sans: ["Inter", "system-ui", "sans-serif"],
       },
       fontSize: {
-        caption: ["12px", { lineHeight: "1.4" }],
-        label: ["13px", { lineHeight: "1.4" }],
+        caption: ["11px", { lineHeight: "1.4", letterSpacing: "0.01em" }],
+        label: ["13px", { lineHeight: "1.4", letterSpacing: "0.01em" }],
         body: ["14px", { lineHeight: "1.5" }],
         "body-large": ["15px", { lineHeight: "1.5" }],
-        input: ["16px", { lineHeight: "1.4" }],
-        subtitle: ["18px", { lineHeight: "1.3" }],
-        title: ["20px", { lineHeight: "1.3", letterSpacing: "-0.3px" }],
-        heading: ["24px", { lineHeight: "1.2", letterSpacing: "-0.5px" }],
-        hero: ["32px", { lineHeight: "1.15", letterSpacing: "-0.5px" }],
-        display: ["40px", { lineHeight: "1.1", letterSpacing: "-0.5px" }],
+        input: ["14px", { lineHeight: "1.4" }],
+        subtitle: ["16px", { lineHeight: "1.3", letterSpacing: "-0.01em" }],
+        title: ["18px", { lineHeight: "1.3", letterSpacing: "-0.015em" }],
+        heading: ["24px", { lineHeight: "1.2", letterSpacing: "-0.02em" }],
+        hero: ["32px", { lineHeight: "1.15", letterSpacing: "-0.025em" }],
+        display: ["44px", { lineHeight: "1.1", letterSpacing: "-0.03em" }],
       },
       borderRadius: {
         xs: "4px", sm: "6px", md: "8px", lg: "12px", xl: "16px", xxl: "20px", full: "9999px",
@@ -86,14 +86,17 @@ export default {
       },
       boxShadow: {
         none: "0 0 #0000",
-        subtle: "0 1px 2px rgba(15,23,42,0.03)",
-        raised: "0 2px 4px rgba(15,23,42,0.05)",
-        overlay: "0 4px 8px rgba(15,23,42,0.08)",
-        modal: "0 8px 16px rgba(15,23,42,0.12)",
+        subtle: "0 1px 2px -1px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)",
+        raised: "0 0 0 1px rgba(0,0,0,0.04), 0 2px 4px -1px rgba(0,0,0,0.06), 0 4px 6px -1px rgba(0,0,0,0.04)",
+        overlay: "0 0 0 1px rgba(0,0,0,0.04), 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04)",
+        modal: "0 0 0 1px rgba(0,0,0,0.05), 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.04)",
       },
       transitionDuration: {
-        instant: "100ms", fast: "200ms", normal: "300ms", slow: "400ms", deliberate: "600ms",
+        instant: "100ms", fast: "150ms", normal: "250ms", slow: "400ms", deliberate: "600ms",
       },
+      transitionTimingFunction: {
+        'ui': 'cubic-bezier(0.23, 1, 0.32, 1)',
+      }
     },
   },
   plugins: [],

@@ -113,14 +113,14 @@ export default function VetHomeSection() {
           {stats.map((stat) => {
             const Icon = stat.icon;
             return (
-              <div key={stat.label} className="rounded-xl border border-border bg-white p-5 shadow-sm">
-                <div className="mb-2">
-                  <Icon className={`h-6 w-6 ${stat.color}`} />
+              <div key={stat.label} className="rounded-xl border border-slate-100 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-shadow hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {stat.label}
+                  </p>
+                  <Icon className={`h-5 w-5 ${stat.color} opacity-80`} />
                 </div>
-                <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-                <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {stat.label}
-                </p>
+                <p className={`text-3xl font-bold tracking-tight tabular-nums ${stat.color}`}>{stat.value}</p>
               </div>
             );
           })}

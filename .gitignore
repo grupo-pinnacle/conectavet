@@ -34,3 +34,5 @@ mobile/.env
 
 # Temp files created by integration tests
 backend/.jest-schema
+# Playwright CLI output (may contain credentials)
+.playwright-cli/

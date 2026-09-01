@@ -24,7 +24,7 @@ import {
   getLastConsultationId,
   setLastConsultationId,
 } from "../../../services/chatStore";
-import { joinConsultation } from "../../../services/socket";
+import { joinConsultation, getSocket } from "../../../services/socket";
 import { useChatSocket } from "../../../hooks/useChatSocket";
 import { useConsultations, useInvalidateConsultations, consultationsKey } from "../../../hooks/useConsultations";
 import { MessageBubble } from "../MessageBubble";
@@ -216,10 +216,10 @@ export default function VetMessagesSection() {
     setCachedPrescriptions(activeCons.id, prescriptions);
   }, [prescriptions, activeCons]);
 
-  const { connected: socketConnected } = useChatSocket("vet");
-  useEffect(() => {
-    const socket = getSocket();
-    if (!socket) return;
+  // Socket global: mensajes, consultas, notificaciones.
+  // La conexión (y el reintento si el handshake falla) vive en useChatSocket,
+  // compartido con MessagesSection (P2-6). Acá solo registramos los listeners.
+  const { socketConnected } = useChatSocket((socket) => {
     const onConnect = () => {
       const active = activeConsRef.current;
       if (active) joinConsultation(active.id);
@@ -231,10 +231,14 @@ export default function VetMessagesSection() {
     };
     socket.on("connect", onConnect);
     socket.on("message:new", (msg: Message) => {
+      // Siempre guardamos el echo en la caché de esa consulta, aunque no esté
+      // abierta ahora, para que esté caliente al abrirla (P3-13).
       applyMessageEcho(msg.consultationId, msg);
       const active = activeConsRef.current;
       if (active && msg.consultationId === active.id) {
         setMessages(getCachedMessages(active.id) ?? []);
+        // El mensaje ya llegó (echo del socket): el botón deja de
+        // mostrar "enviando" aunque el POST REST todavía no responda.
         setIsSending(false);
       }
     });
@@ -256,7 +260,7 @@ export default function VetMessagesSection() {
     });
     socket.on("notification:new", () => invalidateConsultations());
     return () => {
-      socket.off("connect");
+      socket.off("connect", onConnect);
       socket.off("message:new");
       socket.off("consultation:updated");
       socket.off("consultation:new");

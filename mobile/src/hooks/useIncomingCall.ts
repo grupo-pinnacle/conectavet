@@ -1,4 +1,4 @@
-﻿import { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { getSocket } from '@/lib/socket';
 import { useDialogStore } from '@/stores/dialogStore';
@@ -14,10 +14,10 @@ export function useIncomingCall() {
       useDialogStore.getState().show({
         type: 'info',
         title: 'Videollamada Entrante',
-        message: data.callerName ? \El veterinario \ te esta llamando.\ : 'El veterinario te esta llamando.',
+        message: data.callerName ? `El veterinario ${data.callerName} te está llamando.` : 'El veterinario te está llamando.',
         confirmText: 'Contestar',
         onConfirm: () => {
-          router.push(\/(app)/call/\\);
+          router.push(`/(app)/call/${data.consultationId}`);
         }
       });
     };

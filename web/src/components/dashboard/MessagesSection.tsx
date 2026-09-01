@@ -150,6 +150,9 @@ export default function MessagesSection() {
         .filter((m) => !data.some((d) => d.id === m.id));
       const merged = pending.length ? [...data, ...pending] : data;
       setCachedMessages(consultationId, merged);
+      if (activeConsRef.current?.id === consultationId) {
+        setMessages(merged);
+      }
     } catch { /* fallback handled */ }
   }, []);
 

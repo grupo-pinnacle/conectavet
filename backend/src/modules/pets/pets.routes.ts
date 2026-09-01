@@ -19,7 +19,7 @@ router.get('/', authenticate, getMyPetsController);
 router.get('/managed', authenticate, getManagedPetsController);
 router.get('/:id', authenticate, getPetByIdController);
 router.post('/', authenticate, validate(createPetSchema), createPetController);
-router.put('/:id', authenticate, updatePetController);
+router.put('/:id', authenticate, validate(updatePetSchema), updatePetController);
 router.patch('/:id', authenticate, validate(updatePetSchema), updatePetController);
 router.delete('/:id', authenticate, deletePetController);
 router.get('/:id/vetcard', authenticate, getPetVetCardController);

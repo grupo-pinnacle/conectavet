@@ -144,11 +144,11 @@ describe('GET /api/pets/:id', () => {
     expect(res.status).toBe(404);
   });
 
-  test('200 — VET puede ver cualquier mascota', async () => {
+  test('403 — VET no asignado no puede ver la mascota (IDOR fix)', async () => {
     const res = await request(app)
       .get(`/api/pets/${createdPetId}`)
       .set('Authorization', `Bearer ${vetToken}`);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(403);
   });
 
   test('403 — otro CLIENT no puede ver', async () => {

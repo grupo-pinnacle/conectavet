@@ -127,7 +127,7 @@ describe('Auth Service', () => {
         .post('/api/auth/register')
         .send({ email, password: '12345678', role: 'CLIENT' });
       expect(res.status).toBe(409);
-      expect(res.body.message).toBe('Este email ya está registrado');
+      expect(res.body.message).toMatch(/No pudimos completar el registro con ese correo/);
     });
 
     test('POST /api/auth/register — 400 email inválido', async () => {

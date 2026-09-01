@@ -101,14 +101,15 @@ app.get('/health', async (_req: Request, res: Response) => {
 // Rate limit global: solo mutaciones (POST/PATCH/DELETE).
 // El front tiene polling GET (consultas/mensajes c/10s) y varias pestaÃ±as:
 // exentamos GET/HEAD para que el 429 global no tumbe el dashboard.
+const isTest = process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development';
 const limiter = rateLimit({
   store: new CustomRedisStore('rl:global:'),
   windowMs: 15 * 60 * 1000,
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => req.method === 'GET' || req.method === 'HEAD',
-  message: { success: false, message: 'Demasiadas solicitudes, intentÃ¡ de nuevo mÃ¡s tarde' },
+  skip: (req) => req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS' || isTest,
+  message: { success: false, message: 'Demasiadas solicitudes, intentá de nuevo más tarde' },
 });
 app.use(limiter);
 
@@ -118,7 +119,8 @@ const authLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, message: 'Demasiados intentos de login, intentÃ¡ de nuevo mÃ¡s tarde' },
+  skip: () => isTest,
+  message: { success: false, message: 'Demasiados intentos de login, intentá de nuevo más tarde' },
 });
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
@@ -130,7 +132,8 @@ const callsLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, message: 'Demasiadas solicitudes de llamada, intentÃ¡ de nuevo mÃ¡s tarde' },
+  skip: () => isTest,
+  message: { success: false, message: 'Demasiadas solicitudes de llamada, intentá de nuevo más tarde' },
 });
 app.use('/api/calls', callsLimiter);
 

@@ -24,7 +24,7 @@ export function useIncomingCall() {
             message: data.callerName ? `El veterinario ${data.callerName} te está llamando.` : 'El veterinario te está llamando.',
             confirmText: 'Contestar',
             onConfirm: () => {
-              router.push(`/(app)/call/${data.consultationId}`);
+              router.push(`/(app)/call/${data.consultationId}?accept=true`);
             }
           });
         };

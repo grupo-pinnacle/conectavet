@@ -41,13 +41,13 @@ export default function CallButton({ consultationId, peerName, disabled }: CallB
     };
   }, [consultationId, call, loading]);
 
-  const startCall = async () => {
+  const startCall = async (isAccepting = false) => {
     if (loading) return;
     setLoading(true);
     setError("");
     const socket = getSocket();
-    if (socket) {
-      socket.emit("call:initiate", consultationId, "Tu veterinario/cliente"); // Wait, we don't have our own name easily, but peerName is the OTHER guy. We'll just emit.
+    if (socket && !isAccepting) {
+      socket.emit("call:initiate", consultationId, "Tu veterinario/cliente");
     }
     try {
       const data = await getCallToken(consultationId);
@@ -66,7 +66,7 @@ export default function CallButton({ consultationId, peerName, disabled }: CallB
 
   const acceptCall = () => {
     setIncomingCall(null);
-    startCall();
+    startCall(true);
   };
 
   const rejectCall = () => {

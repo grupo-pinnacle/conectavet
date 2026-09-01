@@ -152,8 +152,26 @@ export async function setupChatSocket(httpServer: HttpServer) {
       }
     );
 
-    socket.on('call:initiate', (consultationId: string, peerName: string) => {
+    socket.on('call:initiate', async (consultationId: string, peerName: string) => {
+      // 1. Emite a la sala de la consulta (por si el usuario está en la vista del chat)
       socket.to(`consultation:${consultationId}`).emit('call:incoming', { consultationId, callerName: peerName });
+
+      // 2. Emite a la sala global del OTRA persona para que lo reciba en toda la app
+      try {
+        const consultation = await prisma.consultation.findUnique({
+          where: { id: consultationId },
+          select: { clientId: true, vetId: true }
+        });
+        if (consultation) {
+          const user = socket.data.user as JwtPayload;
+          const targetId = user.userId === consultation.clientId ? consultation.vetId : consultation.clientId;
+          if (targetId) {
+            socket.to(`user:${targetId}`).emit('call:incoming', { consultationId, callerName: peerName });
+          }
+        }
+      } catch (err) {
+        console.error('Error al enrutar call:incoming global', err);
+      }
     });
 
     socket.on('call:reject', (consultationId: string) => {

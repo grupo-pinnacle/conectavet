@@ -28,7 +28,7 @@ async function requestCallPermissions(): Promise<boolean> {
 }
 
 export default function CallScreen() {
-  const { consultationId } = useLocalSearchParams<{ consultationId: string }>();
+  const { consultationId, accept } = useLocalSearchParams<{ consultationId: string; accept?: string }>();
   const router = useRouter();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
@@ -57,7 +57,9 @@ export default function CallScreen() {
         if (!cancelled) {
           setCall(data);
           const socket = getSocket();
-          if (socket) socket.emit('call:initiate', consultationId, `${user?.firstName || 'El'} ${user?.lastName || 'cliente'}`);
+          if (socket && accept !== 'true') {
+            socket.emit('call:initiate', consultationId, `${user?.firstName || 'El'} ${user?.lastName || 'cliente'}`);
+          }
         }
       } catch (err) {
         if (!cancelled) {

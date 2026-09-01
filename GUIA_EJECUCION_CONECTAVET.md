@@ -1,4 +1,4 @@
-﻿# 🚀 Guía de Ejecución Local de ConectaVet (Paso a Paso)
+# 🚀 Guía de Ejecución Local de ConectaVet (Paso a Paso)
 
 Esta guía está diseñada para que cualquier persona del equipo (incluso sin experiencia previa programando) pueda encender todo el sistema ConectaVet (Base de datos, Web y App Móvil) en su propia computadora y probarlo con su celular conectado por cable.
 
@@ -31,62 +31,62 @@ Como en la empresa las redes Wi-Fi a veces bloquean conexiones, la forma más se
 
 ## 💻 PARTE 3: Encender el Sistema
 
-Abrí **Visual Studio Code**. Arriba en el menú tocá Terminal -> New Terminal (Nueva terminal). Vas a ver que se abre un recuadro abajo para escribir comandos.
+Abrí **Visual Studio Code**. Arriba en el menú tocá `Terminal` -> `New Terminal` (Nueva terminal). Vas a ver que se abre un recuadro abajo para escribir comandos.
 
-Debemos encender **tres partes** por separado. Lo ideal es abrir **3 pestañas de terminal distintas** (usando el botón + en la ventana de terminal de VS Code).
+Debemos encender **tres partes** por separado. Lo ideal es abrir **3 pestañas de terminal distintas** (usando el botón `+` en la ventana de terminal de VS Code).
 
 ### Terminal 1: El Backend (El Cerebro)
 1. Escribí el siguiente comando para entrar a la carpeta del backend y presioná Enter:
-   \\\ash
+   ```bash
    cd backend
-   \\\
+   ```
 2. Descargá las dependencias necesarias:
-   \\\ash
+   ```bash
    npm install
-   \\\
-3. **Atención a las claves:** Asegurate de tener un archivo llamado .env dentro de la carpeta ackend (si no existe, copiá el .env.example, renombralo a .env y pedile a un desarrollador que te pase las claves reales de base de datos y LiveKit).
+   ```
+3. **Atención a las claves:** Asegurate de tener un archivo llamado `.env` dentro de la carpeta `backend` (si no existe, copiá el `.env.example`, renombralo a `.env` y pedile a un desarrollador que te pase las claves reales de base de datos y LiveKit).
 4. Encendé el servidor:
-   \\\ash
+   ```bash
    npm run dev
-   \\\
+   ```
    *(Debería decirte que el servidor está corriendo en el puerto 3000 o 3001).*
 
 ### Terminal 2: La Web (Panel Administrativo)
-1. Abrí una **segunda pestaña** de terminal (botón +).
+1. Abrí una **segunda pestaña** de terminal (botón `+`).
 2. Entrá a la carpeta web:
-   \\\ash
+   ```bash
    cd web
-   \\\
+   ```
 3. Descargá las dependencias:
-   \\\ash
+   ```bash
    npm install
-   \\\
+   ```
 4. Encendé la página web:
-   \\\ash
+   ```bash
    npm run dev
-   \\\
-   *(Te dará un enlace tipo http://localhost:5173. Si le hacés Ctrl + Clic, se abrirá en tu navegador).*
+   ```
+   *(Te dará un enlace tipo `http://localhost:5173`. Si le hacés Ctrl + Clic, se abrirá en tu navegador).*
 
 ### Terminal 3: La App Móvil (Expo)
 1. Abrí una **tercera pestaña** de terminal.
 2. Entrá a la carpeta móvil:
-   \\\ash
+   ```bash
    cd mobile
-   \\\
+   ```
 3. Descargá las dependencias:
-   \\\ash
+   ```bash
    npm install
-   \\\
-4. Encendé el servidor de la app:
-   \\\ash
-   npx expo start
-   \\\
-5. Aparecerá un código QR grande en la terminal.
+   ```
+4. Encendé el servidor de la app y prepará el cable:
+   ```bash
+   npm start
+   ```
+5. Al ejecutar esto, el sistema ejecutará un script especial que busca automáticamente tu celular por USB, configura los puertos de red y te abre una imagen con un código QR (por las dudas) en tu computadora.
 
 ### ¿Cómo lo abro en el celular por cable?
 Como tenés el celular conectado por cable con la "Depuración USB" activa, **no hace falta escanear el QR**.
-Simplemente hacé un clic en esa misma terminal y presioná la tecla **** (de Android) en tu teclado.
-La PC se comunicará por el cable con el celular, abrirá Expo Go automáticamente y cargará ConectaVet.
+Simplemente hacé un clic en esa misma terminal y presioná la tecla **`a`** (de Android) en tu teclado.
+La PC se comunicará por el cable con el celular, abrirá Expo Go automáticamente y cargará ConectaVet sin depender de la red Wi-Fi de la empresa.
 
 ---
 
@@ -94,13 +94,12 @@ La PC se comunicará por el cable con el celular, abrirá Expo Go automáticamen
 
 * **"Network Error" o pantalla roja en el celular:**
   Significa que el celular no puede comunicarse con la computadora. 
-  *Solución:* Asegurate de que el cable está bien conectado. En la terminal del móvil, presioná la tecla Shift + R para reiniciar, o presiona  nuevamente.
+  *Solución:* Asegurate de que el cable está bien conectado. En la terminal del móvil, presioná la tecla `Shift + R` para reiniciar, o presiona `a` nuevamente.
 * **Fallas al escanear el QR:**
-  Si intentas escanear el QR con la cámara y no carga, es porque la red Wi-Fi de la empresa bloquea la conexión (Client Isolation). Por eso **es obligatorio** usar el cable y presionar la tecla .
+  Si intentas escanear el QR con la cámara y no carga, es porque la red Wi-Fi de la empresa bloquea la conexión (Client Isolation). Por eso **es obligatorio** usar el cable y presionar la tecla `a`.
 * **Las videollamadas no funcionan:**
-  Asegurate de que las claves de *LiveKit* estén correctamente pegadas en tu archivo .env del backend y en el .env de la web/app. Si faltan, la cámara nunca se va a encender.
+  Asegurate de que las claves de *LiveKit* estén correctamente pegadas en tu archivo `.env` del backend y en el `.env` de la web/app. Si faltan, la cámara nunca se va a encender.
 * **El backend arroja textos rojos en la terminal:**
-  Normalmente es porque falta el archivo .env o la base de datos (Supabase) superó el límite de conexiones. Frená el backend tocando Ctrl + C y volvé a escribir 
-pm run dev.
+  Normalmente es porque falta el archivo `.env` o la base de datos (Supabase) superó el límite de conexiones. Frená el backend tocando `Ctrl + C` y volvé a escribir `npm run dev`.
 
 ¡Listo! Con estas 3 terminales corriendo, ya tenés el control absoluto de ConectaVet en tu PC.

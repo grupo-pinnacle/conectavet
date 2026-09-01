@@ -1,9 +1,9 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, authorizedProcedure } from "../../trpc";
+import { createTRPCRouter, protectedProcedure, authorizedProcedure } from "../trpc";
 import { prisma } from "@conectavet/db";
-import { getUploadParamsSchema, confirmUploadSchema } from "../../schemas";
-import { generateSignedUploadParams, getDeliveryUrl, getThumbnailUrl, deleteResource } from "../../services/media";
+import { getUploadParamsSchema, confirmUploadSchema } from "../schemas";
+import { generateSignedUploadParams, getDeliveryUrl, getThumbnailUrl, deleteResource } from "../services/media";
 
 const MediaTypeEnum = z.enum(["image", "video", "raw"]);
 type MediaType = z.infer<typeof MediaTypeEnum>;

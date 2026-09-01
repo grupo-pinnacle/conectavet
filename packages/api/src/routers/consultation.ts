@@ -1,11 +1,11 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, authorizedProcedure } from "../../trpc";
+import { createTRPCRouter, protectedProcedure, authorizedProcedure } from "../trpc";
 import { prisma } from "@conectavet/db";
 import {
   createConsultationSchema, completeConsultationSchema, sendMessageSchema,
   rateSchema, prescriptionCreateSchema,
-} from "../../schemas";
+} from "../schemas";
 
 export const consultationRouter = createTRPCRouter({
   // Dueño crea consulta para una de sus mascotas → estado WAITING

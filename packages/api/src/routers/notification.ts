@@ -1,7 +1,7 @@
-import { createTRPCRouter, protectedProcedure } from "../../trpc";
+import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { z } from "zod";
 import { prisma } from "@conectavet/db";
-import { pushTokenSchema } from "../../schemas";
+import { pushTokenSchema } from "../schemas";
 
 export const notificationRouter = createTRPCRouter({
   registerToken: protectedProcedure.input(pushTokenSchema).mutation(async ({ ctx, input }) => {

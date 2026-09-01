@@ -1,7 +1,8 @@
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure, protectedProcedure } from "../../trpc";
-import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from "../../schemas";
-import { register, revokeSessions } from "../../services/auth";
+import { createTRPCRouter, publicProcedure, protectedProcedure } from "../trpc";
+import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from "../schemas";
+import { register, verifyCredentials, revokeSessions } from "../services/auth";
+import { signMobileToken } from "../services/mobileToken";
 import { TRPCError } from "@trpc/server";
 import { prisma } from "@conectavet/db";
 
@@ -14,7 +15,7 @@ export const authRouter = createTRPCRouter({
   // El login real lo hace NextAuth (Credentials). Este procedimiento valida
   // credenciales para el callback de NextAuth y devuelve el user o error.
   verify: publicProcedure.input(loginSchema).mutation(async ({ input }) => {
-    const { verifyCredentials } = await import("../../services/auth");
+    const { verifyCredentials } = await import("../services/auth");
     const user = await verifyCredentials(input);
     return { id: user.id, email: user.email, role: user.role, vetStatus: user.vetStatus, tokenVersion: user.tokenVersion };
   }),
@@ -35,6 +36,28 @@ export const authRouter = createTRPCRouter({
   logout: protectedProcedure.mutation(async ({ ctx }) => {
     await revokeSessions(ctx.session.id);
     return { success: true };
+  }),
+
+  // Login para mobile: recibe credenciales, devuelve JWT firmado.
+  // Mobile guarda el JWT y lo manda como Authorization: Bearer ...
+  mobileLogin: publicProcedure.input(loginSchema).mutation(async ({ input }) => {
+    const user = await verifyCredentials(input);
+    const token = signMobileToken({
+      id: user.id,
+      role: user.role,
+      vetStatus: user.vetStatus,
+      tokenVersion: user.tokenVersion,
+    });
+    return {
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        vetStatus: user.vetStatus,
+        tokenVersion: user.tokenVersion,
+      },
+    };
   }),
 
   forgotPassword: publicProcedure.input(forgotPasswordSchema).mutation(async ({ input }) => {

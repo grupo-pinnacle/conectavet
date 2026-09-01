@@ -1,10 +1,10 @@
 // NextAuth v4 instance
-// Exporta `authOptions` (config) y los handlers para App Router (NextAuth 4 style).
+// Importa config del package compartido @conectavet/api.
 import NextAuth from "next-auth";
 import type { NextAuthOptions } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@conectavet/db";
-import { verifyCredentials } from "../services/auth";
+import { verifyCredentials, type Role } from "@conectavet/api";
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
@@ -26,8 +26,8 @@ export const authOptions: NextAuthOptions = {
         return {
           id: user.id,
           email: user.email,
-          role: user.role,
-          vetStatus: user.vetStatus,
+          role: user.role as Role,
+          vetStatus: user.vetStatus as "PENDING" | "APPROVED",
           tokenVersion: user.tokenVersion,
         };
       },
@@ -38,8 +38,8 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = user.role;
-        token.vetStatus = user.vetStatus;
+        token.role = user.role as Role;
+        token.vetStatus = user.vetStatus as "PENDING" | "APPROVED";
         token.tokenVersion = user.tokenVersion;
       } else if (token.id) {
         const db = await prisma.user.findUnique({ where: { id: token.id as string } });
@@ -54,7 +54,7 @@ export const authOptions: NextAuthOptions = {
       session.user = {
         ...session.user,
         id: token.id as string,
-        role: token.role as "CLIENT" | "VET" | "ADMIN",
+        role: token.role as Role,
         vetStatus: token.vetStatus as "PENDING" | "APPROVED",
         tokenVersion: token.tokenVersion as number,
       };

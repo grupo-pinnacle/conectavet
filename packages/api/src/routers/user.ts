@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, authorizedProcedure } from "../../trpc";
+import { createTRPCRouter, protectedProcedure, authorizedProcedure } from "../trpc";
 import { prisma } from "@conectavet/db";
 
 export const userRouter = createTRPCRouter({

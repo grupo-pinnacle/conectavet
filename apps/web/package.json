@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@auth/core": "^0.41.3",
+    "@conectavet/api": "workspace:*",
     "@conectavet/db": "workspace:*",
     "@hookform/resolvers": "^3.10.0",
     "@prisma/client": "^6.1.0",

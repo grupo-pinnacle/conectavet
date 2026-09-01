@@ -1,6 +1,8 @@
-import { View, Text, TextInput, Pressable, ScrollView, Alert } from "react-native";
+import { View, Text, TextInput, Pressable, ScrollView, ActivityIndicator, Alert } from "react-native";
 import { useState } from "react";
 import { router } from "expo-router";
+import { trpc } from "@/trpc/react";
+import { saveSession } from "@/auth/session";
 import { Button } from "@/components/ui/Button";
 
 export default function LoginScreen() {
@@ -8,17 +10,30 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const loginMutation = trpc.auth.mobileLogin.useMutation();
+
   const onSubmit = async () => {
     if (!email || !password) {
       Alert.alert("Error", "Completá email y contraseña");
       return;
     }
     setLoading(true);
-    // Auth via tRPC → NextAuth (en una iteración posterior: integrar next-auth client mobile)
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const result = await loginMutation.mutateAsync({ email, password });
+      await saveSession({
+        token: result.token,
+        userId: result.user.id,
+        email: result.user.email,
+        role: result.user.role,
+        vetStatus: result.user.vetStatus,
+        tokenVersion: result.user.tokenVersion,
+      });
       router.replace("/(app)");
-    }, 500);
+    } catch (err: any) {
+      Alert.alert("Error", err?.message || "Credenciales inválidas");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -58,7 +73,7 @@ export default function LoginScreen() {
         </View>
 
         <Button onPress={onSubmit} loading={loading} size="lg" className="mt-2">
-          Iniciar sesión
+          {loading ? "Ingresando..." : "Iniciar sesión"}
         </Button>
 
         <Pressable onPress={() => router.push("/(auth)/register")} className="py-2">

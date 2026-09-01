@@ -1,48 +1,54 @@
 import { View, Text, TextInput, ScrollView, Pressable, Alert } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Button } from "@/components/ui/Button";
-
-const mockPets = [
-  { id: "1", name: "Max", species: "Perro" },
-  { id: "2", name: "Luna", species: "Gato" },
-];
+import { trpc } from "@/trpc/react";
+import { Button } from "@/components/ui";
 
 export default function NewConsultationScreen() {
-  const { petId } = useLocalSearchParams();
-  const [selectedPet, setSelectedPet] = useState<string>(petId as string || "");
+  const { petId } = useLocalSearchParams<{ petId?: string }>();
+  const utils = trpc.useUtils();
+  const { data: pets } = trpc.pets.list.useQuery();
+
+  const [selectedPet, setSelectedPet] = useState<string>(petId || "");
   const [reason, setReason] = useState("");
-  const [loading, setLoading] = useState(false);
+
+  const createMutation = trpc.consultations.create.useMutation({
+    onSuccess: () => {
+      utils.consultations.mine.invalidate();
+      Alert.alert("Consulta solicitada", "Buscaremos un veterinario disponible.", [
+        { text: "OK", onPress: () => router.replace("/(app)/consultations") },
+      ]);
+    },
+    onError: (e) => Alert.alert("Error", e.message),
+  });
 
   const onSubmit = () => {
     if (!selectedPet || !reason.trim()) {
       Alert.alert("Error", "Seleccioná una mascota y describí el motivo");
       return;
     }
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      Alert.alert("Éxito", "Consulta solicitada. Buscaremos un veterinario disponible.", [
-        { text: "OK", onPress: () => router.replace("/(app)/consultations") }
-      ]);
-    }, 800);
+    if (reason.trim().length < 10) {
+      Alert.alert("Motivo muy corto", "Describí el motivo con al menos 10 caracteres");
+      return;
+    }
+    createMutation.mutate({ petId: selectedPet, reason: reason.trim() });
   };
 
   return (
-    <ScrollView className="flex-1 bg-bg" contentContainerClassName="p-6">
+    <ScrollView className="flex-1 bg-bg" contentContainerClassName="p-4">
       <Text className="text-2xl font-bold text-ink mb-2">Nueva consulta</Text>
-      <Text className="text-ink-soft mb-6">Solicitá una videollamada con un veterinario</Text>
+      <Text className="text-ink-soft text-sm mb-6">Solicitá una videollamada con un veterinario</Text>
 
-      <View className="space-y-5">
+      <View className="gap-5">
         <View>
           <Text className="text-base font-semibold text-ink mb-3">¿Qué mascota necesita atención?</Text>
-          {mockPets.length === 0 ? (
+          {pets?.length === 0 ? (
             <View className="bg-amber-50 border border-amber-200 rounded-md p-3">
               <Text className="text-amber-800 text-sm">No tenés mascotas registradas.</Text>
             </View>
           ) : (
-            <View className="space-y-2">
-              {mockPets.map((pet) => (
+            <View className="gap-2">
+              {pets?.map((pet) => (
                 <Pressable
                   key={pet.id}
                   onPress={() => setSelectedPet(pet.id)}
@@ -80,12 +86,6 @@ export default function NewConsultationScreen() {
           />
         </View>
 
-        <View className="bg-surface rounded-md p-3">
-          <Text className="text-sm text-ink-soft">
-            💡 <Text className="font-medium text-ink">Tip:</Text> Cuanto más detalle des, mejor podrá prepararse el veterinario para la consulta.
-          </Text>
-        </View>
-
         <View className="flex-row gap-3 pt-2">
           <Pressable
             onPress={() => router.back()}
@@ -94,7 +94,7 @@ export default function NewConsultationScreen() {
             <Text className="text-ink font-medium">Cancelar</Text>
           </Pressable>
           <View className="flex-1">
-            <Button onPress={onSubmit} loading={loading} size="lg" className="w-full">
+            <Button onPress={onSubmit} loading={createMutation.isPending} size="lg" className="w-full">
               Solicitar consulta
             </Button>
           </View>

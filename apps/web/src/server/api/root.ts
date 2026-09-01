@@ -1,18 +1,7 @@
-import { createTRPCRouter } from "../trpc";
-import { authRouter } from "./routers/auth";
-import { userRouter } from "./routers/user";
-import { petRouter } from "./routers/pet";
-import { consultationRouter } from "./routers/consultation";
-import { notificationRouter } from "./routers/notification";
-import { mediaRouter } from "./routers/media";
+// Reexport del appRouter del package compartido @conectavet/api.
+// El web expone los routers con nombres en plural para matchear las claves que usa el cliente
+// (users, pets, consultations, notifications, media).
+import { appRouter as apiRouter } from "@conectavet/api";
 
-export const appRouter = createTRPCRouter({
-  auth: authRouter,
-  users: userRouter,
-  pets: petRouter,
-  consultations: consultationRouter,
-  notifications: notificationRouter,
-  media: mediaRouter,
-});
-
+export const appRouter = apiRouter;
 export type AppRouter = typeof appRouter;

@@ -1,14 +1,19 @@
-import { View, Text, TextInput, Pressable, ScrollView, Alert } from "react-native";
+import { View, Text, TextInput, Pressable, ScrollView, ActivityIndicator, Alert } from "react-native";
 import { useState } from "react";
 import { router } from "expo-router";
+import { trpc } from "@/trpc/react";
 import { Button } from "@/components/ui/Button";
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [role, setRole] = useState<"CLIENT" | "VET">("CLIENT");
   const [loading, setLoading] = useState(false);
+
+  const registerMutation = trpc.auth.register.useMutation();
 
   const onSubmit = async () => {
     if (!email || password.length < 6) {
@@ -20,10 +25,20 @@ export default function RegisterScreen() {
       return;
     }
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await registerMutation.mutateAsync({ email, password, role, firstName, lastName });
+      Alert.alert(
+        role === "VET" ? "¡Registro recibido!" : "¡Listo!",
+        role === "VET"
+          ? "Los veterinarios deben pasar por aprobación. Te avisaremos por email."
+          : "Tu cuenta fue creada. Iniciá sesión.",
+        [{ text: "OK", onPress: () => router.replace("/(auth)/login") }]
+      );
+    } catch (err: any) {
+      Alert.alert("Error", err?.message || "No se pudo registrar");
+    } finally {
       setLoading(false);
-      router.replace("/(auth)/login");
-    }, 500);
+    }
   };
 
   return (
@@ -53,6 +68,27 @@ export default function RegisterScreen() {
                 Veterinario
               </Text>
             </Pressable>
+          </View>
+        </View>
+
+        <View className="flex-row gap-3">
+          <View className="flex-1">
+            <Text className="text-sm font-medium text-ink-soft mb-1.5">Nombre</Text>
+            <TextInput
+              value={firstName}
+              onChangeText={setFirstName}
+              placeholder="Juan"
+              className="bg-white border border-border rounded-md px-3 py-3 text-ink"
+            />
+          </View>
+          <View className="flex-1">
+            <Text className="text-sm font-medium text-ink-soft mb-1.5">Apellido</Text>
+            <TextInput
+              value={lastName}
+              onChangeText={setLastName}
+              placeholder="Pérez"
+              className="bg-white border border-border rounded-md px-3 py-3 text-ink"
+            />
           </View>
         </View>
 
@@ -91,7 +127,7 @@ export default function RegisterScreen() {
         </View>
 
         <Button onPress={onSubmit} loading={loading} size="lg" className="mt-2">
-          Crear cuenta
+          {loading ? "Creando cuenta..." : "Crear cuenta"}
         </Button>
 
         <Pressable onPress={() => router.back()} className="py-2">

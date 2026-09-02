@@ -63,30 +63,69 @@ const ChatListHeader = memo(function ChatListHeader({
       )}
       {rxList.length > 0 && (
         <View style={{ marginBottom: spacing.md }}>
-          {rxList.map((rx) => (
-            <View
-              key={rx.id}
-              style={{
-                backgroundColor: c.primaryBg,
-                borderRadius: radius.lg,
-                borderWidth: 1,
-                borderColor: c.primary + '30',
-                padding: spacing.md,
-                marginBottom: spacing.sm,
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm }}>
-                <MaterialCommunityIcons name="pill" size={16} color={c.primary} />
-                <Text style={{ fontSize: fontSizes.caption, fontWeight: fontWeights.bold, color: c.primary, textTransform: 'uppercase', flex: 1 }}>
-                  Receta de {rx.vet?.firstName || 'tu veterinario'}
-                </Text>
-                <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted }}>
-                  {new Date(rx.createdAt).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
-                </Text>
+          {rxList.map((rx) => {
+            const hasDetails = rx.medication || rx.dosage || rx.frequency || rx.durationDays || rx.indications;
+            return (
+              <View
+                key={rx.id}
+                style={{
+                  backgroundColor: c.surface,
+                  borderRadius: radius.xl,
+                  borderWidth: 1.5,
+                  borderColor: c.primary + '40',
+                  padding: spacing.md,
+                  marginBottom: spacing.sm,
+                  shadowColor: c.ink,
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 4,
+                  elevation: 1,
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm }}>
+                  <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: c.primaryBg, alignItems: 'center', justifyContent: 'center' }}>
+                    <MaterialCommunityIcons name="pill" size={14} color={c.primary} />
+                  </View>
+                  <Text style={{ fontSize: fontSizes.caption, fontWeight: fontWeights.bold, color: c.primary, textTransform: 'uppercase', flex: 1 }}>
+                    Receta Oficial · {rx.vet?.firstName ? `Dr. ${rx.vet.firstName}` : 'Veterinario'}
+                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: c.successBg, paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.full }}>
+                    <MaterialCommunityIcons name="check-decagram" size={12} color={c.success} />
+                    <Text style={{ fontSize: 10, color: c.successDark, fontWeight: fontWeights.bold }}>Certificada</Text>
+                  </View>
+                </View>
+
+                {hasDetails && (
+                  <View style={{ backgroundColor: c.primaryBg, borderRadius: radius.md, padding: spacing.sm, marginBottom: spacing.xs, gap: 4 }}>
+                    {rx.medication && (
+                      <Text style={{ fontSize: fontSizes.caption, color: c.ink, fontWeight: fontWeights.bold }}>
+                        💊 Medicamento: <Text style={{ fontWeight: fontWeights.regular }}>{rx.medication}</Text>
+                      </Text>
+                    )}
+                    {(rx.dosage || rx.frequency) && (
+                      <Text style={{ fontSize: fontSizes.caption, color: c.ink }}>
+                        ⏱️ Posología: <Text style={{ fontWeight: fontWeights.semibold }}>{rx.dosage || 'Dosis indicada'} · {rx.frequency || '1 vez/día'}</Text>
+                      </Text>
+                    )}
+                    {rx.durationDays && (
+                      <Text style={{ fontSize: fontSizes.caption, color: c.ink }}>
+                        📅 Duración: <Text style={{ fontWeight: fontWeights.semibold }}>{rx.durationDays} días</Text>
+                      </Text>
+                    )}
+                    {rx.indications && (
+                      <Text style={{ fontSize: fontSizes.caption, color: c.inkSoft, fontStyle: 'italic', marginTop: 2 }}>
+                        Indicaciones: {rx.indications}
+                      </Text>
+                    )}
+                  </View>
+                )}
+
+                {rx.content && rx.content !== rx.medication && (
+                  <Text style={{ fontSize: fontSizes.label, color: c.ink, lineHeight: 18 }}>{rx.content}</Text>
+                )}
               </View>
-              <Text style={{ fontSize: fontSizes.body, color: c.ink, lineHeight: 20 }}>{rx.content}</Text>
-            </View>
-          ))}
+            );
+          })}
         </View>
       )}
       {notes ? (

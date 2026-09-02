@@ -1,14 +1,15 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { View, Text, Pressable, RefreshControl, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { usePets } from '@/hooks/usePets';
 import { useAuth } from '@/hooks/useAuth';
+import { useConsultationHistory } from '@/hooks/useConsultations';
 import { PetCard } from '@/components/PetCard';
-import { Card, SkeletonCard, EmptyState } from '@/components/ui';
+import { Card, SkeletonCard, EmptyState, Badge } from '@/components/ui';
 import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
-import type { Pet } from '@/types';
+import type { Pet, Consultation } from '@/types';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -16,7 +17,14 @@ export default function HomeScreen() {
   const { colors: c } = useTheme();
   const { user } = useAuth();
   const { list } = usePets();
+  const { data: consultationsData, refetch: refetchConsultations } = useConsultationHistory({ limit: 10 });
   const pets = list.data ?? [];
+
+  const activeConsultation = useMemo(() => {
+    return (consultationsData ?? []).find(
+      (cons: Consultation) => cons.status === 'WAITING' || cons.status === 'PENDING' || cons.status === 'ACTIVE'
+    );
+  }, [consultationsData]);
 
   const hour = new Date().getHours();
   const saludo = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
@@ -25,12 +33,17 @@ export default function HomeScreen() {
     router.push(`/(app)/pets/${pet.id}`);
   }, [router]);
 
+  const onRefreshAll = useCallback(() => {
+    list.refetch();
+    refetchConsultations();
+  }, [list, refetchConsultations]);
+
   return (
     <ScrollView
       contentContainerStyle={{ padding: spacing.lg, paddingBottom: insets.bottom + spacing.huge }}
-      refreshControl={<RefreshControl refreshing={list.isFetching} onRefresh={list.refetch} tintColor={c.primary} />}
+      refreshControl={<RefreshControl refreshing={list.isFetching} onRefresh={onRefreshAll} tintColor={c.primary} />}
     >
-      <View style={{ marginBottom: spacing.xxl }}>
+      <View style={{ marginBottom: spacing.xl }}>
         <Text style={{ fontSize: fontSizes.title, fontWeight: fontWeights.bold, color: c.ink, letterSpacing: -0.5 }}>
           {saludo}, {user?.firstName}
         </Text>
@@ -38,6 +51,73 @@ export default function HomeScreen() {
           ¿Qué necesitás hacer hoy por tus mascotas?
         </Text>
       </View>
+
+      {/* Banner de Consulta en Vivo / Cola con ETA */}
+      {activeConsultation && (
+        <Pressable
+          onPress={() => router.push(`/(app)/chat/${activeConsultation.id}`)}
+          style={{ marginBottom: spacing.xl }}
+          accessibilityRole="button"
+          accessibilityLabel="Consulta activa en curso"
+        >
+          <View
+            style={{
+              backgroundColor: activeConsultation.status === 'ACTIVE' ? c.successBg : c.primaryBg,
+              borderRadius: radius.xl,
+              borderWidth: 1.5,
+              borderColor: activeConsultation.status === 'ACTIVE' ? c.success : c.primary,
+              padding: spacing.lg,
+              shadowColor: c.ink,
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 8,
+              elevation: 2,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                <View
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: activeConsultation.status === 'ACTIVE' ? c.success : c.accentDark,
+                  }}
+                />
+                <Text style={{ fontSize: fontSizes.caption, fontWeight: fontWeights.bold, color: activeConsultation.status === 'ACTIVE' ? c.successDark : c.primary, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  {activeConsultation.status === 'ACTIVE'
+                    ? '🟢 Consulta en curso'
+                    : activeConsultation.status === 'PENDING'
+                    ? '🔵 Veterinario asignado'
+                    : '🟡 En cola de espera'}
+                </Text>
+              </View>
+              {activeConsultation.status === 'WAITING' && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: c.surface, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full }}>
+                  <MaterialCommunityIcons name="clock-outline" size={12} color={c.inkMuted} />
+                  <Text style={{ fontSize: fontSizes.caption, color: c.inkMuted, fontWeight: fontWeights.semibold }}>~2-5 min</Text>
+                </View>
+              )}
+            </View>
+
+            <Text style={{ fontSize: fontSizes.subtitle, fontWeight: fontWeights.bold, color: c.ink, marginBottom: 2 }}>
+              Paciente: {activeConsultation.pet?.name || 'Mascota'}
+            </Text>
+            <Text style={{ fontSize: fontSizes.label, color: c.inkSoft, marginBottom: spacing.md }}>
+              {activeConsultation.vet
+                ? `Atiende: Dr. ${activeConsultation.vet.firstName || activeConsultation.vet.email}`
+                : 'Buscando el mejor veterinario de guardia disponible...'}
+            </Text>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: c.surface, borderRadius: radius.lg, paddingVertical: spacing.sm, paddingHorizontal: spacing.md }}>
+              <Text style={{ fontSize: fontSizes.label, fontWeight: fontWeights.bold, color: c.primary }}>
+                Entrar al chat y videollamada
+              </Text>
+              <MaterialCommunityIcons name="arrow-right" size={18} color={c.primary} />
+            </View>
+          </View>
+        </Pressable>
+      )}
 
       <View style={{ flexDirection: 'row', gap: spacing.md, marginBottom: spacing.xl }}>
         <Pressable

@@ -301,6 +301,11 @@ export const prescriptionSchema = z.object({
   consultationId: z.string(),
   vetId: z.string(),
   content: z.string(),
+  medication: z.string().nullable().optional(),
+  dosage: z.string().nullable().optional(),
+  frequency: z.string().nullable().optional(),
+  durationDays: z.string().nullable().optional(),
+  indications: z.string().nullable().optional(),
   createdAt: z.string(),
   vet: z.object({
     id: z.string(),

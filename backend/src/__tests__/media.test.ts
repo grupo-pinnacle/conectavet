@@ -31,12 +31,14 @@ afterAll(async () => {
   await prisma.user.deleteMany({ where: { email: { startsWith: prefix } } });
 });
 
+const validPngBuffer = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52]);
+
 describe('POST /api/media', () => {
   test('201 — CLIENT sube una imagen y recibe la URL', async () => {
     const res = await request(app)
       .post('/api/media')
       .set('Authorization', `Bearer ${token}`)
-      .attach('file', Buffer.from('contenido-de-imagen'), {
+      .attach('file', validPngBuffer, {
         filename: 'foto.png',
         contentType: 'image/png',
       });
@@ -70,7 +72,7 @@ describe('POST /api/media', () => {
     const res = await request(app)
       .post('/api/media')
       .set('Authorization', `Bearer ${token}`)
-      .attach('file', Buffer.from('contenido'), {
+      .attach('file', validPngBuffer, {
         filename: 'virus.svg',
         contentType: 'image/png',
       });

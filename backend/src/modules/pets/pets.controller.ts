@@ -45,17 +45,23 @@ return res.status(200).json({ success: true, data: pet });
 });
 
 export const getPetVetCardController = asyncHandler(async (req: RequestWithUser, res: Response) => {
-if (!req.user) {
-      return res.status(401).json({ success: false, message: 'No autenticado' });
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: 'No autenticado' });
+  }
+  const vetCard = await getPetVetCard(req.params.id as string);
+  if (!vetCard) {
+    throw new NotFoundError('Mascota no encontrada');
+  }
+  if (vetCard.pet.ownerId !== req.user.userId && req.user.role === 'CLIENT') {
+    throw new ForbiddenError('No tenés permiso para ver esta mascota');
+  }
+  if (req.user.role === 'VET' && vetCard.pet.ownerId !== req.user.userId) {
+    const allowed = await vetHasConsultationForPet(req.user.userId, vetCard.pet.id);
+    if (!allowed) {
+      throw new ForbiddenError('No tenés permiso para ver la ficha clínica de esta mascota');
     }
-const vetCard = await getPetVetCard(req.params.id as string);
-if (!vetCard) {
-      throw new NotFoundError('Mascota no encontrada');
-    }
-if (vetCard.pet.ownerId !== req.user.userId && req.user.role === 'CLIENT') {
-      throw new ForbiddenError('No tenés permiso para ver esta mascota');
-    }
-return res.status(200).json({ success: true, data: vetCard });
+  }
+  return res.status(200).json({ success: true, data: vetCard });
 });
 
 export const createPetController = asyncHandler(async (req: RequestWithUser, res: Response) => {

@@ -13,7 +13,14 @@ export async function getUserById(userId: string) {
     return null;
   }
 
-  const { password, ...userWithoutPassword } = user;
+  const {
+    password,
+    emailVerifyToken,
+    emailVerifyExpires,
+    passwordResetToken,
+    passwordResetExpires,
+    ...userWithoutPassword
+  } = user;
   return userWithoutPassword;
 }
 
@@ -21,7 +28,7 @@ const SALT_ROUNDS = 12;
 
 /**
  * Alta de usuario por un ADMIN (vets, clientes o admins). Nunca se expone
- * vÃ­a el registro pÃºblico, que solo crea CLIENT. Valida unicidad de email
+ * vía el registro público, que solo crea CLIENT. Valida unicidad de email
  * y hashea la password con el mismo costo que el registro.
  */
 export async function createUser(data: {
@@ -35,7 +42,7 @@ export async function createUser(data: {
 }) {
   const existing = await prisma.user.findUnique({ where: { email: data.email } });
   if (existing) {
-    throw new ConflictError('Este email ya estÃ¡ registrado');
+    throw new ConflictError('Este email ya está registrado');
   }
   const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
   const user = await prisma.user.create({
@@ -46,11 +53,19 @@ export async function createUser(data: {
       firstName: data.firstName,
       lastName: data.lastName,
       phone: data.phone,
-      // La matrÃ­cula/especialidad solo aplica a veterinarios.
+      // La matrícula/especialidad solo aplica a veterinarios.
       specialty: data.role === 'VET' ? data.specialty || null : null,
+      vetStatus: data.role === 'VET' ? 'PENDING' : 'APPROVED',
     },
   });
-  const { password, ...userWithoutPassword } = user;
+  const {
+    password,
+    emailVerifyToken,
+    emailVerifyExpires,
+    passwordResetToken,
+    passwordResetExpires,
+    ...userWithoutPassword
+  } = user;
   return userWithoutPassword;
 }
 
@@ -69,7 +84,14 @@ export async function updateProfile(
     },
   });
 
-  const { password, ...userWithoutPassword } = user;
+  const {
+    password,
+    emailVerifyToken,
+    emailVerifyExpires,
+    passwordResetToken,
+    passwordResetExpires,
+    ...userWithoutPassword
+  } = user;
   return userWithoutPassword;
 }
 
@@ -77,7 +99,7 @@ export async function updateAvailability(userId: string, isOnline: boolean) {
   const user = await prisma.user.update({
     where: { id: userId },
     // Al ponerse online registramos lastSeen para que la presencia no quede
-    // "pegada" si se cae la conexiÃ³n (P3-4).
+    // "pegada" si se cae la conexión (P3-4).
     data: { isOnline, lastSeen: isOnline ? new Date() : undefined },
   });
 
@@ -86,7 +108,14 @@ export async function updateAvailability(userId: string, isOnline: boolean) {
   await clearCache('vets:list:available');
   await clearCache('vets:list:');
 
-  const { password, ...userWithoutPassword } = user;
+  const {
+    password,
+    emailVerifyToken,
+    emailVerifyExpires,
+    passwordResetToken,
+    passwordResetExpires,
+    ...userWithoutPassword
+  } = user;
   return userWithoutPassword;
 }
 
@@ -103,70 +132,49 @@ export async function listVets(
 ) {
   const { search, onlineOnly, viewerId, minRating, sortBy } = filters;
   const cacheKey = `vets:list:${page}:${limit}:${search?.toLowerCase()}:${onlineOnly}:${viewerId ?? 'anon'}:${minRating ?? 0}:${sortBy ?? 'recent'}`;
-  type VetListDTO = {
-    id: string;
-    firstName: string | null;
-    lastName: string | null;
-    specialty: string | null;
-    role: string;
-    isOnline: boolean;
-    createdAt: Date;
-    ratingAvg: number;
-    ratingCount: number;
-    isFavorite: boolean;
-  };
   
-  const cached = await getCached<{ data: VetListDTO[]; total: number; page: number; limit: number; totalPages: number }>(cacheKey);
+  const cached = await getCached<{ data: any[]; total: number; page: number; limit: number; totalPages: number }>(cacheKey);
   if (cached) return cached;
   const skip = (page - 1) * limit;
-  const whereConditions = [Prisma.sql`u.role = 'VET'`, Prisma.sql`u."vet_status" = 'APPROVED'`];
-  if (onlineOnly) whereConditions.push(Prisma.sql`u."isOnline" = true`);
-  if (search) {
-    const term = `%${search}%`;
-    whereConditions.push(Prisma.sql`(u."firstName" ILIKE ${term} OR u."lastName" ILIKE ${term} OR u.email ILIKE ${term})`);
-  }
 
-  const whereClause = Prisma.sql`${Prisma.join(whereConditions, ' AND ')}`;
-  const havingClause = minRating && minRating > 0 ? Prisma.sql`HAVING COALESCE(AVG(r.rating), 0) >= ${minRating}` : Prisma.empty;
-  
-  const orderByClause = sortBy === 'rating' 
-    ? Prisma.sql`ORDER BY "ratingAvg" DESC, u."createdAt" DESC` 
-    : Prisma.sql`ORDER BY u."createdAt" DESC`;
+  const where: Prisma.UserWhereInput = {
+    role: 'VET',
+    vetStatus: 'APPROVED',
+    deletedAt: null,
+    ...(onlineOnly ? { isOnline: true } : {}),
+    ...(search
+      ? {
+          OR: [
+            { firstName: { contains: search, mode: 'insensitive' } },
+            { lastName: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+            { specialty: { contains: search, mode: 'insensitive' } },
+          ],
+        }
+      : {}),
+  };
 
-  // Raw query scale perfectly in DB
-  const rawVets = await prisma.$queryRaw<Array<{
-    id: string;
-    firstName: string | null;
-    lastName: string | null;
-    specialty: string | null;
-    role: string;
-    isOnline: boolean;
-    createdAt: Date;
-    ratingAvg: number;
-    ratingCount: number;
-  }>>`
-    SELECT 
-      u.id, u."firstName", u."lastName", u.specialty, u.role, u."isOnline", u."createdAt",
-      ROUND(COALESCE(AVG(r.rating), 0)::numeric, 1)::float as "ratingAvg",
-      COUNT(r.id)::int as "ratingCount"
-    FROM "users" u
-    LEFT JOIN "reviews" r ON r."vetId" = u.id
-    WHERE ${whereClause}
-    GROUP BY u.id
-    ${havingClause}
-    ${orderByClause}
-    LIMIT ${limit} OFFSET ${skip}
-  `;
-
-  // Need a separate query for total count due to pagination
-  const countResult = await prisma.$queryRaw<Array<{ total: number }>>`
-    SELECT COUNT(DISTINCT u.id)::int as total
-    FROM "users" u
-    LEFT JOIN "reviews" r ON r."vetId" = u.id
-    WHERE ${whereClause}
-    ${havingClause}
-  `;
-  const total = countResult[0]?.total || 0;
+  const [vets, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        specialty: true,
+        role: true,
+        isOnline: true,
+        createdAt: true,
+        reviewsAsVet: {
+          select: { rating: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.user.count({ where }),
+  ]);
 
   let favoriteIds = new Set<string>();
   if (viewerId) {
@@ -177,12 +185,43 @@ export async function listVets(
     favoriteIds = new Set(favorites.map((f) => f.vetId));
   }
 
-  const data = rawVets.map(vet => ({
-    ...vet,
-    isFavorite: favoriteIds.has(vet.id)
-  }));
+  const mapped = vets.map((vet) => {
+    const totalRatings = vet.reviewsAsVet.length;
+    const ratingAvg =
+      totalRatings > 0
+        ? Math.round((vet.reviewsAsVet.reduce((sum, r) => sum + r.rating, 0) / totalRatings) * 10) / 10
+        : 0;
 
-  const result = { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+    return {
+      id: vet.id,
+      firstName: vet.firstName,
+      lastName: vet.lastName,
+      specialty: vet.specialty,
+      role: vet.role,
+      isOnline: vet.isOnline,
+      createdAt: vet.createdAt,
+      ratingAvg,
+      ratingCount: totalRatings,
+      isFavorite: favoriteIds.has(vet.id),
+    };
+  });
+
+  const filteredData = minRating && minRating > 0
+    ? mapped.filter((v) => v.ratingAvg >= minRating)
+    : mapped;
+
+  if (sortBy === 'rating') {
+    filteredData.sort((a, b) => b.ratingAvg - a.ratingAvg);
+  }
+
+  const result = {
+    data: filteredData,
+    total: minRating && minRating > 0 ? filteredData.length : total,
+    page,
+    limit,
+    totalPages: Math.ceil((minRating && minRating > 0 ? filteredData.length : total) / limit),
+  };
+
   await setCache(cacheKey, result, 30);
   return result;
 }

@@ -21,6 +21,9 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [specialty, setSpecialty] = useState("");
+  const [licenseNumber, setLicenseNumber] = useState("");
+
   const PASSWORD_REQUIREMENTS: { label: string; test: (p: string) => boolean }[] = [
     { label: "Al menos 8 caracteres", test: (p) => p.length >= 8 },
     { label: "Una letra mayúscula", test: (p) => /[A-Z]/.test(p) },
@@ -43,13 +46,20 @@ export default function RegisterPage() {
     if (!role) { setError("Seleccioná si sos dueño de mascota o veterinario"); return; }
     if (!name.trim()) { setError("Ingresá tu nombre completo"); return; }
     if (!email.trim()) { setError("Ingresá tu correo electrónico"); return; }
+    if (role === "vet" && !licenseNumber.trim()) {
+      setError("La matrícula profesional es obligatoria para registrarse como veterinario");
+      return;
+    }
     const pwdError = validatePassword(password);
     if (pwdError) { setPasswordError(pwdError); setError(pwdError); return; }
     if (password !== confirmPassword) { setConfirmError("Las contraseñas no coinciden"); return; }
 
     setLoading(true);
     try {
-      await register(name, email, password, role);
+      const formattedSpecialty = role === "vet"
+        ? (licenseNumber.trim() ? `${specialty.trim() || "General"} (Mat. ${licenseNumber.trim()})` : specialty.trim())
+        : undefined;
+      await register(name, email, password, role, formattedSpecialty);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } }; message?: string } | null)?.response?.data?.message
         || (err as { message?: string } | null)?.message
@@ -143,12 +153,12 @@ export default function RegisterPage() {
             </div>
 
             {role === "vet" && (
-              <p className="mb-6 -mt-2 rounded-lg bg-teal-50 p-3 text-xs leading-relaxed text-teal-800">
-                Los veterinarios son dados de alta por el equipo VetConnect. Al continuar se creará una cuenta de <strong>dueño de mascota</strong>; luego podés solicitar el alta como veterinarian.
-              </p>
+              <div className="mb-6 -mt-2 rounded-lg bg-teal-50 p-3 text-xs leading-relaxed text-teal-800 border border-teal-200">
+                <strong>Validación Profesional Requerida:</strong> Por normativa sanitaria (SENASA / Ley 25.326), tu cuenta iniciará en estado <em>Pendiente de Verificación</em> hasta que el equipo administrativo valide tu matrícula profesional antes de habilitar la atención telemática.
+              </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <Input
                 label="Nombre completo"
                 type="text"
@@ -156,6 +166,30 @@ export default function RegisterPage() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Juan Pérez"
               />
+              {role === "vet" && (
+                <>
+                  <Input
+                    label="Matrícula Profesional (MN / MP) *"
+                    type="text"
+                    value={licenseNumber}
+                    onChange={(e) => setLicenseNumber(e.target.value)}
+                    placeholder="Ej: MN 12345 / MP 6789"
+                  />
+                  <Input
+                    label="Especialidad (Opcional)"
+                    type="text"
+                    value={specialty}
+                    onChange={(e) => setSpecialty(e.target.value)}
+                    placeholder="Ej: Clínica Médica, Dermatología, Felinos"
+                  />
+                  <div className="rounded-lg border border-dashed border-teal-300 bg-teal-50/50 p-3 text-xs text-slate-600">
+                    <p className="font-semibold text-teal-800">Documentación de Respaldo (SENASA / Colegio Veterinario):</p>
+                    <p className="mt-1 text-slate-500">
+                      Podrás adjuntar copia de tu título y credencial profesional en tu panel de perfil tras el registro para acelerar la aprobación administrativa.
+                    </p>
+                  </div>
+                </>
+              )}
               <Input
                 label="Correo Electrónico"
                 type="email"

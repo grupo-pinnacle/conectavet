@@ -54,38 +54,54 @@ const consultationWithMessages = {
   },
 } satisfies Prisma.ConsultationSelect;
 
-const vetPublicSelect = {
-  id: true,
-  email: true,
-  firstName: true,
-  lastName: true,
-  isOnline: true,
-} as const;
-
 export async function findFirstAvailableVet(species?: string) {
-  // Sin cachÃ©: el pick se consume una sola vez (se asigna a una consulta).
-  // Cachearlo 30s re-servÃ­a el MISMO vet a todos los clients en esa ventana
-  // (sobrecarga del vet) y podÃ­a devolver un vet reciÃ©n puesto offline.
-  // Si hay una especie, se priorizan los vets que ya atendieron mascotas de
-  // esa especie; si ninguno tiene historial, se cae a cualquier vet online.
-  if (species) {
-    const experienced = await prisma.user.findFirst({
-      where: {
-        role: 'VET',
-        isOnline: true,
-        vetStatus: 'APPROVED',
-        consultationsAsVet: { some: { pet: { species } } },
+  // Matching por carga (Fairness): en vez de saturar al vet más antiguo,
+  // seleccionamos los veterinarios online APPROVED y elegimos el que tenga
+  // MENOR cantidad de consultas activas o pendientes.
+  const where: Prisma.UserWhereInput = {
+    role: 'VET',
+    isOnline: true,
+    vetStatus: 'APPROVED',
+    ...(species
+      ? {
+          consultationsAsVet: { some: { pet: { species } } },
+        }
+      : {}),
+  };
+
+  const candidates = await prisma.user.findMany({
+    where,
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      isOnline: true,
+      consultationsAsVet: {
+        where: { status: { in: ['ACTIVE', 'PENDING'] }, deletedAt: null },
+        select: { id: true },
       },
-      orderBy: { createdAt: 'asc' },
-      select: vetPublicSelect,
-    });
-    if (experienced) return experienced;
-  }
-  return prisma.user.findFirst({
-    where: { role: 'VET', isOnline: true, vetStatus: 'APPROVED' },
+    },
     orderBy: { createdAt: 'asc' },
-    select: vetPublicSelect,
+    take: 10,
   });
+
+  if (candidates.length === 0 && species) {
+    return findFirstAvailableVet();
+  }
+
+  if (candidates.length === 0) return null;
+
+  candidates.sort((a, b) => a.consultationsAsVet.length - b.consultationsAsVet.length);
+
+  const best = candidates[0];
+  return {
+    id: best.id,
+    email: best.email,
+    firstName: best.firstName,
+    lastName: best.lastName,
+    isOnline: best.isOnline,
+  };
 }
 
 export async function createConsultation(data: {
@@ -145,9 +161,17 @@ export async function createConsultation(data: {
 }
 
 export async function assignVet(consultationId: string, vetId: string) {
-  // Claim atÃ³mico (WHERE status) para evitar la carrera TOCTOU: dos vets
+  const vet = await prisma.user.findUnique({
+    where: { id: vetId },
+    select: { role: true, vetStatus: true },
+  });
+  if (!vet || vet.role !== 'VET' || vet.vetStatus !== 'APPROVED') {
+    throw new ForbiddenError('Solo veterinarios aprobados pueden atender consultas');
+  }
+
+  // Claim atómico (WHERE status) para evitar la carrera TOCTOU: dos vets
   // no pueden "tomar" la misma consulta WAITING al mismo tiempo. La oferta
-  // PENDING sÃ³lo la reclama el vet al que fue ofrecida.
+  // PENDING sólo la reclama el vet al que fue ofrecida.
   const claimed = await prisma.consultation.updateMany({
     where: {
       id: consultationId,
@@ -165,7 +189,7 @@ export async function assignVet(consultationId: string, vetId: string) {
     if (consultation.status === 'PENDING' && consultation.vetId !== vetId) {
       throw new ConflictError('Esta oferta es de otro veterinario');
     }
-    throw new ConflictError(`No se puede tomar â€” la consulta estÃ¡ en estado ${consultation.status}`);
+    throw new ConflictError(`No se puede tomar — la consulta está en estado ${consultation.status}`);
   }
 
   const consultation = await prisma.consultation.findUnique({
@@ -177,8 +201,8 @@ export async function assignVet(consultationId: string, vetId: string) {
 }
 
 /**
- * Rechazo de una oferta PENDING: la consulta vuelve a la cola pÃºblica (WAITING)
- * sin vet asignado para que otro veterinario pueda tomarla u ofrecÃ©rsela.
+ * Rechazo de una oferta PENDING: la consulta vuelve a la cola pública (WAITING)
+ * sin vet asignado para que otro veterinario pueda tomarla u ofrecérsela.
  */
 export async function declineConsultation(consultationId: string, vetId: string) {
   const consultation = await prisma.consultation.findUnique({
@@ -186,7 +210,7 @@ export async function declineConsultation(consultationId: string, vetId: string)
   });
   if (!consultation) throw new NotFoundError('Consulta no encontrada');
   if (consultation.status !== 'PENDING') {
-    throw new ConflictError('La consulta no estÃ¡ en estado de aprobaciÃ³n');
+    throw new ConflictError('La consulta no está en estado de aprobación');
   }
   if (consultation.vetId && consultation.vetId !== vetId) {
     throw new ConflictError('Esta oferta es de otro veterinario');
@@ -200,14 +224,22 @@ export async function declineConsultation(consultationId: string, vetId: string)
 
 /**
  * Cola de espera: asigna al primer veterinario que se ponga online
- * la consulta WAITING mÃ¡s antigua como OFERTA (PENDING) â€” Ã©l decide aceptarla,
- * nunca arranca sola. El claim es atÃ³mico (WHERE status=WAITING) para que dos
- * vets online simultÃ¡neos nunca tomen la misma consulta.
+ * la consulta WAITING más antigua como OFERTA (PENDING) — él decide aceptarla,
+ * nunca arranca sola. El claim es atómico (WHERE status=WAITING) para que dos
+ * vets online simultáneos nunca tomen la misma consulta.
  */
 export async function assignNextPendingVet(vetId: string) {
-  // Reintenta el claim atÃ³mico: si dos vets online compiten por la misma
+  const vet = await prisma.user.findUnique({
+    where: { id: vetId },
+    select: { role: true, vetStatus: true },
+  });
+  if (!vet || vet.role !== 'VET' || vet.vetStatus !== 'APPROVED') {
+    return null;
+  }
+
+  // Reintenta el claim atómico: si dos vets online compiten por la misma
   // consulta, el perdedor salta a la siguiente WAITING en vez de quedarse sin
-  // asignar hasta su prÃ³ximo toggle de disponibilidad.
+  // asignar hasta su próximo toggle de disponibilidad.
   for (let attempt = 0; attempt < 5; attempt++) {
     const pending = await prisma.consultation.findFirst({
       where: { status: 'WAITING' },
@@ -276,7 +308,7 @@ export async function completeConsultation(
 export async function getConsultationById(id: string) {
   return prisma.consultation.findFirst({
     where: { id, deletedAt: null },
-    select: consultationSnapshot,
+    select: consultationWithMessages,
   });
 }
 

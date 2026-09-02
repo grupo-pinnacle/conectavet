@@ -1,5 +1,7 @@
 import { Response } from 'express';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
+import { prisma } from '../../shared/prisma';
+import { ForbiddenError } from '../../shared/errors';
 import {
   getUserById,
   listVets,
@@ -44,17 +46,28 @@ return res.status(200).json({
 });
 
 export const setAvailabilityController = asyncHandler(async (req: RequestWithUser, res: Response) => {
-if (!req.user) {
-      return res.status(401).json({ success: false, message: 'No autenticado' });
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: 'No autenticado' });
+  }
+
+  if (req.user.role === 'VET') {
+    const vet = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      select: { vetStatus: true },
+    });
+    if (!vet || vet.vetStatus !== 'APPROVED') {
+      throw new ForbiddenError('Tu cuenta está pendiente de verificación y aprobación por un administrador');
     }
-const user = await updateAvailability(req.user.userId, req.body.isOnline);
-try {
-      const io = getIO();
-      if (io) {
-        io.emit('vet:availability', { vetId: user.id, isOnline: user.isOnline });
-      }
-      if (user.isOnline) {
-        const assigned = await assignNextPendingVet(user.id);
+  }
+
+  const user = await updateAvailability(req.user.userId, req.body.isOnline);
+  try {
+    const io = getIO();
+    if (io) {
+      io.emit('vet:availability', { vetId: user.id, isOnline: user.isOnline });
+    }
+    if (user.isOnline) {
+      const assigned = await assignNextPendingVet(user.id);
         if (assigned) {
           try {
             const io2 = getIO();

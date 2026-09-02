@@ -153,33 +153,66 @@ export async function setupChatSocket(httpServer: HttpServer) {
     );
 
     socket.on('call:initiate', async (consultationId: string, peerName: string) => {
-      // 1. Emite a la sala de la consulta (por si el usuario está en la vista del chat)
-      socket.to(`consultation:${consultationId}`).emit('call:incoming', { consultationId, callerName: peerName });
-
-      // 2. Emite a la sala global del OTRA persona para que lo reciba en toda la app
       try {
-        const consultation = await prisma.consultation.findUnique({
-          where: { id: consultationId },
-          select: { clientId: true, vetId: true }
+        const consultation = await prisma.consultation.findFirst({
+          where: {
+            id: consultationId,
+            deletedAt: null,
+            status: 'ACTIVE',
+            OR: [{ clientId: user.userId }, { vetId: user.userId }],
+          },
+          select: { id: true, clientId: true, vetId: true, status: true },
         });
-        if (consultation) {
-          const user = socket.data.user as JwtPayload;
-          const targetId = user.userId === consultation.clientId ? consultation.vetId : consultation.clientId;
-          if (targetId) {
-            socket.to(`user:${targetId}`).emit('call:incoming', { consultationId, callerName: peerName });
-          }
+        if (!consultation) {
+          socket.emit('error', { message: 'No participás de una consulta activa' });
+          return;
         }
+        const targetId = user.userId === consultation.clientId ? consultation.vetId : consultation.clientId;
+        if (!targetId) return;
+
+        socket.to(`consultation:${consultationId}`).emit('call:incoming', { consultationId, callerName: peerName });
+        socket.to(`user:${targetId}`).emit('call:incoming', { consultationId, callerName: peerName });
       } catch (err) {
-        console.error('Error al enrutar call:incoming global', err);
+        console.error('Error al enrutar call:incoming', err);
       }
     });
 
-    socket.on('call:reject', (consultationId: string) => {
-      socket.to(`consultation:${consultationId}`).emit('call:rejected', { consultationId });
+    socket.on('call:reject', async (consultationId: string) => {
+      try {
+        const consultation = await prisma.consultation.findFirst({
+          where: {
+            id: consultationId,
+            deletedAt: null,
+            OR: [{ clientId: user.userId }, { vetId: user.userId }],
+          },
+          select: { clientId: true, vetId: true },
+        });
+        if (!consultation) return;
+        const targetId = user.userId === consultation.clientId ? consultation.vetId : consultation.clientId;
+        socket.to(`consultation:${consultationId}`).emit('call:rejected', { consultationId });
+        if (targetId) {
+          socket.to(`user:${targetId}`).emit('call:rejected', { consultationId });
+        }
+      } catch {
+        /* no-op */
+      }
     });
 
-    socket.on('disconnect', () => {
-      // Los maps de rate-limit/dedup viven en message-throttle (compartido).
+    socket.on('disconnect', async () => {
+      if (user.role === 'VET') {
+        try {
+          const sockets = await io.in(`user:${user.userId}`).fetchSockets();
+          if (sockets.length === 0) {
+            await prisma.user.update({
+              where: { id: user.userId },
+              data: { isOnline: false, lastSeen: new Date() },
+            });
+            io.emit('vet:availability', { vetId: user.userId, isOnline: false });
+          }
+        } catch {
+          /* no-op */
+        }
+      }
     });
   });
 

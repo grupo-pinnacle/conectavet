@@ -273,6 +273,7 @@ export const chatMessageSchema = z.object({
   }).optional(),
 });
 export type ChatMessage = z.infer<typeof chatMessageSchema>;
+export type Message = ChatMessage;
 
 export const attachmentSchema = z.object({
   id: z.string(),

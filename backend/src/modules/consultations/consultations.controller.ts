@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { z } from 'zod';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware';
-import { NotFoundError, ForbiddenError } from '../../shared/errors';
+import { NotFoundError, ForbiddenError, ConflictError } from '../../shared/errors';
 import { parsePagination } from '../../shared/utils';
 import { getIO } from './chat.gateway';
 import { notifyUser, notifyVetsOnline, notifyConsultationMessage } from '../notifications';
@@ -234,14 +234,17 @@ return res.status(200).json({ success: true, data: prescriptions });
 });
 
 export const createPrescriptionController = asyncHandler(async (req: RequestWithUser, res: Response) => {
-if (!req.user) {
-      return res.status(401).json({ success: false, message: 'No autenticado' });
-    }
-const consultation = await assertParticipation(req.params.id as string, req.user.userId, req.user.role);
-if (consultation.vetId !== req.user.userId) {
-      throw new ForbiddenError('Solo el veterinario asignado puede enviar recetas');
-    }
-const prescription = await savePrescription({
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: 'No autenticado' });
+  }
+  const consultation = await assertParticipation(req.params.id as string, req.user.userId, req.user.role);
+  if (consultation.vetId !== req.user.userId) {
+    throw new ForbiddenError('Solo el veterinario asignado puede enviar recetas');
+  }
+  if (consultation.status !== 'ACTIVE') {
+    throw new ConflictError('Solo se pueden emitir recetas en consultas activas');
+  }
+  const prescription = await savePrescription({
       consultationId: req.params.id as string,
       vetId: req.user.userId,
       content: req.body.content,

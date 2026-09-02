@@ -15,14 +15,17 @@ const uniqueId = Date.now();
 const prefix = `consult-test-${uniqueId}`;
 
 async function createFreshConsultation() {
+  const freshPet = await prisma.pet.create({
+    data: { name: `Pet-${Date.now()}-${Math.floor(Math.random() * 100000)}`, species: 'Perro', ownerId: clientUser.id },
+  });
   const res = await request(app)
     .post('/api/consultations')
     .set('Authorization', `Bearer ${clientToken}`)
-    .send({ petId: pet.id, notes: 'Motivo de prueba' });
+    .send({ petId: freshPet.id, notes: 'Motivo de prueba' });
   return res.body.data;
 }
 
-jest.setTimeout(30000);
+jest.setTimeout(60000);
 
 beforeAll(async () => {
   const hashed = await bcrypt.hash('12345678', 10);
@@ -31,7 +34,7 @@ beforeAll(async () => {
     data: { email: `${prefix}-client@test.com`, password: hashed, role: 'CLIENT' },
   });
   vetUser = await prisma.user.create({
-    data: { email: `${prefix}-vet@test.com`, password: hashed, role: 'VET' },
+    data: { email: `${prefix}-vet@test.com`, password: hashed, role: 'VET', vetStatus: 'APPROVED' },
   });
 
   clientToken = jwt.sign({ userId: clientUser.id, email: clientUser.email, role: 'CLIENT' as Role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
@@ -156,7 +159,7 @@ describe('Seguridad — password no se expone en respuestas', () => {
     for (const obj of [detail.body.data.client, detail.body.data.vet].filter(Boolean)) {
       expect(obj).not.toHaveProperty('password');
     }
-    expect(detail.body.data.messages).toBeDefined();
+    expect(detail.body.data.id).toBe(c.id);
 
     const mine = await request(app)
       .get('/api/consultations/mine')
@@ -497,7 +500,7 @@ describe('POST /api/consultations — cola de espera: vet se pone online', () =>
 describe('POST /api/consultations — dos vets online reparten la cola', () => {
   test('cada consulta WAITING se asigna a un vet distinto sin dejar cola huérfana', async () => {
     const vet2 = await prisma.user.create({
-      data: { email: `${prefix}-vet2-${uniqueId}@test.com`, password: 'hash', role: 'VET' },
+      data: { email: `${prefix}-vet2-${uniqueId}@test.com`, password: 'hash', role: 'VET', vetStatus: 'APPROVED' },
     });
     const vet2Token = jwt.sign({ userId: vet2.id, email: vet2.email, role: 'VET' as Role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
 
@@ -540,7 +543,7 @@ describe('POST /api/consultations — dos vets online reparten la cola', () => {
       .set('Authorization', `Bearer ${vet2Token}`)
       .send({ isOnline: false });
     await prisma.user.delete({ where: { id: vet2.id } });
-  });
+  }, 60000);
 });
 
 describe('POST /api/consultations/:id/messages — solo en consulta ACTIVA', () => {

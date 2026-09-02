@@ -9,6 +9,9 @@ import GlobalCallListener from "./components/call/GlobalCallListener";
 // Code-split: cada pǭgina se carga solo cuando el usuario la necesita
 const LoginPage          = lazy(() => import("./pages/LoginPage"));
 const RegisterPage       = lazy(() => import("./pages/RegisterPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage  = lazy(() => import("./pages/ResetPasswordPage"));
+const VerifyEmailPage    = lazy(() => import("./pages/VerifyEmailPage"));
 const DashboardPage      = lazy(() => import("./pages/DashboardPage"));
 const VetDashboardPage   = lazy(() => import("./pages/VetDashboardPage"));
 const AdminDashboardPage = lazy(() => import("./pages/AdminDashboardPage"));
@@ -58,7 +61,7 @@ function NotFoundPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-teal-50 to-white gap-4 px-6 text-center">
       <h1 className="text-3xl font-extrabold text-teal-700">404</h1>
-      <p className="text-body text-slate-600">La pǭgina que buscǭs no existe.</p>
+      <p className="text-body text-slate-600">La página que buscás no existe.</p>
       <a href="/" className="text-teal-700 underline font-medium">
         Volver al inicio
       </a>
@@ -70,13 +73,16 @@ function App() {
   return (
     <AuthProvider>
       <ErrorBoundary>
-        <GlobalCallListener />
         <BrowserRouter>
+          <GlobalCallListener />
           <Suspense fallback={<SplashScreen />}>
             <Routes>
               <Route path="/" element={<RootRedirect />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/call" element={<CallPage />} />
               <Route
                 path="/dashboard"

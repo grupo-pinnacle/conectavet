@@ -153,85 +153,55 @@ export async function getManagedPets(vetId: string, page = 1, limit = 50) {
 
 export async function vetHasConsultationForPet(vetId: string, petId: string) {
   const consultation = await prisma.consultation.findFirst({
-    where: { vetId, petId, status: { in: ['PENDING', 'ACTIVE'] as Array<'PENDING' | 'ACTIVE'> }, deletedAt: null },
+    where: {
+      vetId,
+      petId,
+      status: { in: ['PENDING', 'ACTIVE', 'COMPLETED'] },
+      deletedAt: null,
+    },
     select: { id: true },
   });
   return !!consultation;
 }
 
 export async function getPetVetCard(petId: string) {
-  const rows = await prisma.$queryRaw<
-    Array<{
-      pet: {
-        id: string;
-        name: string;
-        species: string;
-        breed: string | null;
-        birthDate: string | null;
-        weightKg: number | null;
-        sex: string;
-        photoUrl: string | null;
-        notes: string | null;
-        ownerId: string;
-        color: string | null;
-        microchip: string | null;
-        allergies: string[] | null;
-        chronicConditions: string[] | null;
-      };
+  const pet = await prisma.pet.findFirst({
+    where: { id: petId, deletedAt: null },
+    include: {
       owner: {
-        id: string;
-        email: string;
-        firstName: string | null;
-        lastName: string | null;
-        phone: string | null;
-        role: string;
-      };
-      totalConsultations: bigint | number;
-      lastConsultationDate: Date | null;
-      recent: Array<{
-        id: string;
-        notes: string | null;
-        status: string;
-        endedAt: string | null;
-        createdAt: string;
-        prescriptionCount: number;
-      }>;
-    }>
-  >`
-    SELECT
-      to_jsonb(p) AS pet,
-      to_jsonb(jsonb_build_object(
-        'id', u.id,
-        'email', u.email,
-        'firstName', u."firstName",
-        'lastName', u."lastName",
-        'phone', u.phone,
-        'role', u.role
-      )) AS owner,
-      (SELECT COUNT(*) FROM consultations WHERE "petId" = ${petId}) AS "totalConsultations",
-      (SELECT "endedAt" FROM consultations
-       WHERE "petId" = ${petId} AND status = 'COMPLETED'
-       ORDER BY "endedAt" DESC LIMIT 1) AS "lastConsultationDate",
-      COALESCE(
-        (SELECT jsonb_agg(sub ORDER BY sub."createdAt" DESC)
-         FROM (
-           SELECT c."id", c."notes", c."status", c."endedAt", c."createdAt",
-             (SELECT COUNT(*) FROM prescriptions pr WHERE pr."consultationId" = c."id")::int AS "prescriptionCount"
-           FROM consultations c
-           WHERE c."petId" = ${petId}
-           ORDER BY c."createdAt" DESC
-           LIMIT 20
-         ) sub),
-        '[]'::jsonb
-      ) AS recent
-    FROM pets p
-    JOIN users u ON u.id = p."ownerId"
-    WHERE p.id = ${petId} AND p."deletedAt" IS NULL
-  `;
-  const row = rows[0];
-  if (!row || !row.pet) return null;
-  const pet = row.pet;
-  const recent = Array.isArray(row.recent) ? row.recent : [];
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
+          role: true,
+        },
+      },
+      consultations: {
+        where: { deletedAt: null },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        include: {
+          _count: {
+            select: { prescriptions: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!pet) return null;
+
+  const totalConsultations = await prisma.consultation.count({
+    where: { petId, deletedAt: null },
+  });
+
+  const lastCompleted = await prisma.consultation.findFirst({
+    where: { petId, status: 'COMPLETED', deletedAt: null },
+    orderBy: { endedAt: 'desc' },
+    select: { endedAt: true },
+  });
 
   let ageYears = 0;
   let ageMonths = 0;
@@ -243,31 +213,24 @@ export async function getPetVetCard(petId: string) {
     if (ageMonths < 0) { ageYears--; ageMonths += 12; }
   }
 
+  const { owner, consultations, ...petData } = pet;
+
   return {
-    pet,
-    owner: row.owner,
+    pet: petData,
+    owner,
     stats: {
-      totalConsultations: Number(row.totalConsultations),
-      lastConsultationDate: row.lastConsultationDate
-        ? new Date(row.lastConsultationDate).toISOString()
-        : null,
+      totalConsultations,
+      lastConsultationDate: lastCompleted?.endedAt ? lastCompleted.endedAt.toISOString() : null,
       ageYears,
       ageMonths,
     },
-    recentConsultations: recent.map((c: {
-      id: string;
-      notes: string | null;
-      status: string;
-      endedAt: string | null;
-      createdAt: string;
-      prescriptionCount: number;
-    }) => ({
+    recentConsultations: consultations.map((c) => ({
       id: c.id,
       reason: c.notes ?? 'Sin motivo',
       status: c.status,
-      completedAt: c.endedAt ? new Date(c.endedAt).toISOString() : null,
-      createdAt: c.createdAt,
-      prescriptionCount: c.prescriptionCount ?? 0,
+      completedAt: c.endedAt ? c.endedAt.toISOString() : null,
+      createdAt: c.createdAt.toISOString(),
+      prescriptionCount: c._count?.prescriptions ?? 0,
     })),
     allergies: pet.allergies ?? [],
     chronicConditions: pet.chronicConditions ?? [],

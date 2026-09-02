@@ -25,7 +25,7 @@ beforeAll(async () => {
     data: { email: `${prefix}-client@test.com`, password: hashed, role: 'CLIENT' },
   });
   vetUser = await prisma.user.create({
-    data: { email: `${prefix}-vet@test.com`, password: hashed, role: 'VET' },
+    data: { email: `${prefix}-vet@test.com`, password: hashed, role: 'VET', vetStatus: 'APPROVED' },
   });
   const sign = (userId: string, email: string, role: Role) =>
     jwt.sign({ userId, email, role }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
@@ -42,19 +42,16 @@ afterAll(async () => {
 
 describe('E2E — flujo principal cliente ↔ vet', () => {
   test('auth: registro y login reales responden token', async () => {
-    const email = `${prefix}-auth@test.com`;
+    const email = `${prefix}-auth-${Date.now()}@test.com`;
     const reg = await request(app)
       .post('/api/auth/register')
       .send({ email, password: '12345678', firstName: 'E2E', lastName: 'Tester' });
-    expect([201, 409]).toContain(reg.status);
+    expect(reg.status).toBe(201);
 
-    const hashed = await bcrypt.hash('12345678', 10);
-    const u = await prisma.user.create({ data: { email, password: hashed, role: 'CLIENT' } });
     const login = await request(app).post('/api/auth/login').send({ email, password: '12345678' });
     expect(login.status).toBe(200);
     expect(login.body.success).toBe(true);
     expect(typeof login.body.data.accessToken).toBe('string');
-    await prisma.user.delete({ where: { id: u.id } });
   });
 
   test('mascota -> consulta -> asignar vet -> mensaje -> historial', async () => {

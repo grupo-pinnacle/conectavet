@@ -74,36 +74,67 @@ export default function HistorySection() {
     );
   }
 
+  const [selectedPetId, setSelectedPetId] = useState<string>("ALL");
+
+  const petsList = Array.from(
+    new Map(
+      completed
+        .filter((c) => c.pet)
+        .map((c) => [c.pet!.id, c.pet!.name])
+    ).entries()
+  );
+
+  const filteredCompleted = selectedPetId === "ALL"
+    ? completed
+    : completed.filter((c) => c.petId === selectedPetId);
+
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-ink">Historial clínico</h1>
+          <h1 className="text-2xl font-bold text-ink">Historial clínico y Timeline</h1>
           <p className="text-slate-500">
-            {completed.length} consulta{completed.length !== 1 ? "s" : ""} finalizada{completed.length !== 1 ? "s" : ""}
+            {completed.length} consulta{completed.length !== 1 ? "s" : ""} médica{completed.length !== 1 ? "s" : ""} registrada{completed.length !== 1 ? "s" : ""}
           </p>
         </div>
+        {petsList.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-slate-500">Filtrar por mascota:</span>
+            <select
+              value={selectedPetId}
+              onChange={(e) => setSelectedPetId(e.target.value)}
+              className="rounded-lg border border-border bg-white px-3 py-2 text-xs font-semibold text-ink focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20 shadow-sm"
+            >
+              <option value="ALL">Todas las mascotas ({completed.length})</option>
+              {petsList.map(([id, name]) => (
+                <option key={id} value={id}>{name}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {error && (
         <div className="mb-5 rounded-lg bg-red-50 p-4 text-sm font-semibold text-red-600">{error}</div>
       )}
 
-      {completed.length === 0 ? (
+      {filteredCompleted.length === 0 ? (
         <div className="rounded-xl border border-border bg-white p-10 text-center shadow-sm">
           <ClipboardList className="mx-auto h-10 w-10 text-teal-700" />
           <p className="mt-4 text-lg font-bold text-ink">Aún no hay historial</p>
           <p className="text-sm text-slate-500">
-            Las consultas finalizadas aparecerán acá con las notas del veterinario.
+            Las consultas finalizadas aparecerán en una línea de tiempo cronológica con sus recetas y diagnósticos.
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {completed.map((c) => (
+        <div className="relative pl-6 space-y-6 before:absolute before:top-3 before:bottom-3 before:left-2 before:w-0.5 before:bg-teal-200">
+          {filteredCompleted.map((c) => (
             <div
               key={c.id}
-              className="rounded-xl border border-border bg-white p-5 shadow-sm"
+              className="relative rounded-xl border border-border bg-white p-5 shadow-sm transition-all hover:shadow-md"
             >
+              {/* Timeline marker node */}
+              <div className="absolute -left-6 top-5 flex h-4 w-4 -translate-x-1/2 items-center justify-center rounded-full border-2 border-white bg-teal-700 shadow" />
               <div className="mb-3 flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-50 text-sm font-bold text-teal-700">
@@ -176,7 +207,7 @@ export default function HistorySection() {
                   <Star className="mt-0.5 h-4 w-4 shrink-0 fill-amber-400 text-amber-400" />
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-amber-700">Tu calificación</p>
-                    <p className="mt-1 text-sm font-semibold text-ink">{c.review.rating}/10</p>
+                    <p className="mt-1 text-sm font-semibold text-ink">{c.review.rating}/5</p>
                     {c.review.comment && <p className="mt-1 text-sm text-ink whitespace-pre-wrap">{c.review.comment}</p>}
                   </div>
                 </div>
@@ -219,7 +250,7 @@ export default function HistorySection() {
 
             <div className="mb-4">
               <StarRatingInput value={rating} onChange={setRating} />
-              <p className="mt-1 text-center text-xs text-slate-500">{rating}/10</p>
+              <p className="mt-1 text-center text-xs text-slate-500">{rating}/5</p>
             </div>
 
             <textarea

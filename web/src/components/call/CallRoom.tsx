@@ -64,7 +64,7 @@ export default function CallRoom({ call, peerName, onLeave }: CallRoomProps) {
           },
           publishDefaults: {
             videoEncoding: { maxBitrate: 400_000, maxFramerate: 20 },
-            videoSimulcastLayers: [VideoPresets.h160, VideoPresets.h360],
+            videoSimulcastLayers: [VideoPresets.h180, VideoPresets.h360],
           },
           audioCaptureDefaults: {
             autoGainControl: true,

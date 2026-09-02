@@ -151,9 +151,6 @@ export default function CallScreen() {
             allowsInlineMediaPlayback
             mediaPlaybackRequiresUserAction={false}
             mediaCapturePermissionGrantType="grant"
-            onPermissionRequest={(event) => {
-              event.request.grant();
-            }}
             onLoad={sendCallInit}
             onMessage={(event) => {
               try {

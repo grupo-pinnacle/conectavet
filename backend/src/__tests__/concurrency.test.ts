@@ -9,7 +9,6 @@ const prefix = `conc-${Date.now()}`;
 let clientUser: import('@prisma/client').User;
 let vet1: import('@prisma/client').User;
 let vet2: import('@prisma/client').User;
-let pet: import('@prisma/client').Pet;
 let clientToken: string;
 let vet1Token: string;
 let vet2Token: string;
@@ -18,10 +17,9 @@ beforeAll(async () => {
   const hashed = await bcrypt.hash('12345678', 10);
   [clientUser, vet1, vet2] = await Promise.all([
     prisma.user.create({ data: { email: `${prefix}-client@test.com`, password: hashed, role: 'CLIENT' } }),
-    prisma.user.create({ data: { email: `${prefix}-vet1@test.com`, password: hashed, role: 'VET' } }),
-    prisma.user.create({ data: { email: `${prefix}-vet2@test.com`, password: hashed, role: 'VET' } }),
+    prisma.user.create({ data: { email: `${prefix}-vet1@test.com`, password: hashed, role: 'VET', vetStatus: 'APPROVED' } }),
+    prisma.user.create({ data: { email: `${prefix}-vet2@test.com`, password: hashed, role: 'VET', vetStatus: 'APPROVED' } }),
   ]);
-  pet = await prisma.pet.create({ data: { name: 'TestPet', species: 'Perro', ownerId: clientUser.id } });
   const sign = (u: import('@prisma/client').User, r: Role) =>
     jwt.sign({ userId: u.id, email: u.email, role: r }, process.env.JWT_SECRET as string, { expiresIn: '7d' });
   clientToken = sign(clientUser, 'CLIENT');
@@ -36,11 +34,14 @@ afterAll(async () => {
   await prisma.user.deleteMany({ where: { email: { startsWith: prefix } } });
 });
 
-async function createConsultation() {
+jest.setTimeout(30000);
+
+async function createConsultation(customPet?: import('@prisma/client').Pet) {
+  const targetPet = customPet || await prisma.pet.create({ data: { name: `Pet-${Date.now()}`, species: 'Perro', ownerId: clientUser.id } });
   const res = await request(app)
     .post('/api/consultations')
     .set('Authorization', `Bearer ${clientToken}`)
-    .send({ petId: pet.id, notes: 'Motivo' });
+    .send({ petId: targetPet.id, notes: 'Motivo' });
   return res.body.data;
 }
 
@@ -51,8 +52,8 @@ describe('Concurrencia: assign race (T-03 / A-05)', () => {
       request(app).patch(`/api/consultations/${consult.id}/assign`).set('Authorization', `Bearer ${vet1Token}`),
       request(app).patch(`/api/consultations/${consult.id}/assign`).set('Authorization', `Bearer ${vet2Token}`),
     ]);
-    const statuses = [a.status, b.status].sort();
-    expect(statuses).toEqual([409, 200]);
+    const statuses = [a.status, b.status].sort((x, y) => x - y);
+    expect(statuses).toEqual([200, 409]);
 
     const after = await request(app).get(`/api/consultations/${consult.id}`).set('Authorization', `Bearer ${clientToken}`);
     const assignedVet = after.body.data.vetId;
@@ -65,13 +66,17 @@ describe('Concurrencia: assign race (T-03 / A-05)', () => {
 describe('Concurrencia: dedup de message:send por clientMsgId (T-03)', () => {
   test('mismo clientMsgId enviado dos veces → un solo mensaje persistido', async () => {
     const consult = await createConsultation();
+    await prisma.consultation.update({
+      where: { id: consult.id },
+      data: { status: 'ACTIVE', vetId: vet1.id },
+    });
     const clientMsgId = `dedup-${Date.now()}`;
     const payload = { content: 'Hola', clientMsgId };
     const [first, second] = await Promise.all([
       request(app).post(`/api/consultations/${consult.id}/messages`).set('Authorization', `Bearer ${clientToken}`).send(payload),
       request(app).post(`/api/consultations/${consult.id}/messages`).set('Authorization', `Bearer ${clientToken}`).send(payload),
     ]);
-    expect([first.status, second.status]).toContain(200);
+    expect([first.status, second.status]).toContain(201);
 
     const messages = await prisma.message.findMany({ where: { consultationId: consult.id, clientMsgId } });
     expect(messages.length).toBe(1);

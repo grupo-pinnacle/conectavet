@@ -49,7 +49,7 @@ function Hero() {
         <div className="z-10">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-success-bg px-3 py-1 text-xs font-bold text-success-dark">
             <span className="h-2 w-2 rounded-full bg-success" />
-            ATENCIÓN VETERINARIA 24/7
+            TELECONSULTAS VETERINARIAS
           </div>
           <h1 className="mb-6 text-4xl font-extrabold leading-tight text-ink md:text-5xl tracking-tight">
             Cuidado veterinario
@@ -57,7 +57,7 @@ function Hero() {
             <span className="text-teal-700">siempre al alcance</span>
           </h1>
           <p className="mb-10 max-w-lg text-body leading-relaxed text-slate-600">
-            Consultá con veterinarios certificados por chat en tiempo real y gestioná el historial clínico de tus mascotas desde un solo lugar.
+            Conectá con veterinarios matriculados por chat y videollamada en tiempo real. Historial clínico digital, recetas médicas y seguimiento profesional en una sola plataforma.
           </p>
           <div className="flex flex-col gap-4 sm:flex-row">
             <Link
@@ -237,7 +237,7 @@ function Footer() {
       <div className="mb-8 flex flex-col items-center gap-4 md:mb-0 md:items-start">
         <Logo size="sm" />
         <p className="max-w-xs text-center text-sm text-slate-500 md:text-left">
-          © 2025 VetConnect. Cuidado veterinario profesional, reinventado.
+          © 2026 VetConnect. Cuidado veterinario profesional, reinventado.
         </p>
       </div>
       <div className="flex flex-wrap justify-center gap-x-8 gap-y-4">

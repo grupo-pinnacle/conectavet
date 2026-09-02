@@ -24,7 +24,7 @@ import {
   getLastConsultationId,
   setLastConsultationId,
 } from "../../../services/chatStore";
-import { joinConsultation, getSocket } from "../../../services/socket";
+import { joinConsultation } from "../../../services/socket";
 import { useChatSocket } from "../../../hooks/useChatSocket";
 import { useConsultations, useInvalidateConsultations, consultationsKey } from "../../../hooks/useConsultations";
 import { MessageBubble } from "../MessageBubble";
@@ -559,9 +559,9 @@ export default function VetMessagesSection() {
                     </span>
                   )}
                 </button>
-                {(tab === "offers" || tab === "waiting") && (
+                {(c.status === "PENDING" || c.status === "WAITING") && (
                   <div className="flex items-center gap-2 border-b border-border bg-slate-50/60 px-5 py-2.5">
-                    {tab === "offers" && (
+                    {c.status === "PENDING" && (
                       <>
                         <Button
                           size="sm"
@@ -584,7 +584,7 @@ export default function VetMessagesSection() {
                         </Button>
                       </>
                     )}
-                    {tab === "waiting" && (
+                    {c.status === "WAITING" && (
                       <Button
                         size="sm"
                         fullWidth={false}
@@ -895,13 +895,75 @@ export default function VetMessagesSection() {
               <Pill className="h-5 w-5 text-teal-700" />
               Enviar receta
             </h3>
-            <p className="mb-4 text-sm text-slate-500">
+            <p className="mb-3 text-sm text-slate-500">
               Receta para{" "}
               <span className="font-semibold text-ink">
                 {activeCons?.pet?.name || "la mascota"}
               </span>
-              . Completá los campos y el resumen se arma solo:
+              . Podés usar una plantilla rápida o completar los campos:
             </p>
+            {/* Plantillas clínicas rápidas */}
+            <div className="mb-4">
+              <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-teal-800">
+                Plantillas clínicas rápidas
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  {
+                    name: "Antiparasitario",
+                    med: "Praziquantel + Febantel (Comprimidos)",
+                    dose: "1 comp cada 10 kg",
+                    freq: "Una vez al día",
+                    dur: "1",
+                    ind: "Repetir a los 15 días si persiste infestación",
+                    extra: "Administrar con una porción pequeña de comida.",
+                  },
+                  {
+                    name: "Amoxicilina / Clav.",
+                    med: "Amoxicilina + Ácido Clavulánico 250mg",
+                    dose: "1 comp cada 12 hs",
+                    freq: "Cada 12 hs",
+                    dur: "7",
+                    ind: "Junto con alimento",
+                    extra: "Completar los 7 días de tratamiento aunque haya mejoría.",
+                  },
+                  {
+                    name: "Meloxicam (AINE)",
+                    med: "Meloxicam Gotas 0.5%",
+                    dose: "1 gota/kg día 1, luego 1 gota/2kg",
+                    freq: "Una vez al día",
+                    dur: "5",
+                    ind: "Con el estómago lleno",
+                    extra: "Suspender si presenta vómitos o diarrea.",
+                  },
+                  {
+                    name: "Protector Gástrico",
+                    med: "Omeprazol 10mg",
+                    dose: "1 comprimido en ayunas",
+                    freq: "Una vez al día",
+                    dur: "10",
+                    ind: "30 minutos antes del desayuno",
+                    extra: "Mantener agua fresca disponible.",
+                  },
+                ].map((tpl) => (
+                  <button
+                    key={tpl.name}
+                    type="button"
+                    onClick={() => {
+                      setRxMedication(tpl.med);
+                      setRxDosage(tpl.dose);
+                      setRxFrequency(tpl.freq);
+                      setRxDuration(tpl.dur);
+                      setRxIndications(tpl.ind);
+                      setRxContent(tpl.extra);
+                    }}
+                    className="rounded-lg border border-teal-200 bg-teal-50/70 px-2.5 py-1 text-xs font-semibold text-teal-800 hover:bg-teal-100 transition-colors"
+                  >
+                    + {tpl.name}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="space-y-3">
               <div>
                 <label className="mb-1 block text-xs font-semibold text-slate-600">Medicación *</label>

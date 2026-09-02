@@ -23,7 +23,7 @@ beforeAll(async () => {
     data: { email: `${prefix}-client@test.com`, password: hashed, role: 'CLIENT' },
   });
   vetUser = await prisma.user.create({
-    data: { email: `${prefix}-vet@test.com`, password: hashed, role: 'VET' },
+    data: { email: `${prefix}-vet@test.com`, password: hashed, role: 'VET', vetStatus: 'APPROVED' },
   });
 
   clientToken = jwt.sign(

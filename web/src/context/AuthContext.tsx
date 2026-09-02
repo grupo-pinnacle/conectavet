@@ -10,7 +10,7 @@ export interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, role: string) => Promise<void>;
+  register: (name: string, email: string, password: string, role: string, specialty?: string) => Promise<void>;
   logout: () => void;
   updateProfile: (data: import("../services/endpoints").UpdateProfilePayload) => Promise<void>;
   setOnline: (isOnline: boolean) => Promise<void>;
@@ -85,10 +85,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setAuth(normalizeUser(userData));
   }, [setAuth]);
 
-  const register = useCallback(async (name: string, email: string, password: string, role: string) => {
+  const register = useCallback(async (name: string, email: string, password: string, role: string, specialty?: string) => {
     const [firstName, ...rest] = name.trim().split(" ");
     const roleMap: Record<string, string> = { owner: "CLIENT", vet: "VET" };
-    const res = await api.post("/api/auth/register", { firstName, lastName: rest.join(" ") || undefined, email, password, role: roleMap[role] || role });
+    const res = await api.post("/api/auth/register", {
+      firstName,
+      lastName: rest.join(" ") || undefined,
+      email,
+      password,
+      role: roleMap[role] || role,
+      specialty: specialty || undefined,
+    });
     const { user: userData, accessToken } = res.data.data;
     setApiToken(accessToken ?? null);
     setToken(accessToken ?? null);

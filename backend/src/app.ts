@@ -1,4 +1,4 @@
-﻿import 'dotenv/config';
+import 'dotenv/config';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -101,7 +101,7 @@ app.get('/health', async (_req: Request, res: Response) => {
 // Rate limit global: solo mutaciones (POST/PATCH/DELETE).
 // El front tiene polling GET (consultas/mensajes c/10s) y varias pestaÃ±as:
 // exentamos GET/HEAD para que el 429 global no tumbe el dashboard.
-const isTest = process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development';
+const isTest = process.env.NODE_ENV === 'test';
 const limiter = rateLimit({
   store: new CustomRedisStore('rl:global:'),
   windowMs: 15 * 60 * 1000,

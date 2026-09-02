@@ -1,4 +1,21 @@
 export type Role = 'CLIENT' | 'VET' | 'ADMIN';
+export type VetStatus = 'PENDING' | 'APPROVED';
+export type ConsultationStatus = 'WAITING' | 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+
+export const RATING_SCALE = {
+  MIN: 1,
+  MAX: 5,
+} as const;
+
+export const VALID_SPECIES = [
+  'Perro',
+  'Gato',
+  'Ave',
+  'Conejo',
+  'Roedor',
+  'Reptil',
+  'Otro',
+] as const;
 
 export interface JwtPayload {
   userId: string;
@@ -7,22 +24,38 @@ export interface JwtPayload {
   tokenVersion?: number;
 }
 
-export interface ApiResponse<T> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   message?: string;
 }
 
-export interface PaginationParams {
+export interface PaginatedResponse<T> {
+  success: boolean;
+  data: T[];
+  total: number;
   page: number;
   limit: number;
+  totalPages: number;
+  nextCursor?: string | null;
+}
+
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+  cursor?: string;
 }
 
 export interface User {
   id: string;
   email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  phone?: string | null;
   role: Role;
+  vetStatus?: VetStatus;
   isOnline: boolean;
+  specialty?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -31,10 +64,26 @@ export interface Pet {
   id: string;
   name: string;
   species: string;
-  breed: string | null;
-  age: number | null;
-  weight: number | null;
+  breed?: string | null;
+  age?: number | null;
+  weightKg?: number | null;
+  photoUrl?: string | null;
   ownerId: string;
+  allergies?: string[];
+  chronicConditions?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Consultation {
+  id: string;
+  clientId: string;
+  vetId?: string | null;
+  petId: string;
+  status: ConsultationStatus;
+  notes?: string | null;
+  startedAt?: string | null;
+  endedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

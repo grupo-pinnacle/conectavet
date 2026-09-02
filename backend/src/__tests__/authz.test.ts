@@ -32,12 +32,21 @@ afterAll(async () => {
 });
 
 describe('Matriz de autorización negativa (T-02)', () => {
-  test('GET /api/users/vets — CLIENT bloqueado (403), VET/ADMIN permitidos (200)', async () => {
+  test('GET /api/users/vets — CLIENT, VET y ADMIN pueden ver el directorio de veterinarios (200)', async () => {
     const client = await request(app).get('/api/users/vets').set('Authorization', `Bearer ${clientToken}`);
     const vet = await request(app).get('/api/users/vets').set('Authorization', `Bearer ${vetToken}`);
     const admin = await request(app).get('/api/users/vets').set('Authorization', `Bearer ${adminToken}`);
-    expect(client.status).toBe(403);
+    expect(client.status).toBe(200);
     expect(vet.status).toBe(200);
+    expect(admin.status).toBe(200);
+  });
+
+  test('GET /api/users/admin/users — CLIENT y VET bloqueados (403), ADMIN permitido (200)', async () => {
+    const client = await request(app).get('/api/users/admin/users').set('Authorization', `Bearer ${clientToken}`);
+    const vet = await request(app).get('/api/users/admin/users').set('Authorization', `Bearer ${vetToken}`);
+    const admin = await request(app).get('/api/users/admin/users').set('Authorization', `Bearer ${adminToken}`);
+    expect(client.status).toBe(403);
+    expect(vet.status).toBe(403);
     expect(admin.status).toBe(200);
   });
 
@@ -67,7 +76,7 @@ describe('Matriz de autorización negativa (T-02)', () => {
     expect(admin.status).not.toBe(401);
   });
 
-  test('PATCH /api/consultations/:id/assign — CLIENT bloqueado (403), VET/ADMIN pasan el gate (≠403)', async () => {
+  test('PATCH /api/consultations/:id/assign — CLIENT y ADMIN bloqueados (403), VET pasa el gate (≠403)', async () => {
     const fakeId = 'clinicio-no-existe';
     const client = await request(app)
       .patch(`/api/consultations/${fakeId}/assign`)
@@ -81,7 +90,6 @@ describe('Matriz de autorización negativa (T-02)', () => {
     expect(client.status).toBe(403);
     expect(vet.status).not.toBe(403);
     expect(vet.status).not.toBe(401);
-    expect(admin.status).not.toBe(403);
-    expect(admin.status).not.toBe(401);
+    expect(admin.status).toBe(403);
   });
 });

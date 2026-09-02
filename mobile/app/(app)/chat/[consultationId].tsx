@@ -226,6 +226,8 @@ export default function ConsultationChatScreen() {
     }
   };
 
+  const reversedMessages = useMemo(() => [...messages].reverse(), [messages]);
+
   const renderMessage = useCallback(({ item }: { item: Message }) => (
     <ChatBubble
       message={item}
@@ -333,10 +335,10 @@ export default function ConsultationChatScreen() {
       ) : (
         <FlatList
           ref={flatRef}
-          data={messages}
+          data={reversedMessages}
           keyExtractor={(item) => item.id}
+          inverted
           contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm }}
-          onContentSizeChange={() => scrollToEnd(false)}
           keyboardShouldPersistTaps="handled"
           renderItem={renderMessage}
           ItemSeparatorComponent={() => <View style={{ height: 2 }} />}
@@ -345,7 +347,7 @@ export default function ConsultationChatScreen() {
           windowSize={7}
           removeClippedSubviews={Platform.OS === 'android'}
           updateCellsBatchingPeriod={50}
-          ListHeaderComponent={
+          ListFooterComponent={
             <ChatListHeader
               isPending={isPending}
               isWaiting={isWaiting}

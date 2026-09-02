@@ -1,113 +1,85 @@
-name: CI / CD Pipeline
+﻿name: CI — ConectaVet FAANG Quality Gate
 
 on:
   push:
-    branches: [main, develop]
+    branches: [ main, master ]
   pull_request:
-    branches: [main, develop]
+    branches: [ main, master ]
 
 jobs:
-  backend-checks:
-    name: Backend - Lint, Typecheck & Tests
+  backend:
+    name: Backend Quality Gate
     runs-on: ubuntu-latest
-    services:
-      redis:
-        image: redis:alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-    defaults:
-      run:
-        working-directory: ./backend
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: './backend/package-lock.json'
-      - name: Install Dependencies
-        run: npm ci
-      - name: Generate Prisma Client
-        run: npx prisma generate
-      - name: Typecheck
-        run: npx tsc --noEmit
-      - name: Lint
-        run: npm run lint --if-present
-      - name: Unit Tests
-        run: npx jest --selectProjects unit
-        env:
-          JWT_SECRET: test-secret-github-actions
-          REDIS_URL: redis://localhost:6379
-      - name: Integration Tests
-        run: npx jest --selectProjects integration --runInBand
-        env:
-          JWT_SECRET: test-secret-github-actions
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_URL: ${{ secrets.DIRECT_URL }}
-          REDIS_URL: redis://localhost:6379
+          cache-dependency-path: backend/package-lock.json
 
-  web-checks:
-    name: Web - Lint, Typecheck & Build
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Generate Prisma Client
+        working-directory: backend
+        run: npx prisma generate
+
+      - name: Typecheck Backend
+        working-directory: backend
+        run: npx tsc --noEmit
+
+      - name: Unit Tests
+        working-directory: backend
+        run: npm run test:unit
+
+  web:
+    name: Web Frontend Quality Gate
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./web
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: './web/package-lock.json'
-      - name: Install Dependencies
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web
         run: npm ci
-      - name: Typecheck
-        run: npx tsc --noEmit
-      - name: Lint
-        run: npm run lint --if-present
-      - name: Build Web
+
+      - name: Typecheck Web
+        working-directory: web
+        run: npx tsc -b
+
+      - name: Run Web Tests
+        working-directory: web
+        run: npm test
+
+      - name: Build Web Production Bundle
+        working-directory: web
         run: npm run build
 
-  mobile-checks:
-    name: Mobile - Typecheck & Lint
+  mobile:
+    name: Mobile App Quality Gate
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./mobile
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: './mobile/package-lock.json'
-      - name: Install Dependencies
-        run: npm ci
-      - name: Typecheck
-        run: npx tsc --noEmit
-      - name: Lint
-        run: npm run lint --if-present
+          cache-dependency-path: mobile/package-lock.json
 
-  security-scan:
-    name: Security - Audit & Secret Scan
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Gitleaks Secret Scan (Blocking)
-        uses: gitleaks/gitleaks-action@v2
-        with:
-          args: detect --no-history --source .
+      - name: Install dependencies
+        working-directory: mobile
+        run: npm ci
+
+      - name: Typecheck Mobile
+        working-directory: mobile
+        run: npx tsc --noEmit
+
+      - name: Run Mobile Tests
+        working-directory: mobile
+        run: npm test

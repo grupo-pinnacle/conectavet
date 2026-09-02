@@ -8,7 +8,7 @@ import {
 } from "@livekit/components-react";
 import "@livekit/components-styles";
 import type { CallToken } from "../../services/endpoints";
-import { Stethoscope } from "lucide-react";
+import { Stethoscope, AlertTriangle } from "lucide-react";
 
 interface CallRoomProps {
   call: CallToken;
@@ -18,22 +18,34 @@ interface CallRoomProps {
 
 export default function CallRoom({ call, peerName, onLeave }: CallRoomProps) {
   const [preJoined, setPreJoined] = useState(false);
+  const [mediaError, setMediaError] = useState<string | null>(null);
 
   if (!preJoined) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950" data-lk-theme="default">
-        <div className="mb-8 flex flex-col items-center">
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 p-4" data-lk-theme="default">
+        <div className="mb-6 flex flex-col items-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-teal-600 shadow-lg">
             <Stethoscope className="h-8 w-8 text-white" />
           </div>
           <h1 className="mt-4 text-2xl font-bold text-white">Sala de Consulta</h1>
           <p className="mt-2 text-slate-400">Preparate para hablar con {peerName}</p>
         </div>
+
+        {mediaError && (
+          <div className="mb-4 flex max-w-md items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-amber-200 text-sm">
+            <AlertTriangle className="h-5 w-5 shrink-0 text-amber-400" />
+            <span>{mediaError}</span>
+          </div>
+        )}
+
         <div className="w-full max-w-md overflow-hidden rounded-2xl bg-slate-900 shadow-2xl ring-1 ring-white/10">
           <PreJoin
             onSubmit={() => setPreJoined(true)}
             onValidate={() => true}
-            onError={(err) => console.error(err)}
+            onError={(err) => {
+              console.error("LiveKit PreJoin error:", err);
+              setMediaError("No pudimos acceder a tu cámara o micrófono. Verificá los permisos del dispositivo.");
+            }}
           />
         </div>
         <button

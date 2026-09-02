@@ -66,23 +66,23 @@ const consultation = await createConsultation({
       vetId: req.body.vetId,
     });
 emitConsultationUpdate('consultation:new', consultation);
-if (consultation.status === 'WAITING') {
-      await notifyVetsOnline(
-        'consultation_new',
-        'Nueva consulta en espera',
-        'Un cliente está esperando atención',
-        { consultationId: consultation.id }
-      );
-    } else if (consultation.status === 'PENDING' && consultation.vetId) {
-      await notifyUser(
-        consultation.vetId,
-        'consultation_offer',
-        'Nueva consulta asignada',
-        'Un cliente te eligió para atender a su mascota',
-        { consultationId: consultation.id }
-      );
-    }
-return res.status(201).json({ success: true, data: consultation });
+  if (consultation.status === 'WAITING') {
+    void notifyVetsOnline(
+      'consultation_new',
+      'Nueva consulta en espera',
+      'Un cliente está esperando atención',
+      { consultationId: consultation.id }
+    ).catch(() => {});
+  } else if (consultation.status === 'PENDING' && consultation.vetId) {
+    void notifyUser(
+      consultation.vetId,
+      'consultation_offer',
+      'Nueva consulta asignada',
+      'Un cliente te eligió para atender a su mascota',
+      { consultationId: consultation.id }
+    ).catch(() => {});
+  }
+  return res.status(201).json({ success: true, data: consultation });
 });
 
 export const assignVetController = asyncHandler(async (req: RequestWithUser, res: Response) => {

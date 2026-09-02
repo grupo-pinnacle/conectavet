@@ -3,12 +3,15 @@ import { useRouter } from 'expo-router';
 import { getSocket } from '@/lib/socket';
 import { useDialogStore } from '@/stores/dialogStore';
 
+import * as Haptics from 'expo-haptics';
+
 export function useIncomingCall() {
   const router = useRouter();
 
   useEffect(() => {
     let cancelled = false;
     let socketInstance: any = null;
+    let handleIncomingCall: ((data: { consultationId: string; callerName?: string }) => void) | null = null;
 
     const init = async () => {
       try {
@@ -17,7 +20,10 @@ export function useIncomingCall() {
         if (cancelled) return;
         socketInstance = socket;
 
-        const handleIncomingCall = (data: { consultationId: string; callerName?: string }) => {
+        handleIncomingCall = (data: { consultationId: string; callerName?: string }) => {
+          // Vibración táctil háptica en el dispositivo móvil
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+
           useDialogStore.getState().show({
             type: 'info',
             title: 'Videollamada Entrante',
@@ -39,9 +45,8 @@ export function useIncomingCall() {
 
     return () => {
       cancelled = true;
-      if (socketInstance) {
-        // Just remove the listener, do not disconnect the socket because chat might be using it.
-        socketInstance.removeAllListeners('call:incoming');
+      if (socketInstance && handleIncomingCall) {
+        socketInstance.off('call:incoming', handleIncomingCall);
       }
     };
   }, [router]);

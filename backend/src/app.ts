@@ -54,6 +54,27 @@ app.use(cors({
   credentials: allowCredentials,
 }));
 
+// Protección anti-CSRF para peticiones mutativas basadas en cookies
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method);
+  const cookieHeader = req.headers.cookie || '';
+  const hasAuthCookie = cookieHeader.includes('access_token=');
+  const authHeader = req.headers.authorization || '';
+  const hasBearer = authHeader.startsWith('Bearer ');
+
+  if (isMutating && hasAuthCookie && !hasBearer) {
+    const origin = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : undefined);
+    if (origin) {
+      const allowed = corsOrigins.includes(origin) || corsOrigins.includes('*');
+      if (!allowed) {
+        res.status(403).json({ success: false, message: 'Origen no permitido (CSRF Protection)' });
+        return;
+      }
+    }
+  }
+  next();
+});
+
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: false }));
 

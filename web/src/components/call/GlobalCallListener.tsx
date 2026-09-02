@@ -5,11 +5,67 @@ import { getCallToken, type CallToken } from "../../services/endpoints";
 
 const CallRoom = lazy(() => import("./CallRoom"));
 
+function playRingtone() {
+  try {
+    const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return () => {};
+    const ctx = new AudioContextClass();
+    let isPlaying = true;
+
+    const playChime = () => {
+      if (!isPlaying || ctx.state === "closed") return;
+      if (ctx.state === "suspended") {
+        ctx.resume().catch(() => {});
+      }
+      const now = ctx.currentTime;
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc1.type = "sine";
+      osc2.type = "sine";
+      osc1.frequency.setValueAtTime(440, now);
+      osc2.frequency.setValueAtTime(554.37, now); // C#5
+
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.12, now + 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 1.25);
+      osc2.stop(now + 1.25);
+    };
+
+    playChime();
+    const interval = setInterval(playChime, 2400);
+
+    return () => {
+      isPlaying = false;
+      clearInterval(interval);
+      ctx.close().catch(() => {});
+    };
+  } catch {
+    return () => {};
+  }
+}
+
 export default function GlobalCallListener() {
   const [incomingCall, setIncomingCall] = useState<{ consultationId: string; callerName: string } | null>(null);
   const [call, setCall] = useState<CallToken | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (incomingCall) {
+      const stopRingtone = playRingtone();
+      return () => stopRingtone();
+    }
+  }, [incomingCall]);
 
   useEffect(() => {
     const sock = getSocket();

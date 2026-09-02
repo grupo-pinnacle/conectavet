@@ -1,6 +1,7 @@
 import { prisma } from '../../shared/prisma.js';
-import { ConflictError } from '../../shared/errors/index.js';
 import { Sex } from '@prisma/client';
+
+import { getIO } from '../consultations/chat.gateway.js';
 
 export async function getPetsByOwner(ownerId: string, page = 1, limit = 20) {
   const skip = (page - 1) * limit;
@@ -39,17 +40,6 @@ export async function createPet(data: {
   chronicConditions?: string[];
   birthDate?: string;
 }) {
-  const existing = await prisma.pet.findFirst({
-    where: {
-      ownerId: data.ownerId,
-      name: { equals: data.name, mode: 'insensitive' },
-      deletedAt: null
-    }
-  });
-  if (existing) {
-    throw new ConflictError('Ya tenés una mascota activa con este nombre');
-  }
-
   return prisma.pet.create({
     data: {
       name: data.name,
@@ -109,19 +99,42 @@ export async function updatePet(
 }
 
 export async function deletePet(id: string) {
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
+    const affectedConsultations = await tx.consultation.findMany({
+      where: { petId: id, status: { in: ['WAITING', 'PENDING', 'ACTIVE'] } },
+      select: { id: true, clientId: true, vetId: true },
+    });
+
     const pet = await tx.pet.update({
       where: { id },
       data: { deletedAt: new Date() },
     });
 
-    await tx.consultation.updateMany({
-      where: { petId: id, status: { in: ['WAITING', 'PENDING', 'ACTIVE'] } },
-      data: { status: 'CANCELLED', updatedAt: new Date() },
-    });
+    if (affectedConsultations.length > 0) {
+      await tx.consultation.updateMany({
+        where: { petId: id, status: { in: ['WAITING', 'PENDING', 'ACTIVE'] } },
+        data: { status: 'CANCELLED', updatedAt: new Date() },
+      });
+    }
 
-    return pet;
+    return { pet, affectedConsultations };
   });
+
+  try {
+    const io = getIO();
+    if (io) {
+      for (const c of result.affectedConsultations) {
+        const payload = { id: c.id, status: 'CANCELLED', petId: id };
+        io.to(`consultation:${c.id}`).emit('consultation:updated', payload);
+        if (c.clientId) io.to(`user:${c.clientId}`).emit('consultation:updated', payload);
+        if (c.vetId) io.to(`user:${c.vetId}`).emit('consultation:updated', payload);
+      }
+    }
+  } catch {
+    /* socket opcional */
+  }
+
+  return result.pet;
 }
 
 export async function restorePet(id: string, userId: string) {

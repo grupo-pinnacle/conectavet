@@ -7,19 +7,20 @@ import { saveAttachment } from './media.service';
 import { asyncHandler } from "../../shared/middlewares/async.middleware.js";
 
 export const uploadImageController = asyncHandler(async (req: RequestWithUser, res: Response) => {
-if (!req.user) {
-      return res.status(401).json({ success: false, message: 'No autenticado' });
-    }
-if (!req.file) {
-      return res.status(400).json({ success: false, message: 'Adjuntá una imagen' });
-    }
-const attachment = await saveAttachment({
-      uploaderId: req.user.userId,
-      mimeType: req.file.mimetype,
-      size: req.file.size,
-      buffer: req.file.buffer,
-    });
-return res.status(201).json({ success: true, data: attachment });
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: 'No autenticado' });
+  }
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'Adjuntá una imagen' });
+  }
+  const attachment = await saveAttachment({
+    uploaderId: req.user.userId,
+    mimeType: req.file.mimetype,
+    size: req.file.size,
+    filePath: req.file.path,
+    buffer: req.file.buffer,
+  });
+  return res.status(201).json({ success: true, data: attachment });
 });
 
 export function handleUploadErrors(

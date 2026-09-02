@@ -167,11 +167,10 @@ export default function CallScreen() {
             }}
             onHttpError={(syntheticEvent) => {
               const status = syntheticEvent.nativeEvent.statusCode;
-              if (status >= 400) setError(`La web de videollamada no está disponible (HTTP ${status}). Verificá que la web esté corriendo en ${WEB_URL}.`);
+              if (status >= 400) setError('El servicio de videollamada no está disponible en este momento. Por favor intentá nuevamente en unos instantes.');
             }}
-            onError={(syntheticEvent) => {
-              const { code, description } = syntheticEvent.nativeEvent;
-              setError(`Error de red en la videollamada (${code}): ${description}.\n\nSi usas USB, intentá reiniciar la app con "R" o reconectar el cable para restaurar los puertos.`);
+            onError={() => {
+              setError('Problemas de conexión con la sala de teleconsulta. Verificá tu señal de internet o datos móviles.');
             }}
           />
           <Pressable

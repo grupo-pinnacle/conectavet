@@ -142,6 +142,7 @@ export async function listVets(
     vetStatus: 'APPROVED',
     deletedAt: null,
     ...(onlineOnly ? { isOnline: true } : {}),
+    ...(minRating && minRating > 0 ? { ratingAvg: { gte: minRating } } : {}),
     ...(search
       ? {
           OR: [
@@ -154,6 +155,11 @@ export async function listVets(
       : {}),
   };
 
+  const orderBy: Prisma.UserOrderByWithRelationInput[] =
+    sortBy === 'rating'
+      ? [{ ratingAvg: 'desc' }, { createdAt: 'desc' }]
+      : [{ createdAt: 'desc' }];
+
   const [vets, total] = await Promise.all([
     prisma.user.findMany({
       where,
@@ -164,12 +170,11 @@ export async function listVets(
         specialty: true,
         role: true,
         isOnline: true,
+        ratingAvg: true,
+        ratingCount: true,
         createdAt: true,
-        reviewsAsVet: {
-          select: { rating: true },
-        },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy,
       skip,
       take: limit,
     }),
@@ -185,41 +190,25 @@ export async function listVets(
     favoriteIds = new Set(favorites.map((f) => f.vetId));
   }
 
-  const mapped = vets.map((vet) => {
-    const totalRatings = vet.reviewsAsVet.length;
-    const ratingAvg =
-      totalRatings > 0
-        ? Math.round((vet.reviewsAsVet.reduce((sum, r) => sum + r.rating, 0) / totalRatings) * 10) / 10
-        : 0;
-
-    return {
-      id: vet.id,
-      firstName: vet.firstName,
-      lastName: vet.lastName,
-      specialty: vet.specialty,
-      role: vet.role,
-      isOnline: vet.isOnline,
-      createdAt: vet.createdAt,
-      ratingAvg,
-      ratingCount: totalRatings,
-      isFavorite: favoriteIds.has(vet.id),
-    };
-  });
-
-  const filteredData = minRating && minRating > 0
-    ? mapped.filter((v) => v.ratingAvg >= minRating)
-    : mapped;
-
-  if (sortBy === 'rating') {
-    filteredData.sort((a, b) => b.ratingAvg - a.ratingAvg);
-  }
+  const mapped = vets.map((vet) => ({
+    id: vet.id,
+    firstName: vet.firstName,
+    lastName: vet.lastName,
+    specialty: vet.specialty,
+    role: vet.role,
+    isOnline: vet.isOnline,
+    createdAt: vet.createdAt,
+    ratingAvg: vet.ratingAvg,
+    ratingCount: vet.ratingCount,
+    isFavorite: favoriteIds.has(vet.id),
+  }));
 
   const result = {
-    data: filteredData,
-    total: minRating && minRating > 0 ? filteredData.length : total,
+    data: mapped,
+    total,
     page,
     limit,
-    totalPages: Math.ceil((minRating && minRating > 0 ? filteredData.length : total) / limit),
+    totalPages: Math.ceil(total / limit),
   };
 
   await setCache(cacheKey, result, 30);

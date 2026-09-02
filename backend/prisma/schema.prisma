@@ -45,6 +45,8 @@ model User {
   vetStatus    VetStatus @default(APPROVED) @map("vet_status")
   isOnline     Boolean  @default(false)
   tokenVersion Int      @default(1)
+  ratingAvg    Float    @default(0) @map("rating_avg")
+  ratingCount  Int      @default(0) @map("rating_count")
   isEmailVerified      Boolean    @default(false) @map("is_email_verified")
   emailVerifyToken     String?    @map("email_verify_token")
   emailVerifyExpires   DateTime?  @map("email_verify_expires")
@@ -71,6 +73,7 @@ model User {
   @@map("users")
   @@index([emailVerifyToken])
   @@index([passwordResetToken])
+  @@index([role, isOnline, vetStatus, deletedAt])
 }
 
 model Pet {
@@ -97,32 +100,33 @@ model Pet {
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 
-  @@index([ownerId])
+  @@index([ownerId, deletedAt])
   @@index([species])
   @@map("pets")
 }
 
 model Consultation {
-  id            String             @id @default(cuid())
-  clientId      String
-  client        User               @relation("ClientConsultations", fields: [clientId], references: [id])
-  vetId         String?
-  vet           User?              @relation("VetConsultations", fields: [vetId], references: [id])
-  petId         String
-  pet           Pet                @relation(fields: [petId], references: [id])
-  status        ConsultationStatus @default(WAITING)
-  notes         String?
-  startedAt     DateTime?
-  endedAt       DateTime?
-  createdAt     DateTime           @default(now())
-  updatedAt    DateTime @updatedAt
-  deletedAt     DateTime? @map("deleted_at")
-  messages      Message[]
-  prescriptions Prescription[]
-  review        Review?
+  id             String             @id @default(cuid())
+  clientId       String
+  client         User               @relation("ClientConsultations", fields: [clientId], references: [id])
+  vetId          String?
+  vet            User?              @relation("VetConsultations", fields: [vetId], references: [id])
+  petId          String
+  pet            Pet                @relation(fields: [petId], references: [id])
+  status         ConsultationStatus @default(WAITING)
+  notes          String?
+  diagnosisNotes String?            @map("diagnosis_notes")
+  startedAt      DateTime?
+  endedAt        DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  deletedAt      DateTime?          @map("deleted_at")
+  messages       Message[]
+  prescriptions  Prescription[]
+  review         Review?
 
-  @@index([clientId])
-  @@index([vetId])
+  @@index([clientId, status, deletedAt])
+  @@index([vetId, status, deletedAt])
   @@index([status])
   @@index([deletedAt])
   @@map("consultations")

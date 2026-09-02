@@ -1,5 +1,6 @@
 import type { FC } from "react";
 import { X, Printer, ShieldCheck, Stethoscope, PawPrint, Calendar, User, FileText } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import Button from "../Button";
 import Logo from "../Logo";
 import type { Prescription } from "../../types";
@@ -158,16 +159,9 @@ export const PrescriptionPDFModal: FC<PrescriptionPDFModalProps> = ({
           {/* Doctor Signature & QR Verification Footer */}
           <div className="grid grid-cols-2 gap-6 pt-4 border-t border-slate-200 items-end">
             <div className="flex items-center gap-3">
-              {/* Dynamic QR Code Canvas/Representation */}
-              <div className="h-20 w-20 bg-slate-900 rounded-lg p-1.5 flex flex-col items-center justify-center shrink-0 text-white text-[8px] font-mono text-center">
-                <div className="grid grid-cols-4 gap-0.5 w-full h-full p-1 bg-white rounded">
-                  {Array.from({ length: 16 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className={`${(i % 2 === 0 || i % 5 === 0) ? "bg-slate-900" : "bg-transparent"} rounded-[1px]`}
-                    />
-                  ))}
-                </div>
+              {/* Real QR Code */}
+              <div className="h-20 w-20 bg-white border border-slate-200 rounded-lg p-1.5 flex items-center justify-center shrink-0">
+                <QRCodeSVG value={qrValidationUrl} size={68} level="M" />
               </div>
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1 text-green-700 font-bold text-xs">

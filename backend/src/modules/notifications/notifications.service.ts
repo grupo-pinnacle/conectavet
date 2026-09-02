@@ -116,7 +116,44 @@ export async function notifyVetsOnline(type: string, title: string, body: string
     where: { role: 'VET', isOnline: true },
     select: { id: true },
   });
-  await Promise.all(vets.map((vet) => notifyUser(vet.id, type, title, body, data)));
+  if (vets.length === 0) return;
+
+  // Inserción en lote en base de datos
+  await prisma.notification.createMany({
+    data: vets.map((v) => ({
+      userId: v.id,
+      type,
+      title,
+      body,
+      data: (data ?? undefined) as any,
+    })),
+  });
+
+  // Notificación instantánea vía Socket.io a cada veterinario conectado
+  try {
+    const { getIO } = await import('../consultations/chat.gateway.js');
+    const io = getIO();
+    if (io) {
+      for (const v of vets) {
+        io.to(`user:${v.id}`).emit('notification:new', { type, title, body, data });
+      }
+    }
+  } catch {
+    /* socket opcional */
+  }
+
+  // Batching de push tokens: una sola llamada masiva a Expo Push
+  try {
+    const tokens = await prisma.pushToken.findMany({
+      where: { userId: { in: vets.map((v) => v.id) } },
+      select: { token: true },
+    });
+    if (tokens.length > 0) {
+      await sendExpoPush(tokens.map((t) => t.token), title, body, data);
+    }
+  } catch {
+    /* push best-effort */
+  }
 }
 
 /**

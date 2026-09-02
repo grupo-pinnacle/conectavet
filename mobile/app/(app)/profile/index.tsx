@@ -9,6 +9,7 @@ import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
 import type { Role } from '@/types';
 
 const roleLabel: Record<Role, string> = {
+  CLIENT: 'Dueño de mascotas',
   OWNER: 'Dueño de mascotas',
   VET: 'Veterinario/a',
   ADMIN: 'Administrador',

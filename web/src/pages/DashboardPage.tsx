@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import type { Socket } from "socket.io-client";
 import { useAuth } from "../hooks/useAuth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Home, PawPrint, Calendar, MessageCircle, Search, User, LogOut } from "lucide-react";
 import Logo from "../components/Logo";
 import HomeSection from "../components/dashboard/HomeSection";
@@ -26,7 +26,11 @@ const navItems = [
 export default function DashboardPage() {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("home");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "home";
+  const setActiveTab = (tab: string) => {
+    setSearchParams({ tab });
+  };
   const [pendingPetId, setPendingPetId] = useState("");
   const [pendingCount, setPendingCount] = useState(0);
   const [activeCount, setActiveCount] = useState(0);

@@ -167,7 +167,7 @@ export async function setupChatSocket(httpServer: HttpServer) {
         const targetId = user.userId === consultation.clientId ? consultation.vetId : consultation.clientId;
         if (!targetId) return;
 
-        socket.to(`consultation:${consultationId}`).emit('call:incoming', { consultationId, callerName: peerName });
+        // Emitir exclusivamente a la sala personal del destinatario para evitar doble timbrado
         socket.to(`user:${targetId}`).emit('call:incoming', { consultationId, callerName: peerName });
       } catch (err) {
         console.error('Error al enrutar call:incoming', err);
@@ -186,7 +186,6 @@ export async function setupChatSocket(httpServer: HttpServer) {
         });
         if (!consultation) return;
         const targetId = user.userId === consultation.clientId ? consultation.vetId : consultation.clientId;
-        socket.to(`consultation:${consultationId}`).emit('call:rejected', { consultationId });
         if (targetId) {
           socket.to(`user:${targetId}`).emit('call:rejected', { consultationId });
         }

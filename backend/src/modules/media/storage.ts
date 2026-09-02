@@ -1,28 +1,37 @@
-import { writeFile } from 'fs/promises';
+import { rename, unlink, writeFile } from 'fs/promises';
+import { createReadStream } from 'fs';
 import { join } from 'path';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { UPLOADS_DIR } from './media.service.js';
 
-/**
- * Persiste un archivo subido por el usuario y devuelve una URL servible.
- *
- * - `STORAGE_PROVIDER=local` (default): deja el archivo en disco de la
- *   instancia y devuelve `/uploads/<filename>`. Válido solo en dev / una
- *   instancia con volumen persistente. En PaaS efímero se pierde en redeploy.
- * - `STORAGE_PROVIDER=s3`: sube el buffer a S3/compatible y devuelve la URL
- *   del objeto (el disco local se usa solo como paso temporal). Requiere
- *   `@aws-sdk/client-s3` y las vars AWS_*.
- */
-export async function persistUpload(buffer: Buffer, filename: string, mimeType: string): Promise<string> {
+export async function persistUpload(
+  source: string | Buffer,
+  filename: string,
+  mimeType: string
+): Promise<string> {
+  const dest = join(UPLOADS_DIR, filename);
+
   if (process.env.STORAGE_PROVIDER === 's3') {
-    const url = await uploadToS3(buffer, filename, mimeType);
+    const url = await uploadToS3(source, filename, mimeType);
+    if (typeof source === 'string') {
+      await unlink(source).catch(() => {});
+    }
     return url;
   }
-  await writeFile(join(UPLOADS_DIR, filename), buffer);
+
+  if (typeof source === 'string') {
+    await rename(source, dest);
+  } else {
+    await writeFile(dest, source);
+  }
   return `/uploads/${filename}`;
 }
 
-async function uploadToS3(buffer: Buffer, key: string, mimeType: string): Promise<string> {
+async function uploadToS3(
+  source: string | Buffer,
+  key: string,
+  mimeType: string
+): Promise<string> {
   const client = new S3Client({
     region: process.env.AWS_REGION,
     endpoint: process.env.AWS_S3_ENDPOINT || undefined,
@@ -32,8 +41,10 @@ async function uploadToS3(buffer: Buffer, key: string, mimeType: string): Promis
     },
   });
   const bucket = process.env.AWS_S3_BUCKET as string;
+  const body = typeof source === 'string' ? createReadStream(source) : source;
   await client.send(
-    new PutObjectCommand({ Bucket: bucket, Key: key, Body: buffer, ContentType: mimeType })
+    new PutObjectCommand({ Bucket: bucket, Key: key, Body: body, ContentType: mimeType })
   );
   return `https://${bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 }
+

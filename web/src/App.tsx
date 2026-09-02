@@ -18,6 +18,7 @@ const VetDashboardPage   = lazy(() => import("./pages/VetDashboardPage"));
 const AdminDashboardPage = lazy(() => import("./pages/AdminDashboardPage"));
 const LandingPage        = lazy(() => import("./pages/LandingPage"));
 const CallPage           = lazy(() => import("./pages/CallPage"));
+const VerifyRxPage       = lazy(() => import("./pages/VerifyRxPage"));
 
 function OfflineBanner() {
   const isOnline = useOnlineStatus();
@@ -102,6 +103,7 @@ function App() {
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/call" element={<CallPage />} />
+              <Route path="/verify-rx" element={<VerifyRxPage />} />
               <Route
                 path="/dashboard"
                 element={

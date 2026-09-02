@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 
 import { useAuth } from "../hooks/useAuth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   LayoutDashboard, PawPrint,
   MessageCircle, LogOut, User,
@@ -24,7 +24,11 @@ const navItems = [
 export default function VetDashboardPage() {
   const { logout, user, isOnline } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("home");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "home";
+  const setActiveTab = (tab: string) => {
+    setSearchParams({ tab });
+  };
   const [offerCount, setOfferCount] = useState(0);
 
   const refreshCounts = useCallback(async () => {

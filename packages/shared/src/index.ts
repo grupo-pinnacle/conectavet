@@ -56,6 +56,8 @@ export interface User {
   vetStatus?: VetStatus;
   isOnline: boolean;
   specialty?: string | null;
+  ratingAvg?: number;
+  ratingCount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -66,6 +68,7 @@ export interface Pet {
   species: string;
   breed?: string | null;
   age?: number | null;
+  weight?: number | null;
   weightKg?: number | null;
   photoUrl?: string | null;
   ownerId: string;
@@ -99,6 +102,16 @@ export interface Message {
   createdAt: string;
 }
 
+export interface Review {
+  id: string;
+  consultationId: string;
+  clientId: string;
+  vetId: string;
+  rating: number;
+  comment?: string | null;
+  createdAt: string;
+}
+
 export interface Consultation {
   id: string;
   clientId: string;
@@ -106,6 +119,7 @@ export interface Consultation {
   petId: string;
   status: ConsultationStatus;
   notes?: string | null;
+  diagnosisNotes?: string | null;
   startedAt?: string | null;
   endedAt?: string | null;
   createdAt: string;
@@ -114,4 +128,5 @@ export interface Consultation {
   client?: Partial<User>;
   vet?: Partial<User>;
   prescriptions?: Prescription[];
+  review?: Review | null;
 }

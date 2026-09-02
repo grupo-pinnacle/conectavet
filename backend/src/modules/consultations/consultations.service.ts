@@ -1,6 +1,6 @@
 import { prisma } from '../../shared/prisma';
 import { NotFoundError, ConflictError, ForbiddenError } from '../../shared/errors';
-import { getCached, setCache, } from '../../shared/cache';
+import { getCached, setCache, clearCache } from '../../shared/cache';
 import { Prisma } from '@prisma/client';
 import { checkRateLimit, isDuplicate } from './message-throttle';
 
@@ -36,6 +36,7 @@ const consultationSnapshot = {
   petId: true,
   status: true,
   notes: true,
+  diagnosisNotes: true,
   startedAt: true,
   endedAt: true,
   createdAt: true,
@@ -612,19 +613,40 @@ export async function createReview(data: {
     throw new ConflictError('Esta consulta ya fue calificada');
   }
 
-  // Carrera (TOCTOU): dos requests pueden pasar la verificaciÃ³n de "ya
+  // Carrera (TOCTOU): dos requests pueden pasar la verificación de "ya
   // calificada" a la vez. Si llegan concurrentes, el unique en consultationId
-  // lanza P2002. En vez de un 500 genÃ©rico, devolvemos 409 claro (ConflictError).
+  // lanza P2002. En vez de un 500 genérico, devolvemos 409 claro (ConflictError).
   try {
-    return await prisma.review.create({
-      data: {
-        rating: data.rating,
-        comment: data.comment,
-        consultationId: data.consultationId,
-        clientId: data.clientId,
-        vetId: consultation.vetId,
-      },
+    const review = await prisma.$transaction(async (tx) => {
+      const created = await tx.review.create({
+        data: {
+          rating: data.rating,
+          comment: data.comment,
+          consultationId: data.consultationId,
+          clientId: data.clientId,
+          vetId: consultation.vetId!,
+        },
+      });
+
+      const aggregate = await tx.review.aggregate({
+        where: { vetId: consultation.vetId! },
+        _avg: { rating: true },
+        _count: { rating: true },
+      });
+
+      const ratingAvg = Math.round((aggregate._avg.rating ?? 0) * 10) / 10;
+      const ratingCount = aggregate._count.rating ?? 0;
+
+      await tx.user.update({
+        where: { id: consultation.vetId! },
+        data: { ratingAvg, ratingCount },
+      });
+
+      return created;
     });
+
+    await clearCache('vets:list:');
+    return review;
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&

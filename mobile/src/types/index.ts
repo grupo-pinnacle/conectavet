@@ -33,7 +33,7 @@ export class ApiError extends Error {
   }
 }
 
-export const roleSchema = z.enum(['OWNER', 'VET', 'ADMIN']);
+export const roleSchema = z.enum(['CLIENT', 'OWNER', 'VET', 'ADMIN']);
 export type Role = z.infer<typeof roleSchema>;
 
 export const userSchema = z.object({
@@ -43,11 +43,13 @@ export const userSchema = z.object({
   firstName: z.string(),
   lastName: z.string(),
   phone: z.string(),
-  isActive: z.boolean(),
+  isActive: z.boolean().default(true),
+  isOnline: z.boolean().optional(),
+  vetStatus: z.string().optional(),
   bio: z.string().nullable().optional(),
   specialty: z.string().nullable().optional(),
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
 });
 export type User = z.infer<typeof userSchema>;
 

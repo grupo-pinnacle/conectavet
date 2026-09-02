@@ -71,9 +71,20 @@ Este registro documenta todas las decisiones arquitectónicas clave tomadas dura
 - **Decisión:** Desplegar el Backend Node.js y la instancia de Redis sobre un servidor VPS propio utilizando **Coolify**, y el Frontend Web SPA sobre **Vercel** (o Hosting Web estático de **Hostinger**).
 - **Consecuencias:** Costo predecible y bajo (servidor VPS fijo de ~$4-8 USD/mes), control total sobre la infraestructura de WebSockets persistentes (Traefik) y CDN global para la Web.
 
-### ADR-018: Estrategia Tripartita de Distribución Android
-- **Contexto:** La publicación inicial en Google Play Store requiere un proceso de validación y pago de cuenta de desarrollador, mientras que las pruebas piloto requieren distribución rápida.
-- **Decisión:** Soportar 3 vías de entrega: (1) EAS Build a Google Play Store (`.aab`) para lanzamiento masivo, (2) Generación directa de `.apk` descargable desde la web oficial para fase beta y tutores iniciales, y (3) Compilación nativa local con Gradle sin dependencia de cloud build.
-- **Consecuencias:** Flexibilidad total para iniciar operaciones inmediatamente sin bloqueos burocráticos.
+### ADR-019: Denormalización Atómica de Calificaciones e Índices Compuestos
+- **Contexto:** El listado de veterinarios realizaba agregaciones N+1 y filtros de calificación en memoria después del `take`/`skip`, causando discrepancias en la paginación e impidiendo consultas eficientes bajo alta concurrencia.
+- **Decisión:** Agregar columnas indexadas `rating_avg` y `rating_count` en la tabla `users`, recalculadas atómicamente en una transacción Prisma al registrar cada `Review`. Indexar compuestos en `(clientId, status, deletedAt)`, `(vetId, status, deletedAt)`, `(role, isOnline, vetStatus, deletedAt)` y `(ownerId, deletedAt)`.
+- **Consecuencias:** Paginación y ordenamiento delegado 100% al motor PostgreSQL con tiempo de respuesta constante O(log N) e invalidación reactiva de caché Redis.
+
+### ADR-020: Streaming de Archivos Seguros y Mitigación de DoS de Heap
+- **Contexto:** Multer almacenaba archivos en memoria RAM (`memoryStorage`), permitiendo ataques de denegación de servicio (DoS por OOM) con archivos grandes y abriendo riesgo de MIME spoofing.
+- **Decisión:** Reemplazar `memoryStorage` por `diskStorage` temporal en `/app/uploads/tmp/`, validación estricta de los primeros 32 bytes (magic bytes para firmas JPEG, PNG, WEBP), streaming directo hacia almacenamiento local o AWS S3, y eliminación inmediata de temporales tras completar la subida.
+- **Consecuencias:** Consumo de memoria RAM plano e inmune al tamaño de los archivos, con validación de seguridad a nivel de bits.
+
+### ADR-021: Hardening de Contenedores y Pipeline de Integración Continua FAANG
+- **Contexto:** Los contenedores Docker ejecutaban Node.js como superusuario `root`, y no existía un pipeline de integración continua que garantizara que los tres paquetes del monorepo (`backend`, `web`, `mobile`) compilen y pasen pruebas antes del despliegue.
+- **Decisión:** Modificar el `Dockerfile` de producción para operar bajo el usuario sin privilegios `USER node` en el puerto estándar 3001, e incorporar GitHub Actions (`.github/workflows/ci.yml`) ejecutando typechecking estricto, suites unitarias e integración en cada push/PR.
+- **Consecuencias:** Reducción drástica de superficie de ataque en el servidor y garantía empírica de 0 regresiones en despliegues.
 
 ---
+

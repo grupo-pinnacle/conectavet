@@ -22,7 +22,12 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
   }
 
   if (requiredRole && user && user.role && !requiredRole.includes(user.role)) {
-    const redirect = user.role === "vet" ? "/vet-dashboard" : "/dashboard";
+    const redirect =
+      user.role === "admin"
+        ? "/admin"
+        : user.role === "vet"
+        ? "/vet-dashboard"
+        : "/dashboard";
     return <Navigate to={redirect} replace />;
   }
 

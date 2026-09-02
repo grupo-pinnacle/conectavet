@@ -112,7 +112,6 @@ model Consultation {
   pet           Pet                @relation(fields: [petId], references: [id])
   status        ConsultationStatus @default(WAITING)
   notes         String?
-  diagnosisNotes String?           @map("diagnosis_notes")
   startedAt     DateTime?
   endedAt       DateTime?
   createdAt     DateTime           @default(now())

@@ -36,7 +36,6 @@ const consultationSnapshot = {
   petId: true,
   status: true,
   notes: true,
-  diagnosisNotes: true,
   startedAt: true,
   endedAt: true,
   createdAt: true,

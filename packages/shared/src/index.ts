@@ -106,7 +106,6 @@ export interface Consultation {
   petId: string;
   status: ConsultationStatus;
   notes?: string | null;
-  diagnosisNotes?: string | null;
   startedAt?: string | null;
   endedAt?: string | null;
   createdAt: string;

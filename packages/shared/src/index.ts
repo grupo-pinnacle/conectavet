@@ -75,6 +75,30 @@ export interface Pet {
   updatedAt: string;
 }
 
+export interface Prescription {
+  id: string;
+  consultationId: string;
+  vetId: string;
+  content: string;
+  medication?: string | null;
+  dosage?: string | null;
+  frequency?: string | null;
+  durationDays?: string | null;
+  indications?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Message {
+  id: string;
+  consultationId: string;
+  senderId: string;
+  content: string;
+  attachmentUrl?: string | null;
+  clientMsgId?: string | null;
+  createdAt: string;
+}
+
 export interface Consultation {
   id: string;
   clientId: string;
@@ -82,8 +106,13 @@ export interface Consultation {
   petId: string;
   status: ConsultationStatus;
   notes?: string | null;
+  diagnosisNotes?: string | null;
   startedAt?: string | null;
   endedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+  pet?: Pet;
+  client?: Partial<User>;
+  vet?: Partial<User>;
+  prescriptions?: Prescription[];
 }

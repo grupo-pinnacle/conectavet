@@ -79,20 +79,23 @@ conectavet/
 ### 2.2 Mascotas (`/api/pets`)
 | Método | Endpoint | Descripción | Acceso |
 |---|---|---|---|
-| `GET` | `/api/pets` | Listar mascotas del usuario autenticado | CLIENT |
-| `POST` | `/api/pets` | Crear nueva ficha de mascota | CLIENT |
-| `GET` | `/api/pets/:id` | Obtener detalle e historial clínico de una mascota | Dueño / Vet asignado |
-| `PUT` | `/api/pets/:id` | Modificar datos de la mascota | Dueño |
-| `DELETE`| `/api/pets/:id` | Soft-delete de mascota | Dueño / Admin |
+| `GET` | `/api/pets` | Listar mascotas del usuario autenticado | CLIENT / ADMIN |
+| `POST` | `/api/pets` | Crear nueva ficha de mascota | CLIENT / ADMIN |
+| `GET` | `/api/pets/:id` | Obtener detalle e historial clínico de una mascota | Dueño / Vet asignado / ADMIN |
+| `PATCH`| `/api/pets/:id` | Modificar datos de la mascota | Dueño / ADMIN |
+| `DELETE`| `/api/pets/:id` | Soft-delete de mascota | Dueño / ADMIN |
 
 ### 2.3 Consultas & Telemedicina (`/api/consultations`)
 | Método | Endpoint | Descripción | Acceso |
 |---|---|---|---|
 | `POST` | `/api/consultations` | Crear consulta e ingresar en cola de triage | CLIENT |
 | `GET` | `/api/consultations/mine`| Listar consultas activas/pendientes del usuario | Autenticado |
-| `POST` | `/api/consultations/:id/accept` | Veterinario acepta consulta en cola | VET (Approved) |
-| `POST` | `/api/consultations/:id/complete` | Cerrar consulta con notas de evolución | VET asignado |
-| `POST` | `/api/consultations/:id/prescriptions` | Emitir receta digital estructurada | VET asignado |
+| `GET` | `/api/consultations/:id`| Obtener detalle completo de consulta e historial | Participantes / ADMIN |
+| `PATCH`| `/api/consultations/:id/assign` | Veterinario toma consulta de la cola o acepta oferta | VET (Approved) |
+| `PATCH`| `/api/consultations/:id/decline`| Veterinario rechaza oferta de consulta directa | VET asignado |
+| `PATCH`| `/api/consultations/:id/complete` | Cerrar consulta registrando evolución (`diagnosisNotes`) | VET asignado |
+| `POST` | `/api/consultations/:id/prescriptions` | Emitir receta digital oficial con QR y firma | VET asignado |
+| `POST` | `/api/consultations/:id/messages` | Enviar mensaje en el chat médico | Participantes |
 
 ### 2.4 Videollamadas (`/api/calls`)
 | Método | Endpoint | Descripción | Acceso |

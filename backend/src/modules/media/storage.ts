@@ -1,6 +1,7 @@
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
-import { UPLOADS_DIR } from './media.service';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { UPLOADS_DIR } from './media.service.js';
 
 /**
  * Persiste un archivo subido por el usuario y devuelve una URL servible.
@@ -22,9 +23,6 @@ export async function persistUpload(buffer: Buffer, filename: string, mimeType: 
 }
 
 async function uploadToS3(buffer: Buffer, key: string, mimeType: string): Promise<string> {
-  // Lazy require: el SDK solo se carga si se habilita S3.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
   const client = new S3Client({
     region: process.env.AWS_REGION,
     endpoint: process.env.AWS_S3_ENDPOINT || undefined,

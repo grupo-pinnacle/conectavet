@@ -63,6 +63,18 @@ export async function logout(userId: string) {
   disconnectUserSockets(userId);
 }
 
+export function sanitizeUser<T extends Record<string, any>>(user: T) {
+  const {
+    password,
+    emailVerifyToken,
+    emailVerifyExpires,
+    passwordResetToken,
+    passwordResetExpires,
+    ...clean
+  } = user;
+  return clean;
+}
+
 export async function register(input: RegisterInput) {
   const existingUser = await prisma.user.findUnique({
     where: { email: input.email }
@@ -106,13 +118,13 @@ export async function register(input: RegisterInput) {
     `<p>ConfirmÃ¡ tu cuenta haciendo clic aquÃ­: <a href="${process.env.WEB_URL ?? ''}/verify-email?token=${emailVerifyToken}">${process.env.WEB_URL ?? ''}/verify-email?token=${emailVerifyToken}</a></p>`
   ).catch(() => undefined);
 
-  const { password, ...userWithoutPassword } = user;
+  const safeUser = sanitizeUser(user);
 
-  try { const io = getIO(); if (io) io.to('admin:room').emit('admin:event', userWithoutPassword); } catch(e) {}
+  try { const io = getIO(); if (io) io.to('admin:room').emit('admin:event', safeUser); } catch(e) {}
   return {
     accessToken: signAccessToken(user),
     refreshToken: signRefreshToken(user.id, user.tokenVersion),
-    user: userWithoutPassword,
+    user: safeUser,
   };
 }
 
@@ -131,13 +143,13 @@ export async function login(input: LoginInput) {
     throw new AuthError('Credenciales inválidas', 401);
   }
 
-  const { password, ...userWithoutPassword } = user;
+  const safeUser = sanitizeUser(user);
 
-  try { const io = getIO(); if (io) io.to('admin:room').emit('admin:event', userWithoutPassword); } catch(e) {}
+  try { const io = getIO(); if (io) io.to('admin:room').emit('admin:event', safeUser); } catch(e) {}
   return {
     accessToken: signAccessToken(user),
     refreshToken: signRefreshToken(user.id, user.tokenVersion),
-    user: userWithoutPassword
+    user: safeUser
   };
 }
 
@@ -176,13 +188,13 @@ export async function refreshAccessToken(refreshTokenValue: string) {
       await setCache(`rtr:${decoded.jti}`, true, 604800);
     }
 
-    const { password, ...userWithoutPassword } = user;
-    try { const io = getIO(); if (io) io.to('admin:room').emit('admin:event', userWithoutPassword); } catch(e) {}
+    const safeUser = sanitizeUser(user);
+    try { const io = getIO(); if (io) io.to('admin:room').emit('admin:event', safeUser); } catch(e) {}
     
     return {
       accessToken: signAccessToken(user),
       refreshToken: signRefreshToken(user.id, user.tokenVersion),
-      user: userWithoutPassword,
+      user: safeUser,
     };
   } catch (err) {
     if (err instanceof AuthError) throw err;

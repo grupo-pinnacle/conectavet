@@ -1,4 +1,4 @@
-﻿import NodeCache from 'node-cache';
+import NodeCache from 'node-cache';
 import { redisClient } from './redis';
 
 const cache = new NodeCache({ stdTTL: 60, checkperiod: 120 });
@@ -28,8 +28,14 @@ export async function clearCache(pattern?: string): Promise<void> {
   if (redisClient && redisClient.status === 'ready') {
     try {
       if (pattern) {
-        const keys = await redisClient.keys(`${pattern}*`);
-        if (keys.length > 0) await redisClient.del(...keys);
+        let cursor = '0';
+        do {
+          const [nextCursor, keys] = await redisClient.scan(cursor, 'MATCH', `${pattern}*`, 'COUNT', 100);
+          cursor = nextCursor;
+          if (keys.length > 0) {
+            await redisClient.del(...keys);
+          }
+        } while (cursor !== '0');
       } else {
         await redisClient.flushdb();
       }

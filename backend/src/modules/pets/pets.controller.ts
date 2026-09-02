@@ -75,41 +75,41 @@ return res.status(201).json({ success: true, data: pet });
 import { Pet } from '@prisma/client';
 
 
-async function verifyPetOwnership(petId: string, userId: string): Promise<{ allowed: boolean; pet: Pet | null }> {
+async function verifyPetOwnership(petId: string, userId: string, role?: string): Promise<{ allowed: boolean; pet: Pet | null }> {
   const pet = await getPetById(petId) as Pet | null;
   if (!pet || pet.deletedAt) return { allowed: false, pet: null };
-  if (pet.ownerId !== userId) return { allowed: false, pet };
-  return { allowed: true, pet };
+  if (role === 'ADMIN' || pet.ownerId === userId) return { allowed: true, pet };
+  return { allowed: false, pet };
 }
 
 export const updatePetController = asyncHandler(async (req: RequestWithUser, res: Response) => {
-if (!req.user) {
-      return res.status(401).json({ success: false, message: 'No autenticado' });
-    }
-const { allowed, pet } = await verifyPetOwnership(req.params.id as string, req.user.userId);
-if (!pet) {
-      throw new NotFoundError('Mascota no encontrada');
-    }
-if (!allowed) {
-      throw new ForbiddenError('No tenés permiso para modificar esta mascota');
-    }
-const updated = await updatePet(req.params.id as string, req.body);
-return res.status(200).json({ success: true, data: updated });
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: 'No autenticado' });
+  }
+  const { allowed, pet } = await verifyPetOwnership(req.params.id as string, req.user.userId, req.user.role);
+  if (!pet) {
+    throw new NotFoundError('Mascota no encontrada');
+  }
+  if (!allowed) {
+    throw new ForbiddenError('No tenés permiso para modificar esta mascota');
+  }
+  const updated = await updatePet(req.params.id as string, req.body);
+  return res.status(200).json({ success: true, data: updated });
 });
 
 export const deletePetController = asyncHandler(async (req: RequestWithUser, res: Response) => {
-if (!req.user) {
-      return res.status(401).json({ success: false, message: 'No autenticado' });
-    }
-const { allowed, pet } = await verifyPetOwnership(req.params.id as string, req.user.userId);
-if (!pet) {
-      throw new NotFoundError('Mascota no encontrada');
-    }
-if (!allowed) {
-      throw new ForbiddenError('No tenés permiso para eliminar esta mascota');
-    }
-await deletePet(req.params.id as string);
-return res.status(200).json({ success: true, message: 'Mascota eliminada' });
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: 'No autenticado' });
+  }
+  const { allowed, pet } = await verifyPetOwnership(req.params.id as string, req.user.userId, req.user.role);
+  if (!pet) {
+    throw new NotFoundError('Mascota no encontrada');
+  }
+  if (!allowed) {
+    throw new ForbiddenError('No tenés permiso para eliminar esta mascota');
+  }
+  await deletePet(req.params.id as string);
+  return res.status(200).json({ success: true, message: 'Mascota eliminada' });
 });
 
 export const restorePetController = asyncHandler(async (req: RequestWithUser, res: Response) => {

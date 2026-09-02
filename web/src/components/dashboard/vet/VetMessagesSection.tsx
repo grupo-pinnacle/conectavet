@@ -29,6 +29,7 @@ import { useChatSocket } from "../../../hooks/useChatSocket";
 import { useConsultations, useInvalidateConsultations, consultationsKey } from "../../../hooks/useConsultations";
 import { MessageBubble } from "../MessageBubble";
 import VetPatientProfile from "./VetPatientProfile";
+import PrescriptionPDFModal from "../PrescriptionPDFModal";
 import CallButton from "../../call/CallButton";
 import { formatSex } from "../../../utils/sex";
 import type { Consultation, Message, Prescription } from "../../../types";
@@ -62,10 +63,14 @@ function needsDateSeparator(curr: Message, prev: Message | null) {
   return c.toDateString() !== p.toDateString();
 }
 
-function PrescriptionCard({ rx }: { rx: Prescription }) {
+function PrescriptionCard({ rx, onViewModal }: { rx: Prescription; onViewModal?: () => void }) {
   const hasDetails = rx.medication || rx.dosage || rx.frequency || rx.durationDays || rx.indications;
 
   const handlePrint = () => {
+    if (onViewModal) {
+      onViewModal();
+      return;
+    }
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       window.print();
@@ -135,17 +140,29 @@ function PrescriptionCard({ rx }: { rx: Prescription }) {
 
   return (
     <div className="mb-2 rounded-xl border border-teal-100 bg-teal-50/50 p-4">
-      <div className="flex items-center gap-2 mb-1.5">
+      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
         <Pill className="h-4 w-4 text-teal-700" />
         <span className="text-xs font-bold uppercase tracking-wide text-teal-800">Receta Emitida</span>
-        <button
-          onClick={handlePrint}
-          className="ml-auto inline-flex items-center gap-1 rounded-md border border-teal-200 bg-white/80 px-2 py-0.5 text-[11px] font-semibold text-teal-800 hover:bg-teal-100 transition-colors"
-          title="Imprimir / Guardar en PDF"
-        >
-          <Printer className="h-3 w-3" />
-          <span className="hidden sm:inline">Imprimir / PDF</span>
-        </button>
+        <div className="ml-auto flex items-center gap-1.5">
+          {onViewModal && (
+            <button
+              onClick={onViewModal}
+              className="inline-flex items-center gap-1 rounded-md border border-teal-300 bg-teal-700 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-teal-800 transition-colors shadow-sm"
+              title="Ver formato oficial con QR y firma"
+            >
+              <FileText className="h-3 w-3" />
+              <span>Ver Oficial (QR)</span>
+            </button>
+          )}
+          <button
+            onClick={handlePrint}
+            className="inline-flex items-center gap-1 rounded-md border border-teal-200 bg-white/80 px-2 py-1 text-[11px] font-semibold text-teal-800 hover:bg-teal-100 transition-colors"
+            title="Imprimir / Guardar en PDF"
+          >
+            <Printer className="h-3 w-3" />
+            <span className="hidden sm:inline">Imprimir</span>
+          </button>
+        </div>
         <span className="text-[11px] text-slate-400">
           {new Date(rx.createdAt).toLocaleString("es-AR", {
             day: "2-digit",
@@ -213,6 +230,7 @@ export default function VetMessagesSection() {
   const [rxIndications, setRxIndications] = useState("");
   const [sendingPrescription, setSendingPrescription] = useState(false);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [selectedRxForModal, setSelectedRxForModal] = useState<Prescription | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
   const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -824,7 +842,11 @@ export default function VetMessagesSection() {
               ) : (
                 <div className="space-y-0.5">
                   {prescriptions.map((rx) => (
-                    <PrescriptionCard key={rx.id} rx={rx} />
+                    <PrescriptionCard
+                      key={rx.id}
+                      rx={rx}
+                      onViewModal={() => setSelectedRxForModal(rx)}
+                    />
                   ))}
                   {messageList.map((msg, idx) => {
                   const prev = idx > 0 ? messageList[idx - 1] : null;
@@ -1134,6 +1156,20 @@ export default function VetMessagesSection() {
             </div>
           </div>
         </div>
+      )}
+
+      {selectedRxForModal && (
+        <PrescriptionPDFModal
+          prescription={selectedRxForModal}
+          petName={activeCons?.pet?.name || "Paciente"}
+          petSpecies={activeCons?.pet?.species || "Canino"}
+          petBreed={activeCons?.pet?.breed || undefined}
+          petAge={activeCons?.pet?.age || undefined}
+          petWeight={activeCons?.pet?.weightKg || undefined}
+          ownerName={activeCons?.client?.firstName ? `${activeCons.client.firstName} ${activeCons.client.lastName || ""}` : "Tutor"}
+          vetName={selectedRxForModal.vet?.firstName ? `Dr. ${selectedRxForModal.vet.firstName} ${selectedRxForModal.vet.lastName || ""}` : undefined}
+          onClose={() => setSelectedRxForModal(null)}
+        />
       )}
     </div>
   );

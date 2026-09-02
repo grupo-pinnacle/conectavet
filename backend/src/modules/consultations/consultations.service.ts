@@ -36,6 +36,7 @@ const consultationSnapshot = {
   petId: true,
   status: true,
   notes: true,
+  diagnosisNotes: true,
   startedAt: true,
   endedAt: true,
   createdAt: true,
@@ -285,12 +286,15 @@ export async function completeConsultation(
   consultationId: string,
   notes?: string
 ) {
-  // ActualizaciÃ³n atÃ³mica: cerramos la consulta SÃ“LO si estÃ¡ ACTIVE. AsÃ­
-  // evitamos la carrera (TOCTOU) entre leer el estado y actualizarlo, que
-  // podÃ­a pisar un estado ya finalizado. Si no habÃ­a fila ACTIVE, avisamos.
+  // Actualización atómica: cerramos la consulta SÓLO si está ACTIVE.
+  // Guardamos las notas del diagnóstico en diagnosisNotes preservando el motivo original en notes.
   const result = await prisma.consultation.updateMany({
     where: { id: consultationId, status: 'ACTIVE' },
-    data: { status: 'COMPLETED', notes, endedAt: new Date() },
+    data: {
+      status: 'COMPLETED',
+      ...(notes !== undefined ? { diagnosisNotes: notes } : {}),
+      endedAt: new Date(),
+    },
   });
   if (result.count === 0) {
     const current = await prisma.consultation.findUnique({
@@ -298,10 +302,11 @@ export async function completeConsultation(
       select: { status: true },
     });
     if (!current) throw new NotFoundError('Consulta no encontrada');
-    throw new ConflictError(`No se puede cerrar â€” la consulta estÃ¡ en estado ${current.status}`);
+    throw new ConflictError(`No se puede cerrar — la consulta está en estado ${current.status}`);
   }
   return prisma.consultation.findUniqueOrThrow({
     where: { id: consultationId },
+    select: consultationSnapshot,
   });
 }
 

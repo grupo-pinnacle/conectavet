@@ -6,8 +6,9 @@ import { JwtPayload } from '../../shared/types';
 import { sendConsultationMessage } from './consultations.service';
 import { notifyConsultationMessage } from '../notifications/notifications.service';
 import { sendMessageSchema } from './consultations.controller';
+import { createAdapter } from '@socket.io/redis-adapter';
+import { Redis } from 'ioredis';
 import { setRedisClient } from './message-throttle';
-import type { Redis } from 'ioredis';
 
 let io: Server;
 
@@ -33,14 +34,10 @@ export async function setupChatSocket(httpServer: HttpServer) {
   });
 
   // HA: si hay REDIS_URL, usa adapter compartido para que los mensajes lleguen
-  // entre instancias, y comparte rate-limit/dedup. Requiere @socket.io/redis-adapter + ioredis (ya en deps).
+  // entre instancias, y comparte rate-limit/dedup.
   if (process.env.REDIS_URL) {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { createAdapter } = require('@socket.io/redis-adapter');
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const IORedis = require('ioredis');
-      redisClient = new IORedis(process.env.REDIS_URL) as Redis;
+      redisClient = new Redis(process.env.REDIS_URL);
       setRedisClient(redisClient!);
       const pub = redisClient!;
       const sub = redisClient!.duplicate();

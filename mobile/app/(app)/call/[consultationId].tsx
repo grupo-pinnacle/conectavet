@@ -151,6 +151,9 @@ export default function CallScreen() {
             allowsInlineMediaPlayback
             mediaPlaybackRequiresUserAction={false}
             mediaCapturePermissionGrantType="grant"
+            androidLayerType="hardware"
+            cacheEnabled={false}
+            incognito={false}
             onLoad={sendCallInit}
             onMessage={(event) => {
               try {

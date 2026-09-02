@@ -27,11 +27,19 @@ export default function CallPage() {
   });
 
   useEffect(() => {
+    const isValidCallData = (data: any): data is CallInit => {
+      if (!data || data.type !== "call:init") return false;
+      if (typeof data.url !== "string" || !/^(wss?|https?):\/\//i.test(data.url)) return false;
+      if (typeof data.room !== "string" || !data.room.trim()) return false;
+      if (typeof data.token !== "string" || data.token.length < 10) return false;
+      return true;
+    };
+
     const onMessage = (e: MessageEvent | Event) => {
       try {
         const eventData = (e as MessageEvent).data || (e as any).data;
         const data = typeof eventData === "string" ? JSON.parse(eventData) : eventData;
-        if (data && data.type === "call:init" && data.url && data.room && data.token) {
+        if (isValidCallData(data)) {
           setCall({ url: data.url, room: data.room, token: data.token });
         }
       } catch {
@@ -41,9 +49,9 @@ export default function CallPage() {
     window.addEventListener("message", onMessage);
     document.addEventListener("message", onMessage as EventListener);
     
-    // Y abrimos un hook global para que injectJavaScript pueda llamarlo directamente si falla el postMessage nativo
+    // Hook global para que injectJavaScript pueda llamarlo directamente si falla el postMessage nativo
     (window as any).__onCallInit = (data: any) => {
-      if (data && data.type === "call:init" && data.url && data.room && data.token) {
+      if (isValidCallData(data)) {
         setCall({ url: data.url, room: data.room, token: data.token });
       }
     };

@@ -55,6 +55,7 @@ afterAll(async () => {
 afterEach(async () => {
   await prisma.message.deleteMany({ where: { consultation: { client: { email: { startsWith: prefix } } } } });
   await prisma.consultation.deleteMany({ where: { client: { email: { startsWith: prefix } } } });
+  await prisma.user.updateMany({ where: { email: { startsWith: prefix } }, data: { isOnline: false } });
 });
 
 describe('POST /api/consultations', () => {

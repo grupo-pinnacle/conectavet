@@ -65,7 +65,7 @@ beforeAll(async () => {
   await request(server).patch(`/api/consultations/${consult.id}/assign`).set('Authorization', `Bearer ${vetToken}`);
   const after = await request(server).get(`/api/consultations/${consult.id}`).set('Authorization', `Bearer ${clientToken}`);
   consult = after.body.data;
-});
+}, 30000);
 
 afterAll(async () => {
   await prisma.message.deleteMany({ where: { consultation: { client: { email: { startsWith: prefix } } } } });
@@ -73,7 +73,7 @@ afterAll(async () => {
   await prisma.pet.deleteMany({ where: { owner: { email: { startsWith: prefix } } } });
   await prisma.user.deleteMany({ where: { email: { startsWith: prefix } } });
   if (server) await new Promise<void>((resolve) => server.close(() => resolve()));
-});
+}, 30000);
 
 describe('WebSocket: entrega en tiempo real (T-01)', () => {
   test('mensaje REST se propaga al socket del otro participante', async () => {

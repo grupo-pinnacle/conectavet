@@ -4,9 +4,10 @@ import { AuthProvider } from "./context/AuthContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuth } from "./hooks/useAuth";
+import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import GlobalCallListener from "./components/call/GlobalCallListener";
 
-// Code-split: cada pǭgina se carga solo cuando el usuario la necesita
+// Code-split: cada página se carga solo cuando el usuario la necesita
 const LoginPage          = lazy(() => import("./pages/LoginPage"));
 const RegisterPage       = lazy(() => import("./pages/RegisterPage"));
 const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
@@ -17,6 +18,16 @@ const VetDashboardPage   = lazy(() => import("./pages/VetDashboardPage"));
 const AdminDashboardPage = lazy(() => import("./pages/AdminDashboardPage"));
 const LandingPage        = lazy(() => import("./pages/LandingPage"));
 const CallPage           = lazy(() => import("./pages/CallPage"));
+
+function OfflineBanner() {
+  const isOnline = useOnlineStatus();
+  if (isOnline) return null;
+  return (
+    <div role="alert" className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-amber-600 px-4 py-2 text-xs font-bold text-white shadow-md animate-in slide-in-from-top duration-300">
+      <span>⚠️ Sin conexión a internet — Reconectando automáticamente...</span>
+    </div>
+  );
+}
 
 function SplashScreen() {
   return (
@@ -73,6 +84,13 @@ function App() {
   return (
     <AuthProvider>
       <ErrorBoundary>
+        <OfflineBanner />
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-teal-700 focus:px-4 focus:py-2 focus:text-white focus:shadow-lg focus:outline-none"
+        >
+          Saltar al contenido principal
+        </a>
         <BrowserRouter>
           <GlobalCallListener />
           <Suspense fallback={<SplashScreen />}>

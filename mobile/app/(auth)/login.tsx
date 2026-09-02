@@ -44,7 +44,6 @@ export default function LoginScreen() {
     setApiError(null);
     try {
       await login(values);
-      useDialogStore.getState().show({ type: 'success', title: 'Bienvenido a VetConnect', message: 'Ya podés consultar con tus mascotas.' });
       router.replace('/(app)');
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'No pudimos iniciar sesión. Verificá tu email y contraseña.';

@@ -22,17 +22,29 @@ export default function EditProfileScreen() {
   const [bio, setBio] = useState(user?.bio ?? '');
   const [specialty, setSpecialty] = useState(user?.specialty ?? '');
 
+  const [formError, setFormError] = useState<string | null>(null);
+
   const onSave = () => {
+    setFormError(null);
+    const cleanFirst = firstName.trim();
+    const cleanLast = lastName.trim();
+    if (!cleanFirst) {
+      setFormError('El nombre es obligatorio.');
+      return;
+    }
     updateProfile.mutate(
       {
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        phone: phone.trim(),
-        bio: bio.trim() || null,
-        specialty: isVet ? (specialty.trim() || null) : undefined,
+        firstName: cleanFirst,
+        lastName: cleanLast || undefined,
+        phone: phone.trim() || undefined,
+        bio: bio.trim() || undefined,
+        specialty: isVet ? (specialty.trim() || undefined) : undefined,
       },
       {
         onSuccess: () => router.back(),
+        onError: (err: any) => {
+          setFormError(err?.message || 'No pudimos guardar los cambios. Intentá nuevamente.');
+        },
       }
     );
   };

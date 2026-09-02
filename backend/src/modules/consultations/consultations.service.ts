@@ -210,8 +210,15 @@ export async function declineConsultation(consultationId: string, vetId: string)
     where: { id: consultationId },
   });
   if (!consultation) throw new NotFoundError('Consulta no encontrada');
+  if (consultation.status === 'WAITING') {
+    // Si ya está en espera, el veterinario simplemente pasa/omite tomarla sin error
+    return prisma.consultation.findUniqueOrThrow({
+      where: { id: consultationId },
+      select: consultationSnapshot,
+    });
+  }
   if (consultation.status !== 'PENDING') {
-    throw new ConflictError('La consulta no está en estado de aprobación');
+    throw new ConflictError('La consulta no está en estado de oferta pendiente');
   }
   if (consultation.vetId && consultation.vetId !== vetId) {
     throw new ConflictError('Esta oferta es de otro veterinario');

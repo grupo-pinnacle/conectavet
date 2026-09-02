@@ -421,12 +421,11 @@ export default function VetMessagesSection() {
   const handleDecline = useCallback(async (id: string) => {
     setActionId(id);
     try {
-      const updated = await declineConsultation(id);
-      patchConsultations((prev) => prev.map((c) => (c.id === id ? updated : c)));
-      updateCachedConsultation(updated);
+      await declineConsultation(id);
+      patchConsultations((prev) => prev.filter((c) => c.id !== id));
       setActiveCons((prev) => (prev?.id === id ? null : prev));
     } catch {
-      alert("Error al rechazar la consulta");
+      alert("No se pudo rechazar la oferta. Por favor intentá nuevamente.");
     } finally {
       setActionId(null);
     }
@@ -680,15 +679,27 @@ export default function VetMessagesSection() {
                       </>
                     )}
                     {c.status === "WAITING" && (
-                      <Button
-                        size="sm"
-                        fullWidth={false}
-                        className="flex-1"
-                        loading={actionId === c.id}
-                        onClick={() => handleAccept(c.id)}
-                      >
-                        Tomar consulta
-                      </Button>
+                      <div className="flex gap-2 flex-1">
+                        <Button
+                          size="sm"
+                          fullWidth={false}
+                          className="flex-1"
+                          loading={actionId === c.id}
+                          onClick={() => handleAccept(c.id)}
+                        >
+                          Tomar consulta
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          fullWidth={false}
+                          className="border border-slate-200 text-slate-600 hover:bg-slate-50"
+                          disabled={actionId === c.id}
+                          onClick={() => handleDecline(c.id)}
+                        >
+                          Pasar
+                        </Button>
+                      </div>
                     )}
                     <button
                       onClick={() => { setActiveCons(c); setShowPatientProfile(true); }}
@@ -770,10 +781,10 @@ export default function VetMessagesSection() {
                   onClick={() => handleAccept(activeCons.id)}
                 >
                   <CheckCircle className="h-3.5 w-3.5" />
-                  Aceptar
+                  {isOffer ? "Aceptar oferta" : "Tomar consulta"}
                 </Button>
               )}
-              {isOffer && (
+              {(isOffer || isWaiting) && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -783,7 +794,7 @@ export default function VetMessagesSection() {
                   onClick={() => handleDecline(activeCons.id)}
                 >
                   <XCircle className="h-3.5 w-3.5" />
-                  Rechazar
+                  {isOffer ? "Rechazar oferta" : "Omitir consulta"}
                 </Button>
               )}
               {activeCons.status === "ACTIVE" && (

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, useMemo, memo } from 'react';
-import { FlatList, Image, KeyboardAvoidingView, Platform, Pressable, TextInput, View, Text, ActivityIndicator, type KeyboardAvoidingViewProps } from 'react-native';
+import { FlatList, Image, KeyboardAvoidingView, Platform, Pressable, TextInput, View, Text, ActivityIndicator, Linking, type KeyboardAvoidingViewProps } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDialogStore } from '@/stores/dialogStore';
@@ -211,6 +211,17 @@ export default function ConsultationChatScreen() {
   const onPickImage = async () => {
     if (!canChat || send.isPending || isUploading || pendingImage) return;
     try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        useDialogStore.getState().show({
+          type: 'info',
+          title: 'Permiso necesario',
+          message: 'VetConnect necesita acceso a tus fotos para enviarlas en la consulta.',
+          confirmText: 'Abrir Ajustes',
+          onConfirm: () => { Linking.openSettings(); },
+        });
+        return;
+      }
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: false,

@@ -1,9 +1,10 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import type { User } from "../types";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: ("owner" | "vet" | "admin")[];
+  requiredRole?: User["role"][];
 }
 
 export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
@@ -22,10 +23,11 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
   }
 
   if (requiredRole && user && user.role && !requiredRole.includes(user.role)) {
+    const roleUpper = user.role.toUpperCase();
     const redirect =
-      user.role === "admin"
+      roleUpper === "ADMIN"
         ? "/admin"
-        : user.role === "vet"
+        : roleUpper === "VET"
         ? "/vet-dashboard"
         : "/dashboard";
     return <Navigate to={redirect} replace />;

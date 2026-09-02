@@ -5,8 +5,11 @@ export interface User {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  bio?: string;
+  specialty?: string;
+  createdAt?: string;
   isOnline?: boolean;
-  role: "owner" | "vet" | "admin";
+  role: "owner" | "vet" | "admin" | "CLIENT" | "VET" | "ADMIN";
   vetStatus?: "PENDING" | "APPROVED";
 }
 

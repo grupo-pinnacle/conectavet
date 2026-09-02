@@ -27,8 +27,18 @@ export function GlobalDialog() {
       animationType="fade"
       onRequestClose={hide}
     >
-      <View style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
-        <View style={[styles.dialog, { backgroundColor: c.surface }]}>
+      <Pressable style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]} onPress={hide}>
+        <Pressable style={[styles.dialog, { backgroundColor: c.surface }]} onPress={(e) => e.stopPropagation()}>
+          <Pressable
+            onPress={hide}
+            style={{ position: 'absolute', top: 16, right: 16, padding: 6, zIndex: 10 }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel="Cerrar diálogo"
+          >
+            <MaterialCommunityIcons name="close" size={20} color={c.inkMuted} />
+          </Pressable>
+
           <View style={styles.iconContainer}>
             <MaterialCommunityIcons name={icon.name} size={48} color={icon.color} />
           </View>
@@ -43,17 +53,17 @@ export function GlobalDialog() {
             style={({ pressed }) => [
               styles.button,
               { backgroundColor: c.primary },
-              pressed && { opacity: 0.8 }
+              pressed && { opacity: 0.85 }
             ]}
             onPress={() => {
               hide();
               config.onConfirm?.();
             }}
           >
-            <Text style={styles.buttonText}>{config.confirmText || 'Entendido'}</Text>
+            <Text style={styles.buttonText}>{config.confirmText || 'Continuar'}</Text>
           </Pressable>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }

@@ -20,9 +20,17 @@ export default function CallButton({ consultationId, peerName, disabled }: CallB
     if (loading) return;
     setLoading(true);
     setError("");
-    const socket = getSocket();
-    if (socket) {
-      socket.emit("call:initiate", consultationId, "Tu veterinario/cliente");
+    try {
+      const { connectSocket } = await import("../../services/socket");
+      let socket = getSocket();
+      if (!socket || !socket.connected) {
+        socket = await connectSocket().catch(() => null);
+      }
+      if (socket?.connected) {
+        socket.emit("call:initiate", consultationId, peerName || "Veterinario");
+      }
+    } catch {
+      /* non-critical */
     }
     try {
       const data = await getCallToken(consultationId);

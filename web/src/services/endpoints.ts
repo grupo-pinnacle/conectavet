@@ -1,4 +1,4 @@
-﻿import api from "./api";
+import api from "./api";
 import type { User, Pet, Consultation, Message, Prescription, VetCard } from "../types";
 
 export async function getMe(): Promise<User> {
@@ -10,6 +10,8 @@ export interface UpdateProfilePayload {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  bio?: string;
+  specialty?: string;
 }
 
 export async function updateProfile(data: UpdateProfilePayload): Promise<User> {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, ActivityIndicator, PermissionsAndroid, Platform } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, PermissionsAndroid, Platform, Linking } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView, type WebView as WebViewType } from 'react-native-webview';
@@ -18,11 +18,11 @@ async function requestCallPermissions(): Promise<boolean> {
       PermissionsAndroid.PERMISSIONS.CAMERA,
       PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
     ]);
-    return (
-      results[PermissionsAndroid.PERMISSIONS.CAMERA] === PermissionsAndroid.RESULTS.GRANTED &&
-      results[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO] === PermissionsAndroid.RESULTS.GRANTED
-    );
-  } catch {
+    const cameraGranted = results[PermissionsAndroid.PERMISSIONS.CAMERA] === PermissionsAndroid.RESULTS.GRANTED;
+    const audioGranted = results[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO] === PermissionsAndroid.RESULTS.GRANTED;
+    return cameraGranted && audioGranted;
+  } catch (err) {
+    console.warn('Error requesting permissions', err);
     return false;
   }
 }
@@ -49,16 +49,28 @@ export default function CallScreen() {
       const granted = await requestCallPermissions();
       if (!cancelled) setPerms(granted);
       if (!granted) {
-        if (!cancelled) { setError('Necesitamos permiso de cámara y micrófono para la videollamada.'); setLoading(false); }
+        if (!cancelled) {
+          setError('Necesitamos permiso de cámara y micrófono para la videollamada.');
+          setLoading(false);
+        }
         return;
       }
       try {
         const data = await callsService.getToken(consultationId);
         if (!cancelled) {
           setCall(data);
-          const socket = getSocket();
+          let socket = getSocket();
+          if (!socket || !socket.connected) {
+            try {
+              const { connectSocket } = await import('@/lib/socket');
+              socket = await connectSocket();
+            } catch {
+              /* ignore */
+            }
+          }
           if (socket && accept !== 'true') {
-            socket.emit('call:initiate', consultationId, `${user?.firstName || 'El'} ${user?.lastName || 'cliente'}`);
+            const callerName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Paciente';
+            socket.emit('call:initiate', consultationId, callerName);
           }
         }
       } catch (err) {
@@ -72,8 +84,6 @@ export default function CallScreen() {
     return () => { cancelled = true; };
   }, [consultationId]);
 
-  // El token NO viaja en la URL (evita que quede en logs/proxy/historial del
-  // dispositivo): la web lo recibe por postMessage tras cargar la página.
   const source = call
     ? { uri: `${WEB_URL}/call?room=${encodeURIComponent(call.room)}` }
     : undefined;
@@ -88,60 +98,69 @@ export default function CallScreen() {
     
     // Método 2: Inyección de JS directa garantizada (llama a la función global o lanza el evento)
     const js = `
-      try {
-        if (typeof window.__onCallInit === 'function') {
-          window.__onCallInit(${payload});
-        }
-        window.dispatchEvent(new MessageEvent('message', { data: ${payload} }));
-      } catch (e) {}
+      (function() {
+        try {
+          if (window.__onCallInit) {
+            window.__onCallInit(${payload});
+          } else {
+            window.postMessage(${payload}, '*');
+          }
+        } catch(e) {}
+      })();
       true;
     `;
     webRef.current?.injectJavaScript(js);
-    
-    // Re-envío diferido por si la web es lenta cargando el DOM
-    setTimeout(() => {
-      webRef.current?.postMessage(payload);
-      webRef.current?.injectJavaScript(js);
-    }, 800);
   }, [call]);
 
-  // Vuelve siempre al chat de la consulta (nunca al inicio), tanto al cerrar
-  // la llamada como al tocar "Volver" tras un error.
   const onClose = useCallback(() => {
-    router.replace(`/(app)/chat/${consultationId}`);
-  }, [router, consultationId]);
+    router.back();
+  }, [router]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#020617', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: '#020617' }}>
       {loading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: spacing.md }}>
-          <ActivityIndicator color={c.primary} size="large" />
-          <Text style={{ color: '#CBD5E1', fontSize: fontSizes.body, fontWeight: fontWeights.semibold }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#020617', padding: spacing.xxl }}>
+          <ActivityIndicator size="large" color={c.primary} />
+          <Text style={{ color: c.white, marginTop: spacing.md, fontSize: fontSizes.body, fontWeight: fontWeights.semibold }}>
             Conectando a la videollamada…
           </Text>
         </View>
       ) : error ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xxl }}>
-          <View style={{ width: 64, height: 64, borderRadius: radius.full, backgroundColor: '#7F1D1D', justifyContent: 'center', alignItems: 'center', marginBottom: spacing.lg }}>
-            <MaterialCommunityIcons name="phone-off" size={30} color="#FCA5A5" />
-          </View>
-          <Text style={{ color: '#FCA5A5', fontSize: fontSizes.subtitle, fontWeight: fontWeights.bold, textAlign: 'center' }}>
-            No se pudo iniciar la llamada
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#020617', padding: spacing.xxl, gap: spacing.md }}>
+          <MaterialCommunityIcons name="alert-circle-outline" size={48} color={c.danger} />
+          <Text style={{ color: c.white, fontSize: fontSizes.subtitle, fontWeight: fontWeights.bold, textAlign: 'center' }}>
+            No pudimos conectar la llamada
           </Text>
-          <Text style={{ color: '#CBD5E1', fontSize: fontSizes.body, textAlign: 'center', marginTop: spacing.sm, lineHeight: 20 }}>
-            {error}
-          </Text>
+          <Text style={{ color: c.inkMuted, fontSize: fontSizes.body, textAlign: 'center' }}>{error}</Text>
+          {perms === false && (
+            <Pressable
+              onPress={() => Linking.openSettings()}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing.sm,
+                backgroundColor: c.primary,
+                borderRadius: radius.full,
+                paddingHorizontal: spacing.xl,
+                paddingVertical: spacing.md,
+                marginTop: spacing.sm,
+              }}
+            >
+              <MaterialCommunityIcons name="cog" size={18} color={c.white} />
+              <Text style={{ color: c.white, fontWeight: fontWeights.bold, fontSize: fontSizes.body }}>
+                Abrir Ajustes de la App
+              </Text>
+            </Pressable>
+          )}
           <Pressable
             onPress={onClose}
-            style={{ marginTop: spacing.xl, paddingHorizontal: spacing.xxl, paddingVertical: spacing.md, borderRadius: radius.full, backgroundColor: c.primary }}
-            accessibilityRole="button"
-            accessibilityLabel="Volver"
+            style={{ backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: radius.full, paddingHorizontal: spacing.xxl, paddingVertical: spacing.md, marginTop: spacing.xs }}
           >
             <Text style={{ color: c.white, fontWeight: fontWeights.bold, fontSize: fontSizes.body }}>Volver</Text>
           </Pressable>
         </View>
       ) : source ? (
-        <>
+        <View style={{ flex: 1, backgroundColor: '#020617', paddingBottom: insets.bottom }}>
           <WebView
             ref={webRef}
             source={source}
@@ -151,6 +170,13 @@ export default function CallScreen() {
             allowsInlineMediaPlayback
             mediaPlaybackRequiresUserAction={false}
             mediaCapturePermissionGrantType="grant"
+            {...({
+              onPermissionRequest: (event: any) => {
+                if (event?.grant && event?.resources) {
+                  event.grant(event.resources);
+                }
+              },
+            } as any)}
             androidLayerType="hardware"
             cacheEnabled={false}
             incognito={false}
@@ -191,7 +217,7 @@ export default function CallScreen() {
               Terminar llamada
             </Text>
           </Pressable>
-        </>
+        </View>
       ) : null}
     </View>
   );

@@ -155,7 +155,7 @@ export async function setupChatSocket(httpServer: HttpServer) {
           where: {
             id: consultationId,
             deletedAt: null,
-            status: 'ACTIVE',
+            status: { in: ['ACTIVE', 'PENDING'] },
             OR: [{ clientId: user.userId }, { vetId: user.userId }],
           },
           select: { id: true, clientId: true, vetId: true, status: true },
@@ -167,8 +167,19 @@ export async function setupChatSocket(httpServer: HttpServer) {
         const targetId = user.userId === consultation.clientId ? consultation.vetId : consultation.clientId;
         if (!targetId) return;
 
-        // Emitir exclusivamente a la sala personal del destinatario para evitar doble timbrado
-        socket.to(`user:${targetId}`).emit('call:incoming', { consultationId, callerName: peerName });
+        // Nombre del emisor con fallback a base de datos
+        let callerName = (peerName || '').trim();
+        if (!callerName) {
+          const caller = await prisma.user.findUnique({
+            where: { id: user.userId },
+            select: { firstName: true, lastName: true, role: true },
+          });
+          callerName = [caller?.firstName, caller?.lastName].filter(Boolean).join(' ')
+            || (caller?.role === 'VET' ? 'Veterinario' : 'Paciente');
+        }
+
+        // Emitir a todas las instancias y dispositivos conectados del usuario destinatario
+        io.to(`user:${targetId}`).emit('call:incoming', { consultationId, callerName });
       } catch (err) {
         console.error('Error al enrutar call:incoming', err);
       }
@@ -187,7 +198,7 @@ export async function setupChatSocket(httpServer: HttpServer) {
         if (!consultation) return;
         const targetId = user.userId === consultation.clientId ? consultation.vetId : consultation.clientId;
         if (targetId) {
-          socket.to(`user:${targetId}`).emit('call:rejected', { consultationId });
+          io.to(`user:${targetId}`).emit('call:rejected', { consultationId });
         }
       } catch {
         /* no-op */

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { getMyPets, createPet, updatePet, getPetById } from "../../services/endpoints";
 import type { Pet } from "../../types";
-import { PawPrint, FileText, Printer, X } from "lucide-react";
+import { PawPrint, FileText, Printer, X, Copy, Check, Clock, Stethoscope, Sparkles, AlertCircle, Heart } from "lucide-react";
 import { formatSex } from "../../utils/sex";
 
 const avatarList = ["🐶", "🐱", "🐩", "🐕", "🐕‍🦺", "🐦", "🐰", "🐹"];
@@ -30,6 +30,8 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [selectedPetDossier, setSelectedPetDossier] = useState<Pet | null>(null);
+  const [copiedChipId, setCopiedChipId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"cards" | "timeline">("cards");
 
   const fetchPets = async () => {
     try {
@@ -52,6 +54,12 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
     } catch {
       alert("No se pudo cargar la ficha de la mascota");
     }
+  };
+
+  const handleCopyChip = (chip: string, id: string) => {
+    navigator.clipboard.writeText(chip);
+    setCopiedChipId(id);
+    setTimeout(() => setCopiedChipId(null), 2000);
   };
 
   const handlePrintDossier = (pet: Pet) => {
@@ -196,28 +204,63 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
   }
 
   return (
-    <div>
-      <div className="mb-6 flex items-start justify-between gap-4 md:items-center">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-ink">Mis mascotas</h1>
-          <p className="text-slate-500">{pets.length} mascota{pets.length !== 1 ? "s" : ""} registrada{pets.length !== 1 ? "s" : ""}</p>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-extrabold text-ink tracking-tight">Mis mascotas</h1>
+            <span className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-bold text-teal-700 border border-teal-200">
+              {pets.length}
+            </span>
+          </div>
+          <p className="text-sm text-slate-500 mt-0.5">Expedientes clínicos, seguimiento preventivo y consultas</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="shrink-0 rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 md:px-5"
-        >
-          + Agregar mascota
-        </button>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Switcher de Vista: Tarjetas vs Línea de Tiempo */}
+          <div className="flex items-center rounded-xl bg-slate-100 p-1 border border-border">
+            <button
+              onClick={() => setViewMode("cards")}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+                viewMode === "cards" ? "bg-white text-teal-800 shadow-xs" : "text-slate-500 hover:text-ink"
+              }`}
+            >
+              <PawPrint className="h-3.5 w-3.5" />
+              <span>Mascotas</span>
+            </button>
+            <button
+              onClick={() => setViewMode("timeline")}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+                viewMode === "timeline" ? "bg-white text-teal-800 shadow-xs" : "text-slate-500 hover:text-ink"
+              }`}
+            >
+              <Clock className="h-3.5 w-3.5" />
+              <span>Línea de Tiempo</span>
+            </button>
+          </div>
+
+          <button
+            onClick={() => setShowForm(true)}
+            className="rounded-xl bg-teal-700 px-4 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-teal-800 transition-colors flex items-center gap-1.5"
+          >
+            <Sparkles className="h-4 w-4" />
+            <span>+ Agregar mascota</span>
+          </button>
+        </div>
       </div>
 
       {error && (
-        <div className="mb-5 rounded-lg bg-red-50 p-4 text-sm font-semibold text-red-600">{error}</div>
+        <div className="rounded-xl bg-red-50 p-4 text-sm font-semibold text-red-600 border border-red-200 flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </div>
       )}
 
       {showForm && (
-        <form onSubmit={handleCreate} className="mb-6 rounded-xl border border-teal-700/30 bg-teal-50 p-6">
-          <h3 className="mb-4 text-lg font-bold text-ink">
-            {editingPet ? `Editar ${editingPet.name}` : "Nueva mascota"}
+        <form onSubmit={handleCreate} className="rounded-2xl border border-teal-700/30 bg-teal-50/70 p-6 shadow-sm animate-in fade-in duration-200">
+          <h3 className="mb-4 text-lg font-bold text-ink flex items-center gap-2">
+            <PawPrint className="h-5 w-5 text-teal-700" />
+            <span>{editingPet ? `Editar a ${editingPet.name}` : "Nueva mascota"}</span>
           </h3>
           <div className="mb-4 grid gap-4 sm:grid-cols-2">
             <div>
@@ -244,7 +287,7 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
                 <input type="number" min={0} value={form.age} onChange={(e) => setForm((f) => ({ ...f, age: Number(e.target.value) }))} className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink focus:border-teal-600 focus:outline-none" />
               </div>
               <div className="flex-1">
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Peso</label>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Peso (kg)</label>
                 <input type="number" min={0} step="0.1" value={form.weight} onChange={(e) => setForm((f) => ({ ...f, weight: e.target.value }))} placeholder="Ej: 10" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
               </div>
             </div>
@@ -261,15 +304,11 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
               <input type="date" value={form.birthDate} onChange={(e) => setForm((f) => ({ ...f, birthDate: e.target.value }))} className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink focus:border-teal-600 focus:outline-none" />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Peso (kg)</label>
-              <input type="number" step="0.1" min={0} value={form.weightKg} onChange={(e) => setForm((f) => ({ ...f, weightKg: e.target.value }))} placeholder="Ej: 8.5" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
-            </div>
-            <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Color</label>
               <input type="text" value={form.color} onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))} placeholder="Ej: Marrón" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Microchip</label>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Microchip (15 dígitos)</label>
               <input type="text" value={form.microchip} onChange={(e) => setForm((f) => ({ ...f, microchip: e.target.value }))} placeholder="15 dígitos" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
             </div>
             <div>
@@ -293,85 +332,170 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
       )}
 
       {pets.length === 0 && !showForm && (
-        <div className="rounded-xl border border-border bg-white p-10 text-center shadow-sm">
-          <PawPrint className="mx-auto h-10 w-10 text-teal-700" />
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-xs">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-teal-50 text-3xl">
+            🐾
+          </div>
           <p className="mt-4 text-lg font-bold text-ink">Aún no tenés mascotas registradas</p>
-          <p className="text-sm text-slate-500">Agregá tu primera mascota para empezar.</p>
-          <button onClick={() => setShowForm(true)} className="mt-4 rounded-lg bg-teal-700 px-6 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90">
-            + Agregar mascota
+          <p className="text-sm text-slate-500 max-w-sm mx-auto mt-1">
+            Registrá a tu perro, gato u otra mascota para acceder a consultas telemédicas y recetas digitales.
+          </p>
+          <button onClick={() => setShowForm(true)} className="mt-5 rounded-xl bg-teal-700 px-6 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-teal-800 transition-colors">
+            + Agregar primera mascota
           </button>
         </div>
       )}
 
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-        {pets.map((pet, i) => (
-          <div key={pet.id} className="rounded-xl border border-border bg-white p-5 shadow-sm">
-            <div className="mb-4 flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-3xl">
-                {avatarList[i % avatarList.length]}
+      {/* Modo 1: Tarjetas Interactivas de Mascotas */}
+      {viewMode === "cards" && pets.length > 0 && (
+        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+          {pets.map((pet, i) => (
+            <div
+              key={pet.id}
+              className="group relative rounded-2xl border border-border bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-teal-300"
+            >
+              <div className="mb-4 flex items-center gap-4">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-3xl shadow-inner border border-amber-100/60">
+                  {avatarList[i % avatarList.length]}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="text-lg font-extrabold text-ink truncate">{pet.name}</p>
+                    <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                      {pet.species}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 truncate">{pet.breed || "Raza no especificada"}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xl font-bold text-ink">{pet.name}</p>
-                <p className="text-sm text-slate-500">{pet.breed || pet.species}</p>
+
+              <div className="mb-4 grid grid-cols-2 gap-2.5 rounded-xl bg-slate-50/70 p-3 text-xs">
+                <div>
+                  <p className="text-[11px] text-slate-400 font-medium">Edad</p>
+                  <p className="font-bold text-ink">{pet.age} {pet.age === 1 ? "año" : "años"}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-slate-400 font-medium">Peso</p>
+                  <p className="font-bold text-ink">{pet.weight || pet.weightKg || "N/A"} kg</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-slate-400 font-medium">Sexo</p>
+                  <p className="font-bold text-ink">{formatSex(pet.sex)}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-slate-400 font-medium">Microchip</p>
+                  {pet.microchip ? (
+                    <button
+                      onClick={() => handleCopyChip(pet.microchip!, pet.id)}
+                      className="inline-flex items-center gap-1 font-mono font-bold text-teal-800 hover:underline"
+                      title="Copiar microchip"
+                    >
+                      <span>{pet.microchip.slice(0, 6)}...</span>
+                      {copiedChipId === pet.id ? (
+                        <Check className="h-3 w-3 text-green-600" />
+                      ) : (
+                        <Copy className="h-3 w-3 text-slate-400" />
+                      )}
+                    </button>
+                  ) : (
+                    <p className="text-slate-400 italic">Sin chip</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Badges de Salud */}
+              {((pet.allergies && pet.allergies.length > 0) || (pet.chronicConditions && pet.chronicConditions.length > 0)) && (
+                <div className="mb-4 flex flex-wrap gap-1.5">
+                  {pet.allergies?.slice(0, 2).map((a) => (
+                    <span key={a} className="rounded-md bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-700 border border-red-200/60">
+                      ⚠️ Alergia: {a}
+                    </span>
+                  ))}
+                  {pet.chronicConditions?.slice(0, 1).map((c) => (
+                    <span key={c} className="rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-200/60">
+                      🩺 {c}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                <button
+                  onClick={() => openDossier(pet.id)}
+                  className="inline-flex items-center justify-center gap-1 rounded-xl border border-teal-200 bg-teal-50/70 px-3 py-2 text-xs font-bold text-teal-800 hover:bg-teal-100 transition-colors"
+                  title="Ver expediente clínico completo y consultas"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  <span>Expediente</span>
+                </button>
+                <button
+                  onClick={() => startEdit(pet)}
+                  className="rounded-xl border border-border px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 transition-colors"
+                >
+                  Editar
+                </button>
+                <button
+                  onClick={() => onAgendarCita?.(pet.id)}
+                  className="flex-1 rounded-xl bg-teal-700 py-2 text-xs font-bold text-white shadow-xs hover:bg-teal-800 transition-colors text-center"
+                >
+                  Agendar cita
+                </button>
               </div>
             </div>
-            <div className="mb-4 grid grid-cols-2 gap-3 border-t border-[#F1F5F9] pt-4">
-              <div>
-                <p className="text-xs text-slate-400">Especie</p>
-                <p className="font-semibold text-ink">{pet.species}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Edad</p>
-                <p className="font-semibold text-ink">{pet.age} años</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Peso</p>
-                <p className="font-semibold text-ink">{pet.weight || pet.weightKg || "N/A"} kg</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Sexo</p>
-                <p className="font-semibold text-ink">{formatSex(pet.sex)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Microchip</p>
-                <p className="font-semibold text-slate-700 truncate">{pet.microchip || "No registrado"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Próximo control</p>
-                <p className="font-semibold text-teal-700">{pet.nextVet || "No agendado"}</p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => openDossier(pet.id)}
-                className="flex items-center justify-center gap-1 rounded-lg border border-teal-200 bg-teal-50/60 px-3 py-2 text-xs font-bold text-teal-800 hover:bg-teal-100 transition-colors"
-                title="Ver expediente clínico completo"
-              >
-                <FileText className="h-3.5 w-3.5" />
-                <span>Expediente</span>
-              </button>
-              <button onClick={() => startEdit(pet)} className="flex-1 rounded-lg border border-border py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100">
-                Editar
-              </button>
-              <button onClick={() => onAgendarCita?.(pet.id)} className="flex-1 rounded-lg bg-teal-700 py-2 text-xs font-bold text-white transition-opacity hover:opacity-90">
-                Agendar cita
-              </button>
+          ))}
+        </div>
+      )}
+
+      {/* Modo 2: Vista de Línea de Tiempo Médica Global (Timeline) */}
+      {viewMode === "timeline" && pets.length > 0 && (
+        <div className="rounded-2xl border border-border bg-white p-6 shadow-xs">
+          <div className="mb-6 flex items-center justify-between border-b border-slate-100 pb-4">
+            <div>
+              <h3 className="text-base font-bold text-ink flex items-center gap-2">
+                <Clock className="h-4 w-4 text-teal-700" />
+                <span>Cronología y Evolución Médica de tus Mascotas</span>
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">Registro unificado de atenciones médicas veterinarias</p>
             </div>
           </div>
-        ))}
-      </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {pets.map((pet) => (
+              <div
+                key={pet.id}
+                onClick={() => openDossier(pet.id)}
+                className="cursor-pointer rounded-xl border border-border p-4 hover:border-teal-400 hover:bg-teal-50/30 transition-all"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-extrabold text-sm text-ink">{pet.name}</span>
+                  <span className="rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-bold text-teal-800">
+                    {pet.species}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500">
+                  {pet.breed || "Raza mestiza"} · {pet.age} años
+                </p>
+                <div className="mt-3 flex items-center justify-between text-xs text-teal-700 font-bold">
+                  <span>Abrir historial completo</span>
+                  <span>→</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Modal de Expediente Clínico y Timeline */}
       {selectedPetDossier && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6 animate-in fade-in duration-200">
-          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs px-4 py-6 animate-in fade-in duration-200">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100">
             <div className="mb-4 flex items-start justify-between border-b border-border pb-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 text-2xl">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 text-2xl border border-teal-100">
                   🐾
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-ink">
+                  <h3 className="text-xl font-extrabold text-ink">
                     Expediente Clínico de {selectedPetDossier.name}
                   </h3>
                   <p className="text-xs text-slate-500">
@@ -382,22 +506,22 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handlePrintDossier(selectedPetDossier)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-800 hover:bg-teal-100 transition-colors"
-                  title="Imprimir expediente"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50 px-3.5 py-2 text-xs font-bold text-teal-800 hover:bg-teal-100 transition-colors shadow-xs"
+                  title="Imprimir expediente médico"
                 >
                   <Printer className="h-3.5 w-3.5" />
-                  <span>Imprimir</span>
+                  <span>Imprimir PDF</span>
                 </button>
                 <button
                   onClick={() => setSelectedPetDossier(null)}
-                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
             </div>
 
-            <div className="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-xl bg-slate-50 p-4 text-xs">
+            <div className="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-2xl bg-slate-50 p-4 text-xs">
               <div>
                 <span className="font-semibold text-slate-400">Sexo</span>
                 <p className="font-bold text-ink">{formatSex(selectedPetDossier.sex)}</p>
@@ -408,7 +532,7 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
               </div>
               <div>
                 <span className="font-semibold text-slate-400">Microchip</span>
-                <p className="font-bold text-ink truncate">{selectedPetDossier.microchip || "No tiene"}</p>
+                <p className="font-bold text-ink truncate font-mono">{selectedPetDossier.microchip || "No registrado"}</p>
               </div>
               <div>
                 <span className="font-semibold text-slate-400">Color</span>
@@ -417,14 +541,18 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
             </div>
 
             <div className="mb-6 space-y-3">
-              <div className="rounded-xl border border-red-100 bg-red-50/50 p-3.5">
-                <p className="text-xs font-bold uppercase tracking-wider text-red-700">Alergias Conocidas</p>
+              <div className="rounded-2xl border border-red-100 bg-red-50/50 p-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-red-700 flex items-center gap-1.5">
+                  <AlertCircle className="h-3.5 w-3.5" /> Alergias Conocidas
+                </p>
                 <p className="mt-1 text-xs text-ink font-medium">
                   {(selectedPetDossier.allergies || []).join(", ") || "Ninguna alergia registrada."}
                 </p>
               </div>
-              <div className="rounded-xl border border-amber-100 bg-amber-50/50 p-3.5">
-                <p className="text-xs font-bold uppercase tracking-wider text-amber-700">Condiciones Crónicas / Antecedentes</p>
+              <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-amber-700 flex items-center gap-1.5">
+                  <Heart className="h-3.5 w-3.5" /> Condiciones Crónicas / Antecedentes
+                </p>
                 <p className="mt-1 text-xs text-ink font-medium">
                   {(selectedPetDossier.chronicConditions || []).join(", ") || "Sin condiciones crónicas registradas."}
                 </p>
@@ -432,13 +560,14 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
             </div>
 
             <div className="border-t border-border pt-4">
-              <h4 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-700">
-                Historial de Consultas Médicas
+              <h4 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+                <Stethoscope className="h-4 w-4 text-teal-700" />
+                <span>Historial de Consultas Médicas</span>
               </h4>
               {selectedPetDossier.consultations && selectedPetDossier.consultations.length > 0 ? (
                 <div className="space-y-3">
                   {selectedPetDossier.consultations.map((c) => (
-                    <div key={c.id} className="rounded-xl border border-border p-3.5 bg-white shadow-xs">
+                    <div key={c.id} className="rounded-2xl border border-border p-4 bg-white shadow-xs">
                       <div className="flex items-center justify-between text-xs mb-1.5">
                         <span className="font-bold text-teal-800">
                           {c.vet ? `Dr./Dra. ${c.vet.firstName || c.vet.email}` : "Veterinario de guardia"}
@@ -461,4 +590,5 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
     </div>
   );
 }
+
 

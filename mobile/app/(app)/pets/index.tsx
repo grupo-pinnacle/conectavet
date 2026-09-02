@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react';
-import { View, Text, FlatList, RefreshControl, Platform, Pressable } from 'react-native';
+import { useCallback, useState, useRef } from 'react';
+import { View, Text, FlatList, RefreshControl, Platform, Pressable, ScrollView, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -16,28 +16,47 @@ type Section = 'pets' | 'history';
 export default function PetsListScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const { colors: c } = useTheme();
   const { list } = usePets();
   const pets = list.data ?? [];
   const params = useLocalSearchParams<{ tab?: string }>();
   const [view, setView] = useState<Section>(params.tab === 'history' ? 'history' : 'pets');
+  const scrollRef = useRef<ScrollView>(null);
 
   const handlePress = useCallback(
     (pet: Pet) => router.push(`/(app)/pets/${pet.id}`),
     [router]
   );
 
+  const switchTab = (tab: Section) => {
+    setView(tab);
+    scrollRef.current?.scrollTo({
+      x: tab === 'history' ? width : 0,
+      animated: true,
+    });
+  };
+
+  const onMomentumEnd = (e: any) => {
+    const offsetX = e.nativeEvent.contentOffset.x;
+    const activeIndex = Math.round(offsetX / width);
+    const newTab: Section = activeIndex === 1 ? 'history' : 'pets';
+    if (newTab !== view) {
+      setView(newTab);
+    }
+  };
+
   const Segmented = (
     <View style={{ flexDirection: 'row', gap: spacing.xs, backgroundColor: c.borderLight, borderRadius: radius.full, padding: 4 }}>
       {([
         { key: 'pets' as const, label: 'Mascotas', icon: 'paw' as const },
-        { key: 'history' as const, label: 'Historial', icon: 'clipboard-text-outline' as const },
+        { key: 'history' as const, label: 'Historial Clínico', icon: 'clipboard-text-outline' as const },
       ]).map((tab) => {
         const active = view === tab.key;
         return (
           <Pressable
             key={tab.key}
-            onPress={() => setView(tab.key)}
+            onPress={() => switchTab(tab.key)}
             style={{
               flex: 1,
               flexDirection: 'row',
@@ -49,7 +68,7 @@ export default function PetsListScreen() {
               backgroundColor: active ? c.surface : 'transparent',
               shadowColor: active ? '#000' : undefined,
               shadowOpacity: active ? 0.06 : 0,
-              shadowRadius: active ? 4 : 0,
+              shadowRadius: 4,
               shadowOffset: active ? { width: 0, height: 1 } : undefined,
               elevation: active ? 2 : 0,
             }}
@@ -90,54 +109,56 @@ export default function PetsListScreen() {
     );
   }
 
-  if (view === 'history') {
-    return (
-      <View style={{ flex: 1, backgroundColor: c.background }}>
-        <View style={{ paddingTop: insets.top, paddingHorizontal: spacing.lg, paddingVertical: spacing.md }}>{Segmented}</View>
-        <HistoryScreen />
-      </View>
-    );
-  }
-
-  if (pets.length === 0) {
-    return (
-      <View style={{ flex: 1, paddingTop: insets.top }}>
-        <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.md }}>{Segmented}</View>
-        <View style={{ flex: 1, paddingHorizontal: spacing.lg, justifyContent: 'center' }}>
-          <EmptyState
-            icon="paw"
-            title="Aún no tenés mascotas"
-            subtitle="Cargá tu primera mascota para empezar a usar VetConnect."
-            ctaLabel="Agregar mascota"
-            onCta={() => router.push('/(app)/pets/new')}
-          />
-        </View>
-      </View>
-    );
-  }
-
   return (
     <Animated.View style={{ flex: 1, backgroundColor: c.background }} entering={FadeIn.duration(300)}>
       <View style={{ paddingTop: insets.top, paddingHorizontal: spacing.lg, paddingVertical: spacing.md }}>{Segmented}</View>
-      <FlatList
-        data={pets}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingTop: spacing.sm, paddingHorizontal: spacing.lg, paddingBottom: insets.bottom + spacing.lg }}
-        ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
-        refreshControl={<RefreshControl refreshing={list.isFetching} onRefresh={list.refetch} tintColor={c.primary} />}
-        renderItem={({ item }) => <PetCard pet={item} onPress={handlePress} />}
-        initialNumToRender={8}
-        maxToRenderPerBatch={8}
-        windowSize={7}
-        removeClippedSubviews={Platform.OS === 'android'}
-        ListHeaderComponent={
-          <View style={{ marginBottom: spacing.lg }}>
-            <Button onPress={() => router.push('/(app)/pets/new')} size="md" fullWidth icon={<MaterialCommunityIcons name="plus" size={18} color={c.white} />}>
-              Agregar mascota
-            </Button>
-          </View>
-        }
-      />
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={onMomentumEnd}
+        contentOffset={{ x: view === 'history' ? width : 0, y: 0 }}
+        style={{ flex: 1 }}
+      >
+        <View style={{ width, flex: 1 }}>
+          {pets.length === 0 ? (
+            <View style={{ flex: 1, paddingHorizontal: spacing.lg, justifyContent: 'center' }}>
+              <EmptyState
+                icon="paw"
+                title="Aún no tenés mascotas"
+                subtitle="Cargá tu primera mascota para empezar a usar VetConnect."
+                ctaLabel="Agregar mascota"
+                onCta={() => router.push('/(app)/pets/new')}
+              />
+            </View>
+          ) : (
+            <FlatList
+              data={pets}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={{ paddingTop: spacing.sm, paddingHorizontal: spacing.lg, paddingBottom: insets.bottom + spacing.lg }}
+              ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
+              refreshControl={<RefreshControl refreshing={list.isFetching} onRefresh={list.refetch} tintColor={c.primary} />}
+              renderItem={({ item }) => <PetCard pet={item} onPress={handlePress} />}
+              initialNumToRender={8}
+              maxToRenderPerBatch={8}
+              windowSize={7}
+              removeClippedSubviews={Platform.OS === 'android'}
+              ListHeaderComponent={
+                <View style={{ marginBottom: spacing.lg }}>
+                  <Button onPress={() => router.push('/(app)/pets/new')} size="md" fullWidth icon={<MaterialCommunityIcons name="plus" size={18} color={c.white} />}>
+                    Agregar mascota
+                  </Button>
+                </View>
+              }
+            />
+          )}
+        </View>
+
+        <View style={{ width, flex: 1 }}>
+          <HistoryScreen />
+        </View>
+      </ScrollView>
     </Animated.View>
   );
 }

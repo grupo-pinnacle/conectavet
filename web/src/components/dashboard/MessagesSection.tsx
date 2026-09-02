@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Send, MessageSquare, ArrowLeft, Pill, Clock, CheckCircle2 } from "lucide-react";
+import { Send, MessageSquare, ArrowLeft, Pill, Clock, CheckCircle2, Printer } from "lucide-react";
 import {
   getMessages,
   sendMessage,
@@ -61,6 +61,75 @@ const statusConfig: Record<string, { label: string; bg: string; text: string }> 
 
 function PrescriptionCard({ rx }: { rx: Prescription }) {
   const hasDetails = rx.medication || rx.dosage || rx.frequency || rx.durationDays || rx.indications;
+
+  const handlePrint = () => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Receta Médica Veterinaria - ConectaVet</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 40px; color: #0f172a; }
+          .header { border-bottom: 2px solid #0f766e; padding-bottom: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+          .title { font-size: 22px; font-weight: bold; color: #0f766e; margin: 0; }
+          .subtitle { font-size: 13px; color: #64748b; margin-top: 4px; }
+          .box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 24px; }
+          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+          .label { font-weight: bold; color: #0f766e; font-size: 12px; text-transform: uppercase; }
+          .val { font-size: 14px; margin-top: 2px; }
+          .content { font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+          .footer { margin-top: 50px; border-top: 1px solid #e2e8f0; padding-top: 20px; display: flex; justify-content: space-between; font-size: 12px; color: #64748b; }
+          .sig { text-align: center; width: 220px; border-top: 1px dashed #94a3b8; padding-top: 8px; margin-top: 40px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <h1 class="title">🐾 ConectaVet — Telemedicina Veterinaria</h1>
+            <div class="subtitle">Prescripción Médica Digital Oficial</div>
+          </div>
+          <div style="text-align: right; font-size: 12px; color: #64748b;">
+            Fecha: ${new Date(rx.createdAt).toLocaleDateString("es-AR")}<br>
+            Hora: ${new Date(rx.createdAt).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+          </div>
+        </div>
+        <div class="box">
+          ${hasDetails ? `
+          <div class="grid">
+            ${rx.medication ? `<div><div class="label">Medicamento:</div><div class="val">${rx.medication}</div></div>` : ""}
+            ${rx.dosage ? `<div><div class="label">Dosis:</div><div class="val">${rx.dosage}</div></div>` : ""}
+            ${rx.frequency ? `<div><div class="label">Frecuencia:</div><div class="val">${rx.frequency}</div></div>` : ""}
+            ${rx.durationDays ? `<div><div class="label">Duración:</div><div class="val">${rx.durationDays} días</div></div>` : ""}
+            ${rx.indications ? `<div style="grid-column: span 2;"><div class="label">Indicaciones:</div><div class="val">${rx.indications}</div></div>` : ""}
+          </div>
+          ` : ""}
+          <div class="label">Instrucciones Médicas:</div>
+          <div class="content">${rx.content}</div>
+        </div>
+        <div class="footer">
+          <div>
+            Emisión telemédica certificada vía ConectaVet.<br>
+            Válido según normativas sanitarias vigentes.
+          </div>
+          <div class="sig">
+            <strong>${rx.vet?.firstName ? `Dr./Dra. ${rx.vet.firstName} ${rx.vet.lastName || ""}` : "Médico Veterinario"}</strong><br>
+            <span style="font-size: 11px;">Firma & Sello Digital</span>
+          </div>
+        </div>
+        <script>window.onload = function() { window.print(); }</script>
+      </body>
+      </html>
+    `;
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
+
   return (
     <div className="mb-2 rounded-xl border border-teal-100 bg-teal-50/50 p-4">
       <div className="flex items-center gap-2 mb-1.5">
@@ -68,7 +137,15 @@ function PrescriptionCard({ rx }: { rx: Prescription }) {
         <span className="text-xs font-bold uppercase tracking-wide text-teal-800">
           Receta de {rx.vet?.firstName || "tu veterinario"}
         </span>
-        <span className="ml-auto text-[11px] text-slate-400">
+        <button
+          onClick={handlePrint}
+          className="ml-auto inline-flex items-center gap-1 rounded-md border border-teal-200 bg-white/80 px-2 py-0.5 text-[11px] font-semibold text-teal-800 hover:bg-teal-100 transition-colors"
+          title="Imprimir / Guardar en PDF"
+        >
+          <Printer className="h-3 w-3" />
+          <span className="hidden sm:inline">Imprimir / PDF</span>
+        </button>
+        <span className="text-[11px] text-slate-400">
           {new Date(rx.createdAt).toLocaleString("es-AR", {
             day: "2-digit",
             month: "2-digit",

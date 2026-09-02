@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { getMyConsultations, rateConsultation } from "../../services/endpoints";
 import type { Consultation, Prescription, Review } from "../../types";
-import { ClipboardList, Clock, Pill, Star, X } from "lucide-react";
+import { ClipboardList, Clock, Pill, Star, X, Printer } from "lucide-react";
 import StarRatingInput from "./StarRatingInput";
 import Button from "../Button";
 
@@ -17,6 +17,88 @@ export default function HistorySection() {
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [rateError, setRateError] = useState("");
+
+  const handlePrintConsultation = (c: Consultation, rxs: Prescription[]) => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Informe Clínico de Consulta - ${c.pet?.name || "Mascota"}</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 40px; color: #0f172a; }
+          .header { border-bottom: 2px solid #0f766e; padding-bottom: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+          .title { font-size: 22px; font-weight: bold; color: #0f766e; margin: 0; }
+          .subtitle { font-size: 13px; color: #64748b; margin-top: 4px; }
+          .section { margin-bottom: 24px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; background: #f8fafc; }
+          .section-title { font-size: 14px; font-weight: bold; color: #0f766e; text-transform: uppercase; margin-bottom: 10px; }
+          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px; }
+          .label { font-weight: bold; color: #475569; }
+          .rx-box { border: 1px solid #ccfbf1; background: #f0fdfa; border-radius: 6px; padding: 12px; margin-top: 8px; font-size: 13px; }
+          .footer { margin-top: 50px; border-top: 1px solid #e2e8f0; padding-top: 20px; display: flex; justify-content: space-between; font-size: 12px; color: #64748b; }
+          .sig { text-align: center; width: 220px; border-top: 1px dashed #94a3b8; padding-top: 8px; margin-top: 30px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <h1 class="title">🐾 ConectaVet — Resumen de Atención Telemédica</h1>
+            <div class="subtitle">Historial Clínico Oficial del Paciente</div>
+          </div>
+          <div style="text-align: right; font-size: 12px; color: #64748b;">
+            Fecha: ${new Date(c.endedAt || c.createdAt).toLocaleDateString("es-AR")}<br>
+            ID Consulta: ${c.id.slice(0, 8)}
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Datos del Paciente y Atención</div>
+          <div class="grid">
+            <div><span class="label">Mascota:</span> ${c.pet?.name || "N/A"} (${c.pet?.species || "Especie no especificada"})</div>
+            <div><span class="label">Veterinario a Cargo:</span> Dr./Dra. ${c.vet?.firstName || c.vet?.email || "N/A"}</div>
+            <div><span class="label">Tutor / Dueño:</span> ${c.client?.firstName || c.client?.email || "N/A"}</div>
+            <div><span class="label">Fecha de Cierre:</span> ${new Date(c.endedAt || c.createdAt).toLocaleString("es-AR")}</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Evolución y Diagnóstico Clínico</div>
+          <div style="font-size: 14px; line-height: 1.6; white-space: pre-wrap;">${c.notes || "Sin observaciones adicionales registradas."}</div>
+        </div>
+
+        ${rxs.length > 0 ? `
+        <div class="section">
+          <div class="section-title">Prescripciones / Recetas Emitidas (${rxs.length})</div>
+          ${rxs.map((rx) => `
+            <div class="rx-box">
+              ${rx.medication ? `<div><strong>Medicamento:</strong> ${rx.medication} ${rx.dosage ? `— <strong>Dosis:</strong> ${rx.dosage}` : ""}</div>` : ""}
+              ${rx.frequency ? `<div><strong>Frecuencia:</strong> ${rx.frequency} ${rx.durationDays ? `— <strong>Duración:</strong> ${rx.durationDays} días` : ""}</div>` : ""}
+              ${rx.indications ? `<div><strong>Indicaciones:</strong> ${rx.indications}</div>` : ""}
+              <div style="margin-top: 6px; color: #334155;">${rx.content}</div>
+            </div>
+          `).join("")}
+        </div>
+        ` : ""}
+
+        <div class="footer">
+          <div>Documento emitido digitalmente vía plataforma ConectaVet.</div>
+          <div class="sig">
+            <strong>Dr./Dra. ${c.vet?.firstName || "Médico Veterinario"}</strong><br>
+            <span style="font-size: 11px;">Firma & Sello de Atención</span>
+          </div>
+        </div>
+        <script>window.onload = function() { window.print(); }</script>
+      </body>
+      </html>
+    `;
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
 
   const load = useCallback(async () => {
     try {
@@ -147,14 +229,24 @@ export default function HistorySection() {
                     </p>
                   </div>
                 </div>
-                <span className="flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">
-                  <Clock className="h-3 w-3" />
-                  {new Date(c.endedAt || c.createdAt).toLocaleDateString("es-AR", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handlePrintConsultation(c, prescriptionsByCons[c.id] || [])}
+                    className="inline-flex items-center gap-1 rounded-lg border border-border bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
+                    title="Imprimir resumen médico de esta consulta"
+                  >
+                    <Printer className="h-3.5 w-3.5 text-teal-700" />
+                    <span className="hidden sm:inline">Imprimir Informe</span>
+                  </button>
+                  <span className="flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">
+                    <Clock className="h-3 w-3" />
+                    {new Date(c.endedAt || c.createdAt).toLocaleDateString("es-AR", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                </div>
               </div>
               {c.notes ? (
                 <div className="rounded-lg bg-[#F1F5F9] p-4">

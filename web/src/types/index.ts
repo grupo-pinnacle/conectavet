@@ -31,6 +31,7 @@ export interface Pet {
   createdAt?: string;
   nextVet?: string;
   lastVisit?: string;
+  consultations?: Consultation[];
 }
 
 export interface Consultation {

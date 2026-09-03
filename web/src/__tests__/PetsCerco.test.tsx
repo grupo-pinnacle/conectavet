@@ -56,7 +56,7 @@ describe("BUG-02 Cerco — editar mascota", () => {
     });
   });
 
-  it("borde: especie vacía se omite del payload (no viaja '' que el 400 rechaza)", async () => {
+  it("borde: especie vacía bloquea el submit con error inline (nada viaja al backend)", async () => {
     mockedUpdate.mockResolvedValue({ ...ANDY });
     await openEditForm();
 
@@ -64,13 +64,13 @@ describe("BUG-02 Cerco — editar mascota", () => {
     fireEvent.change(selects[0], { target: { value: "" } });
     fireEvent.click(screen.getByText("Guardar cambios"));
 
-    await waitFor(() => expect(mockedUpdate).toHaveBeenCalled());
-    const payload = mockedUpdate.mock.calls[0][1] as Record<string, unknown>;
-    expect(payload.species).toBeUndefined();
-    expect("species" in payload && payload.species !== undefined).toBe(false);
+    await waitFor(() => {
+      expect(screen.getByText("Elegí la especie")).toBeInTheDocument();
+    });
+    expect(mockedUpdate).not.toHaveBeenCalled();
   });
 
-  it("borde: edad vaciada (0) se omite del payload en vez de romper Zod positive()", async () => {
+  it("borde: edad vaciada (0) bloquea el submit con error inline (nada viaja al backend)", async () => {
     mockedUpdate.mockResolvedValue({ ...ANDY });
     await openEditForm();
 
@@ -78,9 +78,10 @@ describe("BUG-02 Cerco — editar mascota", () => {
     fireEvent.change(numbers[0], { target: { value: "" } });
     fireEvent.click(screen.getByText("Guardar cambios"));
 
-    await waitFor(() => expect(mockedUpdate).toHaveBeenCalled());
-    const payload = mockedUpdate.mock.calls[0][1] as Record<string, unknown>;
-    expect(payload.age).toBeUndefined();
+    await waitFor(() => {
+      expect(screen.getByText("Ingresá una edad válida (1 año o más)")).toBeInTheDocument();
+    });
+    expect(mockedUpdate).not.toHaveBeenCalled();
   });
 
   it("inválido: un 400 del backend muestra el mensaje real, no el genérico", async () => {

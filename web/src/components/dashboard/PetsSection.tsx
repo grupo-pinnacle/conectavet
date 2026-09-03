@@ -16,7 +16,6 @@ const emptyForm = {
   color: "",
   microchip: "",
   birthDate: "",
-  weightKg: "",
   allergies: "",
   chronicConditions: "",
 };
@@ -29,6 +28,7 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
   const [editingPet, setEditingPet] = useState<Pet | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [selectedPetDossier, setSelectedPetDossier] = useState<Pet | null>(null);
   const [copiedChipId, setCopiedChipId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"cards" | "timeline">("cards");
@@ -133,21 +133,47 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
     printWindow.document.close();
   };
 
+  const validateForm = (): Record<string, string> => {
+    const errs: Record<string, string> = {};
+    const name = form.name.trim();
+    if (!name) errs.name = "El nombre es requerido";
+    else if (name.length > 50) errs.name = "Máximo 50 caracteres";
+    if (!form.species) errs.species = "Elegí la especie";
+    const breed = form.breed.trim();
+    if (breed && (breed.length < 2 || breed.length > 80)) errs.breed = "Entre 2 y 80 caracteres";
+    if (!Number.isInteger(form.age) || form.age < 1) errs.age = "Ingresá una edad válida (1 año o más)";
+    if (form.weight !== "") {
+      const w = Number(form.weight);
+      if (!Number.isFinite(w) || w <= 0 || w > 500) errs.weight = "Peso entre 0 y 500 kg";
+    }
+    const chip = form.microchip.trim();
+    if (chip && !/^\d{15}$/.test(chip)) errs.microchip = "Debe tener exactamente 15 dígitos";
+    if (form.color.trim().length > 50) errs.color = "Máximo 50 caracteres";
+    const allergies = form.allergies.split(",").map((s) => s.trim()).filter(Boolean);
+    if (allergies.length > 20) errs.allergies = "Máximo 20 alergias";
+    else if (allergies.some((a) => a.length > 50)) errs.allergies = "Cada alergia: máximo 50 caracteres";
+    const chronic = form.chronicConditions.split(",").map((s) => s.trim()).filter(Boolean);
+    if (chronic.length > 20) errs.chronicConditions = "Máximo 20 condiciones";
+    else if (chronic.some((c) => c.length > 80)) errs.chronicConditions = "Cada condición: máximo 80 caracteres";
+    return errs;
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim()) return;
+    const validation = validateForm();
+    setFormErrors(validation);
+    if (Object.keys(validation).length > 0) return;
     setSaving(true);
     const weight = form.weight === "" ? undefined : Number(form.weight);
     const payload = {
       name: form.name.trim(),
       species: form.species || undefined,
-      breed: form.breed,
+      breed: form.breed.trim() || undefined,
       age: form.age > 0 ? form.age : undefined,
       weight: Number.isNaN(weight) ? undefined : weight,
       sex: form.sex || undefined,
-      color: form.color || undefined,
-      microchip: form.microchip || undefined,
-      weightKg: form.weightKg ? Number(form.weightKg) : undefined,
+      color: form.color.trim() || undefined,
+      microchip: form.microchip.trim() || undefined,
       birthDate: form.birthDate ? new Date(form.birthDate).toISOString() : undefined,
       allergies: form.allergies.split(",").map((s) => s.trim()).filter(Boolean),
       chronicConditions: form.chronicConditions.split(",").map((s) => s.trim()).filter(Boolean),
@@ -183,10 +209,10 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
       color: pet.color || "",
       microchip: pet.microchip || "",
       birthDate: pet.birthDate ? pet.birthDate.slice(0, 10) : "",
-      weightKg: pet.weightKg ? String(pet.weightKg) : "",
       allergies: (pet.allergies || []).join(", "),
       chronicConditions: (pet.chronicConditions || []).join(", "),
     });
+    setFormErrors({});
     setShowForm(true);
   };
 
@@ -194,6 +220,7 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
     setShowForm(false);
     setEditingPet(null);
     setForm(emptyForm);
+    setFormErrors({});
   };
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -285,6 +312,7 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Nombre</label>
               <input type="text" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Nombre" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
+              {formErrors.name && <p className="mt-1 text-xs font-semibold text-red-600">{formErrors.name}</p>}
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Especie</label>
@@ -294,20 +322,24 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
                 <option value="Gato">Gato</option>
                 <option value="Ave">Ave</option>
                 <option value="Exótico">Exótico</option>
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Raza</label>
-              <input type="text" value={form.breed} onChange={(e) => setForm((f) => ({ ...f, breed: e.target.value }))} placeholder="Raza" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
+                </select>
+                {formErrors.species && <p className="mt-1 text-xs font-semibold text-red-600">{formErrors.species}</p>}
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Raza</label>
+                <input type="text" value={form.breed} onChange={(e) => setForm((f) => ({ ...f, breed: e.target.value }))} placeholder="Raza" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
+                {formErrors.breed && <p className="mt-1 text-xs font-semibold text-red-600">{formErrors.breed}</p>}
             </div>
             <div className="flex gap-4">
               <div className="flex-1">
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Edad</label>
                 <input type="number" min={0} value={form.age} onChange={(e) => setForm((f) => ({ ...f, age: Number(e.target.value) }))} className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink focus:border-teal-600 focus:outline-none" />
+                {formErrors.age && <p className="mt-1 text-xs font-semibold text-red-600">{formErrors.age}</p>}
               </div>
               <div className="flex-1">
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Peso (kg)</label>
                 <input type="number" min={0} step="0.1" value={form.weight} onChange={(e) => setForm((f) => ({ ...f, weight: e.target.value }))} placeholder="Ej: 10" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
+                {formErrors.weight && <p className="mt-1 text-xs font-semibold text-red-600">{formErrors.weight}</p>}
               </div>
             </div>
             <div>
@@ -325,18 +357,22 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Color</label>
               <input type="text" value={form.color} onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))} placeholder="Ej: Marrón" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
+              {formErrors.color && <p className="mt-1 text-xs font-semibold text-red-600">{formErrors.color}</p>}
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Microchip (15 dígitos)</label>
               <input type="text" value={form.microchip} onChange={(e) => setForm((f) => ({ ...f, microchip: e.target.value }))} placeholder="15 dígitos" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
+              {formErrors.microchip && <p className="mt-1 text-xs font-semibold text-red-600">{formErrors.microchip}</p>}
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Alergias</label>
               <input type="text" value={form.allergies} onChange={(e) => setForm((f) => ({ ...f, allergies: e.target.value }))} placeholder="Separadas por coma" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
+              {formErrors.allergies && <p className="mt-1 text-xs font-semibold text-red-600">{formErrors.allergies}</p>}
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Condiciones crónicas</label>
               <input type="text" value={form.chronicConditions} onChange={(e) => setForm((f) => ({ ...f, chronicConditions: e.target.value }))} placeholder="Separadas por coma" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
+              {formErrors.chronicConditions && <p className="mt-1 text-xs font-semibold text-red-600">{formErrors.chronicConditions}</p>}
             </div>
           </div>
           <div className="flex gap-3">

@@ -32,7 +32,7 @@ export default function ConsultationsSection({ initialPetId = "" }: { initialPet
       setPets(petsData);
       setActiveConsultations(
         consData
-          .filter((c) => c.status !== "COMPLETED")
+          .filter((c) => c.status !== "COMPLETED" && c.status !== "CANCELLED")
           .map((c) => ({
             id: c.id,
             petId: c.petId,

@@ -55,6 +55,7 @@ export default function ConsultationsSection({ initialPetId = "" }: { initialPet
   useEffect(() => onDataChanged(loadData), [loadData]);
 
   const handleCreate = async () => {
+    if (creating) return;
     if (!selectedPetId) return;
     if (notes.trim().length < 5) {
       setError("Contanos el motivo de la consulta (mínimo 5 caracteres)");
@@ -78,8 +79,10 @@ export default function ConsultationsSection({ initialPetId = "" }: { initialPet
       setSuccess("Consulta solicitada. Tu caso ya está en la cola de atención profesional.");
       setSelectedPetId("");
       setNotes("");
-    } catch {
-      setError("Error al crear la consulta");
+    } catch (err: unknown) {
+      const response = (err as { response?: { status?: number; data?: { message?: string } } })?.response;
+      setError(response?.data?.message || "Error al crear la consulta");
+      if (response?.status === 409) loadData();
     } finally {
       setCreating(false);
     }

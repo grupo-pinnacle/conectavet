@@ -21,6 +21,7 @@ import {
   setLastConsultationId,
 } from "../../services/chatStore";
 import { joinConsultation } from "../../services/socket";
+import { notifyDataChanged } from "../../services/realtime";
 import { useChatSocket } from "../../hooks/useChatSocket";
 import { useConsultations, useInvalidateConsultations, consultationsKey } from "../../hooks/useConsultations";
 import { MessageBubble } from "./MessageBubble";
@@ -530,8 +531,12 @@ export default function MessagesSection() {
                         prev.map((c) => (c.id === updated.id ? updated : c))
                       );
                       setActiveCons(updated);
+                      invalidateConsultations();
+                      notifyDataChanged();
                     } catch (error) {
                       console.error("Error al cancelar la consulta", error);
+                      const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
+                      alert(msg || "No se pudo cancelar la consulta. Intentá de nuevo.");
                     }
                   }}
                   className="rounded-full px-4 py-1.5 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors"

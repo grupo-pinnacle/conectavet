@@ -127,9 +127,14 @@ if (!req.user || req.user.role !== 'CLIENT') {
       return res.status(403).json({ success: false, message: 'Acceso denegado' });
     }
 const updated = await cancelConsultation(req.params.id as string, req.user.userId);
-if (updated.vetId) {
-      getIO().to(`user:${updated.vetId}`).emit('consultation:updated', updated);
-    }
+try {
+      const io = getIO();
+      if (io) {
+        io.to(`consultation:${req.params.id}`).emit('consultation:updated', updated);
+        if (updated.clientId) io.to(`user:${updated.clientId}`).emit('consultation:updated', updated);
+        if (updated.vetId) io.to(`user:${updated.vetId}`).emit('consultation:updated', updated);
+      }
+    } catch {}
 return res.json({ success: true, data: updated });
 });
 

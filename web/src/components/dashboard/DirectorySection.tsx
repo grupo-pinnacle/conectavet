@@ -54,6 +54,8 @@ export default function DirectorySection() {
   // Modal de consulta
   const [consultVet, setConsultVet] = useState<VetSummary | null>(null);
   const [pets, setPets] = useState<Pet[]>([]);
+  const [petsLoading, setPetsLoading] = useState(false);
+  const [petsError, setPetsError] = useState("");
   const [selectedPetId, setSelectedPetId] = useState("");
   const [notes, setNotes] = useState("");
   const [creating, setCreating] = useState(false);
@@ -129,11 +131,15 @@ export default function DirectorySection() {
     setConsultSuccess("");
     setSelectedPetId("");
     setNotes("");
+    setPetsLoading(true);
+    setPetsError("");
     try {
       const myPets = await getMyPets();
       setPets(myPets);
     } catch {
-      setPets([]);
+      setPetsError("No se pudieron cargar tus mascotas. Revisá tu conexión.");
+    } finally {
+      setPetsLoading(false);
     }
   }, []);
 
@@ -339,6 +345,21 @@ export default function DirectorySection() {
             {consultSuccess ? (
               <div className="rounded-lg bg-green-50 p-4 text-sm font-semibold text-green-700">
                 {consultSuccess}
+              </div>
+            ) : petsLoading ? (
+              <div className="flex items-center justify-center gap-2 py-8 text-sm text-slate-500">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-teal-700 border-t-transparent" />
+                Cargando tus mascotas...
+              </div>
+            ) : petsError ? (
+              <div className="rounded-lg bg-red-50 p-4 text-sm">
+                <p className="font-semibold text-red-600">{petsError}</p>
+                <button
+                  onClick={() => consultVet && openConsult(consultVet)}
+                  className="mt-2 text-sm font-bold text-teal-700 hover:underline"
+                >
+                  Reintentar
+                </button>
               </div>
             ) : pets.length === 0 ? (
               <p className="text-sm text-slate-500">

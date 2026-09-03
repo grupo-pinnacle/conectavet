@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getMyPets, createPet, updatePet, getPetById } from "../../services/endpoints";
+import { getMyPets, createPet, updatePet, deletePet, getPetById } from "../../services/endpoints";
 import type { Pet } from "../../types";
 import { PawPrint, FileText, Printer, X, Copy, Check, Clock, Stethoscope, Sparkles, AlertCircle, Heart } from "lucide-react";
 import { formatSex } from "../../utils/sex";
@@ -140,9 +140,9 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
     const weight = form.weight === "" ? undefined : Number(form.weight);
     const payload = {
       name: form.name.trim(),
-      species: form.species,
+      species: form.species || undefined,
       breed: form.breed,
-      age: form.age,
+      age: form.age > 0 ? form.age : undefined,
       weight: Number.isNaN(weight) ? undefined : weight,
       sex: form.sex || undefined,
       color: form.color || undefined,
@@ -163,8 +163,9 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
       setShowForm(false);
       setEditingPet(null);
       setForm(emptyForm);
-    } catch {
-      setError("Error al guardar la mascota");
+    } catch (err) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg || "Error al guardar la mascota");
     } finally {
       setSaving(false);
     }
@@ -193,6 +194,24 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
     setShowForm(false);
     setEditingPet(null);
     setForm(emptyForm);
+  };
+
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = async (pet: Pet) => {
+    if (!window.confirm(`¿Eliminar a ${pet.name}? Esta acción da de baja su ficha.`)) return;
+    setDeletingId(pet.id);
+    setError("");
+    try {
+      await deletePet(pet.id);
+      setPets((prev) => prev.filter((p) => p.id !== pet.id));
+      if (selectedPetDossier?.id === pet.id) setSelectedPetDossier(null);
+    } catch (err) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg || "No se pudo eliminar la mascota");
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   if (loading) {
@@ -433,6 +452,13 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
                   className="rounded-xl border border-border px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 transition-colors"
                 >
                   Editar
+                </button>
+                <button
+                  onClick={() => handleDelete(pet)}
+                  disabled={deletingId === pet.id}
+                  className="rounded-xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors disabled:opacity-60"
+                >
+                  {deletingId === pet.id ? "Eliminando..." : "Eliminar"}
                 </button>
                 <button
                   onClick={() => onAgendarCita?.(pet.id)}

@@ -54,6 +54,10 @@ export async function updatePet(id: string, data: Partial<Pet>): Promise<Pet> {
   return res.data.data;
 }
 
+export async function deletePet(id: string): Promise<void> {
+  await api.delete(`/api/pets/${id}`);
+}
+
 export async function getMyConsultations(): Promise<Consultation[]> {
   const res = await api.get("/api/consultations/mine");
   return res.data.data;

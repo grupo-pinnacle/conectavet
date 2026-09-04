@@ -32,9 +32,9 @@ router.patch('/me/availability', authenticate, authorize(Role.VET, Role.ADMIN), 
 router.get('/admin-only', authenticate, authorize(Role.ADMIN), adminOnlyController);
 router.get('/vets', authenticate, listVetsController);
 router.post('/admin/users', authenticate, authorize(Role.ADMIN), validate(createUserSchema), createUserController);
-router.get('/favorites', authenticate, listFavoritesController);
-router.post('/vets/:id/favorite', authenticate, addFavoriteController);
-router.delete('/vets/:id/favorite', authenticate, removeFavoriteController);
+router.get('/favorites', authenticate, authorize(Role.CLIENT), listFavoritesController);
+router.post('/vets/:id/favorite', authenticate, authorize(Role.CLIENT), addFavoriteController);
+router.delete('/vets/:id/favorite', authenticate, authorize(Role.CLIENT), removeFavoriteController);
 router.get('/vets/:id', authenticate, getVetByIdController);
 router.patch('/vets/:id/vet-status', authenticate, authorize(Role.ADMIN), validate(updateVetStatusSchema), updateVetStatusController);
 

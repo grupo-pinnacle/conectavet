@@ -79,8 +79,10 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     fetchStats();
-    fetchUsers(1, "", "");
-  }, [fetchStats, fetchUsers]);
+    // La carga inicial de usuarios la hace el efecto debounce (400ms):
+    // llamarla acá también duplicaba GET /admin/users en cada montaje.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchUsers inicial lo dispara el debounce
+  }, [fetchStats]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

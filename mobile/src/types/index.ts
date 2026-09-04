@@ -124,7 +124,7 @@ export const createPetSchema = z.object({
   species: speciesSchema,
   breed: z.string().max(80).optional(),
   birthDate: z.string().datetime(),
-  weightKg: z.number().positive().max(500).optional(),
+  weightKg: z.number().positive('El peso debe ser un número positivo').max(500, 'El peso no puede superar los 500 kg').optional(),
   sex: sexSchema.optional(),
   color: z.string().max(50).optional(),
   microchip: z.string().regex(/^\d{15}$/).optional(),

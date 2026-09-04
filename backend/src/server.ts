@@ -5,7 +5,7 @@ import { logger } from './shared/logger.js';
 
 const PORT = Number(process.env.PORT) || 3001;
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   logger.info(`Servidor iniciado en puerto ${PORT}`, { port: PORT, env: process.env.NODE_ENV });
 });
 

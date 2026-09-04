@@ -95,15 +95,24 @@ if ($useADB) {
     $mode = "ADB REVERSE (USB)"
 } else {
     # ── Fallback: LAN (solo si no hay celular conectado) ──
-    $allIps = ipconfig | Select-String 'IPv4.*\d+\.\d+\.\d+\.\d+' | ForEach-Object { ($_.Line -replace '.*:\s*', '').Trim() }
-    $usbIp = $allIps | Where-Object { $_ -match '192\.168\.4[2-3]\.' } | Select-Object -First 1
-    $lanIp10 = $allIps | Where-Object { $_ -match '^10\.' } | Select-Object -First 1
-    $lanIp192 = $allIps | Where-Object { $_ -match '^192\.168\.' } | Select-Object -First 1
-    if ($usbIp) { $ip = $usbIp; $mode = "USB TETHERING" }
-    elseif ($lanIp10) { $ip = $lanIp10; $mode = "LAN" }
-    elseif ($lanIp192) { $ip = $lanIp192; $mode = "LAN" }
+    # Detección robusta (BUG-10): ignora adaptadores virtuales (VM/VPN/WSL) y
+    # prefiere la NIC de la ruta por defecto; cubre 10/8, 172.16/12 y 192.168/16.
+    $defRoute = Get-NetRoute -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue | Sort-Object RouteMetric | Select-Object -First 1
+    $candidates = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object {
+        $_.IPAddress -notmatch '^(127\.|169\.254\.)' -and
+        $_.InterfaceAlias -notmatch 'vEthernet|VirtualBox|VMware|WSL|VPN|Loopback|Teredo|Bluetooth|Cloudflare|WARP|WireGuard|ZeroTier|Tailscale|Hamachi|OpenVPN' -and
+        $_.PrefixOrigin -match '^(Dhcp|Manual)$'
+    }
+    $preferred = $candidates | Where-Object { $_.InterfaceIndex -eq $defRoute.InterfaceIndex } | Select-Object -First 1
+    if (-not $preferred) {
+        $preferred = $candidates | Where-Object { $_.IPAddress -match '^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)' } | Select-Object -First 1
+    }
+    if (-not $preferred) { $preferred = $candidates | Select-Object -First 1 }
+    if ($preferred -and ($preferred.IPAddress -match '192\.168\.4[2-3]\.')) { $ip = $preferred.IPAddress; $mode = "USB TETHERING" }
+    elseif ($preferred) { $ip = $preferred.IPAddress; $mode = "LAN" }
     else { $ip = "127.0.0.1"; $mode = "LOCALHOST" }
     $ip = $ip.Trim()
+    if ($preferred) { Write-Host "Interfaz: $($preferred.InterfaceAlias) ($($preferred.IPAddress))" -ForegroundColor Gray }
     Write-Host "No se detecto celular por USB. Usando modo $mode con IP $ip" -ForegroundColor DarkYellow
     Write-Host "  Para que funcione en cualquier red, conecta el celular por USB y usa: .\start.ps1 -ADB" -ForegroundColor DarkYellow
     Write-Host ""
@@ -169,4 +178,5 @@ $expoArgs = @("expo", "start", "--clear")
 if ($Fast) { $expoArgs += "--no-dev"; $expoArgs += "--minify" }
 if ($Tunnel) { $expoArgs += "--tunnel" }
 if ($useADB) { $expoArgs += "--localhost" }
+if (-not $useADB -and -not $Tunnel) { $expoArgs += "--lan" }
 & "npx" $expoArgs

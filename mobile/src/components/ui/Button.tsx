@@ -60,7 +60,7 @@ export function Button({
   }));
 
   return (
-    <Animated.View style={[animStyle, fullWidth && { alignSelf: 'stretch' }]}>
+    <Animated.View style={[animStyle, fullWidth && { alignSelf: 'stretch' }, style]}>
       <Pressable
         disabled={isDisabled}
         onPress={onPress}

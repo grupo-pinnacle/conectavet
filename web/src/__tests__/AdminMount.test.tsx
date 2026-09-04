@@ -58,8 +58,11 @@ describe("Reporte API — montaje del panel admin sin llamadas duplicadas", () =
       </MemoryRouter>
     );
 
-    // La tabla llega vía el debounce (400ms): esperar al render antes de contar
+    // La tabla llega vía el debounce (400ms): esperar al render y LUEGO
+    // dejar pasar la ventana del debounce antes de contar. Sin esto, la
+    // aserción ganaría la carrera y no detectaría el fetch duplicado.
     await screen.findByText("admin@test.com");
+    await new Promise((r) => setTimeout(r, 800));
 
     await waitFor(() => {
       expect(mockedStats).toHaveBeenCalledTimes(1);

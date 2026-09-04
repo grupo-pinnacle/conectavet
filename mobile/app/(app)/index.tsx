@@ -7,7 +7,7 @@ import { usePets } from '@/hooks/usePets';
 import { useAuth } from '@/hooks/useAuth';
 import { useConsultationHistory } from '@/hooks/useConsultations';
 import { PetCard } from '@/components/PetCard';
-import { Card, SkeletonCard, EmptyState, Badge } from '@/components/ui';
+import { Card, Skeleton, SkeletonCard, EmptyState, Badge } from '@/components/ui';
 import { useTheme, spacing, radius, fontSizes, fontWeights } from '@/theme';
 import type { Pet, Consultation } from '@/types';
 
@@ -43,14 +43,21 @@ export default function HomeScreen() {
       contentContainerStyle={{ padding: spacing.lg, paddingBottom: insets.bottom + spacing.huge }}
       refreshControl={<RefreshControl refreshing={list.isFetching} onRefresh={onRefreshAll} tintColor={c.primary} />}
     >
-      <View style={{ marginBottom: spacing.xl }}>
-        <Text style={{ fontSize: fontSizes.title, fontWeight: fontWeights.bold, color: c.ink, letterSpacing: -0.5 }}>
-          {saludo}, {user?.firstName}
-        </Text>
-        <Text style={{ fontSize: fontSizes.body, color: c.inkMuted, marginTop: spacing.xs }}>
-          ¿Qué necesitás hacer hoy por tus mascotas?
-        </Text>
-      </View>
+      {!user ? (
+        <View style={{ marginBottom: spacing.xl, gap: spacing.xs }}>
+          <Skeleton width="60%" height={30} />
+          <Skeleton width="80%" height={16} />
+        </View>
+      ) : (
+        <View style={{ marginBottom: spacing.xl }}>
+          <Text style={{ fontSize: fontSizes.title, fontWeight: fontWeights.bold, color: c.ink, letterSpacing: -0.5 }}>
+            {saludo}, {user?.firstName}
+          </Text>
+          <Text style={{ fontSize: fontSizes.body, color: c.inkMuted, marginTop: spacing.xs }}>
+            ¿Qué necesitás hacer hoy por tus mascotas?
+          </Text>
+        </View>
+      )}
 
       {/* Banner de Consulta en Vivo / Cola con ETA */}
       {activeConsultation && (

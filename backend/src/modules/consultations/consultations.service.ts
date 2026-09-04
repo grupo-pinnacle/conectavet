@@ -125,7 +125,7 @@ export async function createConsultation(data: {
     }
   });
   if (existingActive) {
-    throw new ConflictError('Ya tenÃ©s una consulta activa o en espera para esta mascota');
+    throw new ConflictError('Ya tenés una consulta activa o en espera para esta mascota');
   }
 
   // La consulta nunca nace ACTIVA: el veterinario siempre decide si atender.

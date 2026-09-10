@@ -69,7 +69,9 @@ export default function LoginPage() {
           <div className="rounded-xl border border-border bg-white p-8 shadow-overlay md:p-12">
             <div className="mb-8">
               <div className="mb-2">
-                <Logo size="sm" />
+                <Link to="/" >
+                    <Logo size="sm" />
+                  </Link>
               </div>
               <h2 className="text-2xl font-bold text-ink">Iniciar Sesión</h2>
               <p className="mt-1 text-sm text-slate-500">

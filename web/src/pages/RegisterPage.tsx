@@ -107,7 +107,9 @@ export default function RegisterPage() {
           <div className="rounded-xl border border-border bg-white p-8 shadow-overlay md:p-12">
             <div className="mb-8">
               <div className="mb-2">
+                <Link to="/" >
                 <Logo size="sm" />
+              </Link>
               </div>
               <h2 className="text-2xl font-bold text-ink">Crear cuenta</h2>
               <p className="mt-1 text-sm text-slate-500">

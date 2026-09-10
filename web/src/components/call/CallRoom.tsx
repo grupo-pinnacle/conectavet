@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { VideoPresets } from "livekit-client";
 import {
   LiveKitRoom,
   VideoConference,
-  RoomAudioRenderer,
   PreJoin,
+  type LocalUserChoices,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
 import type { CallToken } from "../../services/endpoints";
@@ -17,10 +17,32 @@ interface CallRoomProps {
 }
 
 export default function CallRoom({ call, peerName, onLeave }: CallRoomProps) {
-  const [preJoined, setPreJoined] = useState(false);
+  const [userChoices, setUserChoices] = useState<LocalUserChoices | null>(null);
   const [mediaError, setMediaError] = useState<string | null>(null);
 
-  if (!preJoined) {
+  const roomOptions = useMemo(() => {
+    return {
+      adaptiveStream: { pixelDensity: "screen" as const },
+      dynacast: true,
+      videoCaptureDefaults: {
+        resolution: VideoPresets.h720.resolution,
+        frameRate: 24,
+        deviceId: userChoices?.videoDeviceId,
+      },
+      publishDefaults: {
+        simulcast: true,
+        videoSimulcastLayers: [VideoPresets.h180, VideoPresets.h360, VideoPresets.h720],
+      },
+      audioCaptureDefaults: {
+        deviceId: userChoices?.audioDeviceId,
+        autoGainControl: true,
+        echoCancellation: true,
+        noiseSuppression: true,
+      },
+    };
+  }, [userChoices?.videoDeviceId, userChoices?.audioDeviceId]);
+
+  if (!userChoices) {
     return (
       <div
         className="fixed inset-0 z-50 flex flex-col items-center justify-start overflow-y-auto bg-slate-950 px-4 py-8 pb-32"
@@ -46,7 +68,7 @@ export default function CallRoom({ call, peerName, onLeave }: CallRoomProps) {
 
         <div className="w-full max-w-md overflow-hidden rounded-2xl bg-slate-900 shadow-2xl ring-1 ring-white/10 mb-6">
           <PreJoin
-            onSubmit={() => setPreJoined(true)}
+            onSubmit={(choices) => setUserChoices(choices)}
             onValidate={() => true}
             onError={(err) => {
               console.error("LiveKit PreJoin error:", err);
@@ -84,32 +106,24 @@ export default function CallRoom({ call, peerName, onLeave }: CallRoomProps) {
         }
       `}</style>
       <LiveKitRoom
-        video={true}
-        audio={true}
+        video={userChoices.videoEnabled}
+        audio={userChoices.audioEnabled}
         token={call.token}
         serverUrl={call.url}
         onDisconnected={onLeave}
-        style={{ height: "100%", width: "100%" }}
-        options={{
-          adaptiveStream: { pixelDensity: 'screen' },
-          dynacast: true,
-          videoCaptureDefaults: {
-            resolution: VideoPresets.h360,
-            frameRate: 20,
-          },
-          publishDefaults: {
-            videoEncoding: { maxBitrate: 400_000, maxFramerate: 20 },
-            videoSimulcastLayers: [VideoPresets.h180, VideoPresets.h360],
-          },
-          audioCaptureDefaults: {
-            autoGainControl: true,
-            echoCancellation: true,
-            noiseSuppression: true,
-          },
+        onError={(err) => {
+          console.error("LiveKit connection error:", err);
+          setMediaError("Se perdió la conexión con la sala: " + (err?.message || "Error inesperado"));
+          setUserChoices(null);
         }}
+        onMediaDeviceFailure={(failure) => {
+          console.error("Media device failure:", failure);
+          setMediaError("Ocurrió una falla con el dispositivo de cámara o micrófono.");
+        }}
+        style={{ height: "100%", width: "100%" }}
+        options={roomOptions}
       >
         <VideoConference />
-        <RoomAudioRenderer />
       </LiveKitRoom>
     </div>
   );

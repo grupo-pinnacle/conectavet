@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
 const CallRoom = lazy(() => import("../components/call/CallRoom"));
@@ -19,6 +19,7 @@ interface CallInit {
  */
 export default function CallPage() {
   const [params] = useSearchParams();
+  const navigate = useNavigate();
   const [call, setCall] = useState<CallInit | null>(() => {
     const url = params.get("url") || "";
     const room = params.get("room") || "";
@@ -55,6 +56,14 @@ export default function CallPage() {
         setCall({ url: data.url, room: data.room, token: data.token });
       }
     };
+
+    // Notificar al contenedor nativo (WebView) que la SPA está montada y lista para recibir el token
+    try {
+      (window as unknown as { ReactNativeWebView?: { postMessage: (m: string) => void } })
+        .ReactNativeWebView?.postMessage(JSON.stringify({ type: "page:ready" }));
+    } catch {
+      /* sin WebView */
+    }
 
     return () => {
       window.removeEventListener("message", onMessage);
@@ -93,15 +102,27 @@ export default function CallPage() {
         call={{ ...call, expiresIn: 600 }}
         peerName="el otro participante"
         onLeave={() => {
-          // Avisa al WebView del mobile (postMessage) para que cierre la llamada;
-          // el fallback de deep link cubre el caso de escritorio.
-          try {
-            (window as unknown as { ReactNativeWebView?: { postMessage: (m: string) => void } })
-              .ReactNativeWebView?.postMessage(JSON.stringify({ type: "call:ended" }));
-          } catch {
-            /* sin WebView */
+          const isReactNative = Boolean(
+            (window as unknown as { ReactNativeWebView?: unknown }).ReactNativeWebView
+          );
+          if (isReactNative) {
+            try {
+              (window as unknown as { ReactNativeWebView: { postMessage: (m: string) => void } })
+                .ReactNativeWebView.postMessage(JSON.stringify({ type: "call:ended" }));
+            } catch {
+              /* fallback */
+            }
+            setTimeout(() => {
+              window.location.href = "vetconnect://call-ended";
+            }, 50);
+          } else {
+            // En escritorio web redirigir limpiamente
+            if (window.history.length > 1) {
+              navigate(-1);
+            } else {
+              navigate("/dashboard");
+            }
           }
-          window.location.href = "vetconnect://call-ended";
         }}
       />
     </Suspense>

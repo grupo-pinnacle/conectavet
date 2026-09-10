@@ -1,4 +1,4 @@
-import { AccessToken } from 'livekit-server-sdk';
+import { AccessToken, RoomServiceClient } from 'livekit-server-sdk';
 import { prisma } from '../../shared/prisma.js';
 import { NotFoundError, ForbiddenError, ConflictError, AppError } from '../../shared/errors/index.js';
 import { logger } from '../../shared/logger.js';
@@ -8,12 +8,17 @@ const CALL_TTL_SECONDS = 10 * 60; // 10 minutos
 /**
  * Emite un token de acceso a la sala LiveKit de una consulta.
  * Solo participantes de una consulta ACTIVA pueden entrar.
+ * Se utiliza el nombre visible del participante (sin exponer PII como emails).
  */
 export async function createCallToken(params: { consultationId: string; userId: string; name?: string }) {
   const { consultationId, userId, name } = params;
 
   const consultation = await prisma.consultation.findUnique({
     where: { id: consultationId },
+    include: {
+      client: { select: { firstName: true, lastName: true } },
+      vet: { select: { firstName: true, lastName: true } },
+    },
   });
   if (!consultation) throw new NotFoundError('Consulta no encontrada');
   if (consultation.clientId !== userId && consultation.vetId !== userId) {
@@ -34,12 +39,16 @@ export async function createCallToken(params: { consultationId: string; userId: 
     );
   }
 
+  const participant = consultation.vetId === userId ? consultation.vet : consultation.client;
+  const fallbackRole = consultation.vetId === userId ? 'Veterinario' : 'Paciente';
+  const displayName = name || [participant?.firstName, participant?.lastName].filter(Boolean).join(' ') || fallbackRole;
+
   const room = `consultation-${consultation.id}`;
   let jwt: string;
   try {
     const token = new AccessToken(livekitKey, livekitSecret, {
       identity: userId,
-      name: name || userId,
+      name: displayName,
       ttl: CALL_TTL_SECONDS,
       metadata: JSON.stringify({
         consultationId,
@@ -65,4 +74,27 @@ export async function createCallToken(params: { consultationId: string; userId: 
     token: jwt,
     expiresIn: CALL_TTL_SECONDS,
   };
+}
+
+/**
+ * Cierra la sala de LiveKit de una consulta completada de forma remota,
+ * revocando las sesiones WebRTC activas de los participantes.
+ */
+export async function closeCallRoom(consultationId: string): Promise<void> {
+  const livekitUrl = process.env.LIVEKIT_URL?.trim();
+  const livekitKey = process.env.LIVEKIT_API_KEY?.trim();
+  const livekitSecret = process.env.LIVEKIT_API_SECRET?.trim();
+  if (!livekitUrl || !livekitKey || !livekitSecret) return;
+
+  try {
+    const roomService = new RoomServiceClient(livekitUrl, livekitKey, livekitSecret);
+    await roomService.deleteRoom(`consultation-${consultationId}`);
+    logger.info('Sala de LiveKit cerrada remotamente con éxito', { consultationId });
+  } catch (err) {
+    // Si la sala no existía o ya se cerró por inactividad, se registra sin bloquear
+    logger.warn('Aviso al cerrar sala de LiveKit', {
+      consultationId,
+      message: (err as Error)?.message,
+    });
+  }
 }

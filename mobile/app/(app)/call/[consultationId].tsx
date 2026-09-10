@@ -68,9 +68,17 @@ export default function CallScreen() {
               /* ignore */
             }
           }
-          if (socket && accept !== 'true') {
-            const callerName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Paciente';
-            socket.emit('call:initiate', consultationId, callerName);
+          if (socket) {
+            if (accept !== 'true') {
+              const callerName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Paciente';
+              socket.emit('call:initiate', consultationId, callerName);
+            }
+            const onCallCancelled = (payload: { consultationId: string }) => {
+              if (payload.consultationId === consultationId) {
+                router.back();
+              }
+            };
+            socket.on('call:cancelled', onCallCancelled);
           }
         }
       } catch (err) {
@@ -81,8 +89,18 @@ export default function CallScreen() {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
-  }, [consultationId]);
+    return () => {
+      cancelled = true;
+      try {
+        const socket = getSocket();
+        if (socket) {
+          socket.off('call:cancelled');
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+  }, [consultationId, accept, router, user]);
 
   const source = call
     ? { uri: `${WEB_URL}/call?room=${encodeURIComponent(call.room)}` }
@@ -113,8 +131,16 @@ export default function CallScreen() {
   }, [call]);
 
   const onClose = useCallback(() => {
+    try {
+      const socket = getSocket();
+      if (socket?.connected) {
+        socket.emit('call:cancel', consultationId);
+      }
+    } catch {
+      /* ignore */
+    }
     router.back();
-  }, [router]);
+  }, [router, consultationId]);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#020617' }}>
@@ -184,7 +210,9 @@ export default function CallScreen() {
             onMessage={(event) => {
               try {
                 const data = JSON.parse(event.nativeEvent.data);
-                if (data?.type === 'call:ended') {
+                if (data?.type === 'page:ready') {
+                  sendCallInit();
+                } else if (data?.type === 'call:ended') {
                   onClose();
                 }
               } catch {

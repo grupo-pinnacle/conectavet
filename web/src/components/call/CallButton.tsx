@@ -2,6 +2,7 @@ import { lazy, Suspense, useState } from "react";
 import { Video, Loader2 } from "lucide-react";
 import { getCallToken, type CallToken } from "../../services/endpoints";
 import { getSocket } from "../../services/socket";
+import { useAuth } from "../../hooks/useAuth";
 
 const CallRoom = lazy(() => import("./CallRoom"));
 
@@ -15,26 +16,32 @@ export default function CallButton({ consultationId, peerName, disabled }: CallB
   const [call, setCall] = useState<CallToken | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const { user } = useAuth();
 
   const startCall = async () => {
     if (loading) return;
     setLoading(true);
     setError("");
+
     try {
-      const { connectSocket } = await import("../../services/socket");
-      let socket = getSocket();
-      if (!socket || !socket.connected) {
-        socket = await connectSocket().catch(() => null);
-      }
-      if (socket?.connected) {
-        socket.emit("call:initiate", consultationId, peerName || "Veterinario");
-      }
-    } catch {
-      /* non-critical */
-    }
-    try {
+      // 1. Obtener primero el token de LiveKit para asegurar que la llamada es viable
       const data = await getCallToken(consultationId);
       setCall(data);
+
+      // 2. Notificar al receptor por socket con el nombre del emisor (no del receptor)
+      try {
+        const { connectSocket } = await import("../../services/socket");
+        let socket = getSocket();
+        if (!socket || !socket.connected) {
+          socket = await connectSocket().catch(() => null);
+        }
+        if (socket?.connected) {
+          const callerName = user?.firstName || (user?.role === "vet" ? "Veterinario" : "Paciente");
+          socket.emit("call:initiate", consultationId, callerName);
+        }
+      } catch {
+        /* non-critical socket issue */
+      }
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } } };
       setError(
@@ -45,6 +52,18 @@ export default function CallButton({ consultationId, peerName, disabled }: CallB
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLeave = () => {
+    try {
+      const socket = getSocket();
+      if (socket?.connected) {
+        socket.emit("call:cancel", consultationId);
+      }
+    } catch {
+      /* non-critical */
+    }
+    setCall(null);
   };
 
   return (
@@ -94,7 +113,7 @@ export default function CallButton({ consultationId, peerName, disabled }: CallB
           <CallRoom
             call={call}
             peerName={peerName}
-            onLeave={() => setCall(null)}
+            onLeave={handleLeave}
           />
         </Suspense>
       )}

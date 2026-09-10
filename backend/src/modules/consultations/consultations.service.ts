@@ -3,6 +3,7 @@ import { NotFoundError, ConflictError, ForbiddenError } from '../../shared/error
 import { getCached, setCache, clearCache } from '../../shared/cache';
 import { Prisma } from '@prisma/client';
 import { checkRateLimit, isDuplicate } from './message-throttle';
+import { closeCallRoom } from '../calls/calls.service.js';
 
 // const VALID_TRANSITIONS: Record<string, string[]> = {
 //   WAITING: ['PENDING', 'ACTIVE'],
@@ -311,6 +312,9 @@ export async function completeConsultation(
     if (!current) throw new NotFoundError('Consulta no encontrada');
     throw new ConflictError(`No se puede cerrar — la consulta está en estado ${current.status}`);
   }
+  // Cierre asíncrono de la sala de LiveKit asociada
+  closeCallRoom(consultationId).catch(() => {});
+
   return prisma.consultation.findUniqueOrThrow({
     where: { id: consultationId },
     select: consultationSnapshot,

@@ -56,6 +56,7 @@ function playRingtone() {
 
 export default function GlobalCallListener() {
   const [incomingCall, setIncomingCall] = useState<{ consultationId: string; callerName: string } | null>(null);
+  const [currentPeerName, setCurrentPeerName] = useState<string>("el otro participante");
   const [call, setCall] = useState<CallToken | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -77,10 +78,14 @@ export default function GlobalCallListener() {
     const handleRejected = (data: { consultationId: string }) => {
       setIncomingCall((prev) => (prev?.consultationId === data.consultationId ? null : prev));
     };
+    const handleCancelled = (data: { consultationId: string }) => {
+      setIncomingCall((prev) => (prev?.consultationId === data.consultationId ? null : prev));
+    };
 
     const attach = (s: any) => {
       s.on("call:incoming", handleIncoming);
       s.on("call:rejected", handleRejected);
+      s.on("call:cancelled", handleCancelled);
     };
 
     if (sock) {
@@ -94,6 +99,7 @@ export default function GlobalCallListener() {
       if (s) {
         s.off("call:incoming", handleIncoming);
         s.off("call:rejected", handleRejected);
+        s.off("call:cancelled", handleCancelled);
       }
     };
   }, [call, loading]);
@@ -101,6 +107,8 @@ export default function GlobalCallListener() {
   const acceptCall = async () => {
     if (!incomingCall || loading) return;
     const consId = incomingCall.consultationId;
+    const peer = incomingCall.callerName || "el otro participante";
+    setCurrentPeerName(peer);
     setIncomingCall(null);
     setLoading(true);
     setError("");
@@ -197,7 +205,7 @@ export default function GlobalCallListener() {
           }>
             <CallRoom
               call={call}
-              peerName={"Veterinario/Cliente"}
+              peerName={currentPeerName}
               onLeave={() => setCall(null)}
             />
           </Suspense>

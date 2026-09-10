@@ -155,7 +155,7 @@ export async function setupChatSocket(httpServer: HttpServer) {
           where: {
             id: consultationId,
             deletedAt: null,
-            status: { in: ['ACTIVE', 'PENDING'] },
+            status: 'ACTIVE',
             OR: [{ clientId: user.userId }, { vetId: user.userId }],
           },
           select: { id: true, clientId: true, vetId: true, status: true },
@@ -182,6 +182,26 @@ export async function setupChatSocket(httpServer: HttpServer) {
         io.to(`user:${targetId}`).emit('call:incoming', { consultationId, callerName });
       } catch (err) {
         console.error('Error al enrutar call:incoming', err);
+      }
+    });
+
+    socket.on('call:cancel', async (consultationId: string) => {
+      try {
+        const consultation = await prisma.consultation.findFirst({
+          where: {
+            id: consultationId,
+            deletedAt: null,
+            OR: [{ clientId: user.userId }, { vetId: user.userId }],
+          },
+          select: { clientId: true, vetId: true },
+        });
+        if (!consultation) return;
+        const targetId = user.userId === consultation.clientId ? consultation.vetId : consultation.clientId;
+        if (targetId) {
+          io.to(`user:${targetId}`).emit('call:cancelled', { consultationId });
+        }
+      } catch {
+        /* no-op */
       }
     });
 

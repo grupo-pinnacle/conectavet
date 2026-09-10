@@ -15,7 +15,6 @@ if (!id) {
 const data = await createCallToken({
       consultationId: id,
       userId: req.user.userId,
-      name: req.user.email,
     });
 return res.json({ success: true, data });
 });

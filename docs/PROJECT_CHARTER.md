@@ -1,185 +1,200 @@
 # 📜 PROJECT CHARTER: CONECTAVET (VetConnect)
 ## Plataforma Integral de Telemedicina Veterinaria & Gestión Clínica de Alta Disponibilidad
+**Document ID:** `CHARTER-CONECTAVET-2026-V2`  
+**Autor:** Senior / Staff Technical Program Manager & Solutions Architect (FAANG Tier)  
+**Organización:** Grupo Pinnacle / ConectaVet Team  
+**Fecha de Emisión:** Septiembre 2026  
+**Estado:** `APPROVED (ACTIVE GOVERNANCE CHARTER)`  
+**Nivel de Estándar:** FAANG Engineering Governance (Google / Meta / Stripe / Vercel level)  
 
 ---
 
-### Metadatos del Documento
-- **Proyecto:** ConectaVet (VetConnect)
-- **Versión:** 2.0 (FAANG-Ready Enterprise Edition)
-- **Fecha de Emisión:** Septiembre 2026
-- **Organización:** Grupo Pinnacle / ConectaVet Team
-- **Estado:** Aprobado / En Producción & Escalamiento
-- **Nivel de Estándar:** FAANG Engineering Standards (Google / Meta / Stripe / Vercel level)
+## 1. Resumen Ejecutivo & Mandato de Autorización
+
+### 1.1 Mandato del Proyecto
+El presente **Project Charter** otorga formalmente la autoridad al equipo de ingeniería de ConectaVet para planificar, ejecutar, asegurar y desplegar la plataforma **ConectaVet (VetConnect) v2.0**. Este documento establece los objetivos estratégicos, los límites del alcance, la estructura de gobernanza, el presupuesto operativo de infraestructura y el criterio riguroso de *Definition of Done (DoD)* bajo estándares de ingeniería de primer nivel.
+
+### 1.2 Declaración de Propósito
+ConectaVet nace para proveer una solución tecnológica escalable, resiliente y legalmente blindada para la telemedicina veterinaria en América Latina, facilitando la atención clínica primaria de animales de compañía, garantizando la validación de matrículas profesionales y asegurando la integridad de las historias clínicas conforme a la legislación vigente.
 
 ---
 
-## 1. Resumen Ejecutivo (Executive Summary)
+## 2. Justificación del Negocio & Alineación Estratégica
 
-**ConectaVet** es un ecosistema digital integral de telemedicina veterinaria de grado médico diseñado para transformar la atención sanitaria de animales de compañía en América Latina. La plataforma conecta de manera segura, auditable y en tiempo real a dueños de mascotas (tutores) con profesionales veterinarios matriculados y certificados.
+### 2.1 Caso de Negocio (Business Case)
+El mercado veterinario en América Latina carece de plataformas telemáticas reguladas. Más del **70% de los hogares poseen mascotas**, pero la atención fuera de horarios comerciales se encuentra colapsada, empujando a los tutores a la automedicación de animales o a la consulta precaria por canales de mensajería informal (WhatsApp).
+* **Riesgo Sanitario:** Pérdida de vidas animales por administración de fármacos contraindicados.
+* **Riesgo Legal para Profesionales:** Ejercicio telemático sin registro auditable ni consentimiento informado.
+* **Oportunidad:** Construir la plataforma de telemedicina líder que integre triaje en tiempo real, videollamadas con adaptabilidad de bitrate, recetas digitales oficiales y repositorio clínico interoperable.
 
-El sistema combina:
-1. **Aplicación Móvil Nativa (React Native / Expo):** Diseñada para tutores, optimizada para baja latencia, acceso rápido a emergencias, historial clínico y gestión de consultas.
-2. **Panel Web de Alto Rendimiento (React 18 / Vite / TailwindCSS):** Diseñado para veterinarios y administradores, con herramientas de diagnóstico telemático, emisión de recetas estructuradas y panel de control con auditoría legal.
-3. **Backend Monolítico Modular Distribuido (Node.js / Express / TypeScript / Redis / PostgreSQL / LiveKit):** Arquitectura resiliente con sincronización de sockets en clúster, almacenamiento desacoplado (S3 con fallback local) y persistencia bajo normativas legales estrictas.
-
----
-
-## 2. Justificación del Negocio y Declaración del Problema
-
-### 2.1 El Problema
-- **Barreras geográficas y temporales:** Urgencias y dudas veterinarias en horarios no comerciales que colapsan guardias físicas o terminan en automedicación riesgosa.
-- **Falta de trazabilidad y validación profesional:** Proliferación de consultas informales por mensajería instantánea no profesional (WhatsApp), sin consentimiento informado, sin registro histórico legal y sin validación de matrícula del profesional ante colegios veterinarios y organismos reguladores (SENASA).
-- **Pérdida de historias clínicas:** Registros fragmentados en papel o sistemas locales incompatibles, lo que compromete la continuidad de tratamientos crónicos.
-
-### 2.2 La Oportunidad
-Crear la primera plataforma interoperable de telemedicina veterinaria en la región que cumpla con el 100% de la **Ley de Protección de Datos Personales (Ley 25.326)**, normativas de los Colegios de Veterinarios, validación de identidad profesional y emisión de recetas digitales válidas.
+### 2.2 Alineación con Normativas Sanitarias y de Privacidad (Argentina / LatAm)
+- **Ley N° 25.326 de Protección de los Datos Personales:** Implementación de protocolos de *Soft-Delete* con disociación y anonimización de PII, preservando la inmutabilidad de la historia clínica médica ante auditorías judiciales.
+- **Resoluciones SENASA & Colegios Médicos Veterinarios:** Procedimiento obligatorio de verificación documental y validación manual de matrículas profesionales habilitantes antes de permitir la atención a pacientes.
 
 ---
 
-## 3. Visión, Misión y Objetivos Estratégicos
+## 3. Alcance del Proyecto & Estructura de Desglose del Trabajo (WBS)
 
-### 3.1 Visión
-Convertirse en la infraestructura digital de referencia para la salud animal en el mercado hispanohablante, estableciendo el estándar de oro en telemedicina, recetas digitales e historias clínicas interoperables.
-
-### 3.2 Misión
-Proveer a dueños de mascotas y veterinarios de una plataforma tecnológica de vanguardia, ultrarrápida, accesible y legalmente blindada, que garantice una atención humanizada y oportuna a las mascotas en cualquier momento y lugar.
-
-### 3.3 Objetivos OKR (Objectives and Key Results)
-- **OKR 1 (Calidad de Software):** Mantener cero errores de tipado TypeScript (`tsc --noEmit`), suite de más de 120 tests automatizados con cobertura > 80% y cumplimiento de accesibilidad WCAG 2.1 AA.
-- **OKR 2 (Rendimiento & Conectividad):** Tiempo de entrega de mensajes en tiempo real < 100ms vía WebSockets distribuidos; inicio de videollamadas peer/sfu < 1.5s; tiempo de carga inicial de pantallas < 800ms.
-- **OKR 3 (Seguridad & Cumplimiento Legal):** 100% de veterinarios verificados manualmente en Sala de Espera (Pending Approval); auditoría inmutable de acciones administrativas (`AuditLog`); soporte integral de Soft-Deletes con anonimización de datos sensibles.
-
----
-
-## 4. Alcance del Proyecto (Scope & Feature Matrix)
-
-### 4.1 Actores del Ecosistema
+### 3.1 Matriz de Alcance: En Alcance vs. Fuera de Alcance
 
 ```mermaid
-graph TD
-    User([Tutor / Dueño de Mascota]) -->|Mobile App / Web| System[ConectaVet Core Platform]
-    Vet([Médico Veterinario]) -->|Web Pro Dashboard| System
-    Admin([Administrador / Auditor]) -->|Web Admin Portal| System
-    SENASA([Colegios Veterinarios / Regulación]) -.->|Auditoría / Validación| Admin
+flowchart LR
+    subgraph Core["🐾 ConectaVet v2.0 Scope Architecture"]
+        direction TB
+        ScopeIn["✅ En Alcance (In-Scope v2.0)"]
+        ScopeOut["❌ Fuera de Alcance (Non-Goals)"]
+    end
+
+    ScopeIn --> A1["IAM: JWT con rotacion atomica (tokenVersion)"]
+    ScopeIn --> A2["Ficha Clinica Digital de Mascotas"]
+    ScopeIn --> A3["Cola Triage Inteligente y Auto-Asignacion"]
+    ScopeIn --> A4["Chat en Tiempo Real Idempotente (clientMsgId)"]
+    ScopeIn --> A5["Videoconsulta WebRTC LiveKit SFU"]
+    ScopeIn --> A6["Receta Medica Digital con Validacion QR"]
+    ScopeIn --> A7["Sala de Espera Profesional SENASA"]
+    ScopeIn --> A8["AuditLog Inmutable de Acciones Admin"]
+    ScopeIn --> A9["Infraestructura VPS Coolify, Traefik y Vercel"]
+
+    ScopeOut --> B1["Despacho de Ambulancias o Rescates Fisicos"]
+    ScopeOut --> B2["E-commerce y Venta de Alimentos/Insumos"]
+    ScopeOut --> B3["Sustitucion de Vacunacion Obligatoria Presencial"]
+    ScopeOut --> B4["Pasarela de Cobros o Split Payments v2.0"]
 ```
 
-### 4.2 Matriz Funcional por Rol
+### 3.2 Desglose del Trabajo WBS (Work Breakdown Structure)
 
-| Módulo | Tutor / Cliente (Mobile & Web) | Médico Veterinario (Web Pro) | Administrador (Admin Portal) |
-|---|---|---|---|
-| **Autenticación & Cuentas** | Registro, Login con JWT rotativo, perfil de tutor, recuperación de clave. | Registro con carga de matrícula y especialidad; estado PENDING hasta aprobación. | Gestión de usuarios, baneo, aprobación/rechazo de veterinarios, auditoría. |
-| **Gestión de Mascotas** | CRUD completo de mascotas (especie, raza, edad/fecha nacimiento, sexo, peso, fotos). | Visualización de ficha clínica del paciente y antecedentes antes de aceptar la consulta. | Supervisión global y métricas de pacientes registrados. |
-| **Cola & Asignación** | Solicitud de consulta (inmediata o programada), cola inteligente con auto-asignación. | Selector de consultas activas/pendientes, aceptación/rechazo en un clic. | Balanceo de carga y reasignación de consultas estancadas. |
-| **Chat en Tiempo Real** | Mensajería instantánea bidireccional (Socket.io), envío de imágenes, confirmaciones de entrega y echo optimista. | Chat en vivo, visualizador de imágenes clínicas en alta resolución, zoom y diagnóstico. | Auditoría de sesiones ante reclamos legales (anonimizada). |
-| **Videollamadas** | Conexión WebRTC/LiveKit integrada en Web y encapsulada en WebView móvil con permisos automáticos. | Sala de teleconsulta con controles de cámara, micrófono, cambio de dispositivo y diagnóstico. | Registro de duración, métricas de calidad de llamada (QoS) y timestamp de inicio/cierre. |
-| **Recetas Digitales** | Recepción de receta digital en tiempo real con descarga y persistencia en historial. | Generador de recetas estructuradas (medicación, dosis, frecuencia, duración, indicaciones). | Registro auditable inmutable de prescripciones emitidas. |
-| **Historial & Calificación** | Historial clínico completo, valoraciones con estrellas (1-5) y comentarios. | Historial de consultas atendidas, registro de notas clínicas de evolución. | Métricas de satisfacción, NPS y ranking de atención profesional. |
-
----
-
-## 5. Arquitectura Técnica de Nivel FAANG
-
-### 5.1 Diagrama de Topología del Sistema
-
-```mermaid
-flowchart TB
-    subgraph Clients["Capas de Cliente (Frontend)"]
-        Mobile["📱 Mobile App (React Native + Expo 54)\n• NativeWind / Tailwind\n• React Navigation / Expo Router\n• SecureStore / TanStack Query"]
-        WebClient["💻 Web Client / Vet Dashboard (React 19 + Vite)\n• Tailwind v3 Layered Shadows\n• TanStack React Query v5\n• Lucide Icons / LiveKit Components"]
-    end
-
-    subgraph Gateway["Red & Balanceo de Carga"]
-        Nginx["🌐 Reverse Proxy / CORS Controller / SSL Termination"]
-    end
-
-    subgraph BackendCluster["Cerebro Backend (Node.js + Express 5 + TypeScript)"]
-        API["⚙️ Express REST API\n• Zod Schema Validation\n• Strict JWT + TokenVersion Rotation\n• Rate Limiting (express-rate-limit)\n• Helmet / Secure Cookies"]
-        SocketEngine["⚡ Socket.io Realtime Engine\n• Room-based Multiplexing\n• Redis Adapter Clustered Broadcast\n• Bidirectional Ringing & Echo"]
-    end
-
-    subgraph StorageServices["Servicios de Datos & Almacenamiento"]
-        PostgreSQL[("🐘 PostgreSQL (Supabase Hosted)\n• Prisma ORM 6\n• Indexed Foreign Keys & Composite Indexes\n• Soft-Deletes & Immutable AuditLogs")]
-        RedisCache[("🔴 Redis Store\n• Socket.io Adapter\n• Realtime Rate Limiting\n• Transient Session Cache")]
-        S3Bucket[("🪣 Object Storage (Amazon S3 / Local Fallback)\n• Encrypted File Storage\n• Magic Bytes MIME Verification")]
-        LiveKitServer["🎥 LiveKit SFU Server\n• WebRTC Low Latency Media Engine\n• Token-based Room Grants"]
-    end
-
-    Clients --> Gateway
-    Gateway --> BackendCluster
-    API --> PostgreSQL
-    API --> RedisCache
-    API --> S3Bucket
-    SocketEngine --> RedisCache
-    BackendCluster --> LiveKitServer
+```
+1.0 ConectaVet Ecosistema Core
+  ├── 1.1 Seguridad, IAM & Base de Datos
+  │     ├── 1.1.1 Esquema PostgreSQL relacional con Prisma ORM 6
+  │     ├── 1.1.2 Sincronización estricta de nombres de columnas (@map)
+  │     ├── 1.1.3 Autenticación JWT con tokenVersion y cookies HttpOnly
+  │     └── 1.1.4 Pipeline de Soft-Delete y anonimización de PII
+  ├── 1.2 Motor de Tiempo Real & Multimedia
+  │     ├── 1.2.1 Clúster Socket.io con Redis Adapter distribuido
+  │     ├── 1.2.2 Deduplicación de mensajería con clientMsgId
+  │     ├── 1.2.3 Señalización y emisión de tokens WebRTC LiveKit SFU
+  │     └── 1.2.4 Almacenamiento S3 con verificación de Magic Bytes
+  ├── 1.3 Aplicación Móvil de Tutores (React Native / Expo)
+  │     ├── 1.3.1 Gestión de fichas clínicas de mascotas
+  │     ├── 1.3.2 Solicitud de triaje y visualización de cola
+  │     ├── 1.3.3 Chat bidireccional y visor de recetas descargables
+  │     └── 1.3.4 WebView optimizado con permisos de hardware para LiveKit
+  ├── 1.4 Panel Web Profesional de Veterinarios (React 19 / Vite)
+  │     ├── 1.4.1 Módulo de atención telemática con controles de videollamada
+  │     ├── 1.4.2 Generador de recetas médicas estructuradas con QR
+  │     └── 1.4.3 Registro de evolución clínica y notas de diagnóstico
+  ├── 1.5 Panel de Control & Auditoría Legal (Web Admin)
+  │     ├── 1.5.1 Flujo de aprobación de matrículas profesionales
+  │     ├── 1.5.2 Visor inmutable de AuditLogs
+  │     └── 1.5.3 Métricas de utilización y balanceo de guardias
+  └── 1.6 Despliegue Cloud & Operaciones
+        ├── 1.6.1 Orquestación VPS con Coolify y Traefik Reverse Proxy
+        ├── 1.6.2 Despliegue Frontend Web en CDN Edge (Vercel)
+        └── 1.6.3 Compilación y empaquetado móvil vía Expo EAS
 ```
 
-### 5.2 Decisiones Arquitectónicas Clave (Architecture Decision Records)
-- **ADR-001 (Monolito Modular):** Domain-Driven Design estructurado en módulos (`auth`, `users`, `pets`, `consultations`, `calls`, `media`, `notifications`) para máxima cohesión y mínimo acoplamiento sin la sobrecarga operativa de microservicios prematuros.
-- **ADR-004 (Seguridad JWT & Token Versioning):** Tokens JWT de corta duración combinados con un mecanismo de `tokenVersion` en base de datos. Si un usuario cambia su contraseña, se cierra su sesión o es revocado por un admin, el `tokenVersion` se incrementa e invalida inmediatamente todos los tokens emitidos.
-- **ADR-005 (Soft-Deletes & Anonimización Legal):** Las historias clínicas y consultas veterinarias nunca se eliminan físicamente (requerimiento legal). La eliminación de usuarios ejecuta una anonimización de PII (Personally Identifiable Information) preservando el historial para fines periciales.
-- **ADR-009 (Tiempo Real Dual Socket + Redis Adapter):** Comunicación bidireccional mediante WebSockets optimizados con `@socket.io/redis-adapter` que permite balanceo horizontal entre múltiples contenedores sin pérdida de estado.
-- **ADR-010 (Almacenamiento Resiliente de Adjuntos):** Soporte multi-proveedor con subida a Amazon S3 y fallback inteligente a almacenamiento local verificado por firma de bytes reales (evitando spoofing de extensiones).
-
 ---
 
-## 6. Cumplimiento Normativo & Seguridad Jurídica (Argentina / LatAm)
-
-### 6.1 Validación Profesional (SENASA & Colegios Veterinarios)
-El sistema implementa un estado `vetStatus: PENDING` al momento del registro de cualquier médico veterinario. La plataforma **bloquea el acceso a atención telemática** hasta que el equipo de auditoría administrativa corrobora el número de matrícula y vigencia profesional contra los padrones oficiales correspondientes.
-
-### 6.2 Ley de Protección de Datos Personales N° 25.326
-- Encriptación de contraseñas mediante **BCrypt con factor de costo 12**.
-- Sanitización de respuestas HTTP para garantizar que hashes de contraseñas, tokens internos o información confidencial nunca viajen al cliente.
-- `AuditLog` inmutable que registra: `adminId`, `action`, `targetType`, `targetId`, `metadata`, `ipAddress` y `userAgent`.
-
----
-
-## 7. Plan de Ejecución, Roadmap & Sprints
+## 4. Cronograma de Hitos & Camino Crítico
 
 ```mermaid
 gantt
-    title Roadmap de Desarrollo y Lanzamiento ConectaVet
+    title Cronograma Estrategico de Hitos ConectaVet
     dateFormat  YYYY-MM-DD
-    section Fase 1: Cimientos
-    Arquitectura Base & Modelado DB       :done, des1, 2026-06-01, 2026-06-15
-    Autenticación JWT & Roles             :done, des2, 2026-06-16, 2026-06-30
-    section Fase 2: Core Telemédico
-    Chat en Vivo (Socket.io)              :done, des3, 2026-07-01, 2026-07-20
-    Gestión de Mascotas & Consultas       :done, des4, 2026-07-21, 2026-08-05
-    Recetas Digitales Estructuradas       :done, des5, 2026-08-06, 2026-08-15
-    section Fase 3: Hardening & FAANG UI
-    Videollamadas WebRTC / LiveKit        :done, des6, 2026-08-16, 2026-08-25
-    Rediseño UI/UX (Tailwind Craft)       :done, des7, 2026-08-26, 2026-09-01
-    Auditoría P0-P3 & Soft Deletes        :done, des8, 2026-08-28, 2026-09-01
-    section Fase 4: Producción
-    Deploy Cloud (Railway/Vercel/EAS)     :active, des9, 2026-09-02, 2026-09-15
-    Escalamiento & Métricas APM           : des10, 2026-09-16, 2026-09-30
+    axisFormat  %b %d
+
+    section Hito 0 (M0)
+    Cimientos y Hardening de Seguridad         :crit, done, m0, 2026-08-15, 2026-08-22
+    section Hito 1 (M1)
+    Core Telemedico y Video LiveKit           :done, m1, 2026-08-23, 2026-09-02
+    section Hito 2 (M2)
+    Cumplimiento Legal y Validacion SENASA    :done, m2, 2026-09-03, 2026-09-11
+    section Hito 3 (M3)
+    Quality Engineering y Testing Integral    :active, m3, 2026-09-12, 2026-09-22
+    section Hito 4 (M4)
+    Despliegue Productivo y Go-Live           :m4, 2026-09-23, 2026-10-05
 ```
 
----
-
-## 8. Gobernanza del Equipo & Matriz RACI
-
-| Rol | Integrante | Responsabilidades Principales |
-|---|---|---|
-| **Tech Lead / Backend Lead** | Tobias Vera | Arquitectura de API, base de datos Prisma/PostgreSQL, seguridad JWT, sockets en tiempo real y tests unitarios/integración. |
-| **Mobile Lead Developer** | Juan Mendoza | Aplicación React Native (Expo), integración de navegación, cámara, push notifications y compatibilidad Android/iOS. |
-| **Web Frontend Lead** | Damian Orellana | Paneles Web (Tutor, Veterinario, Admin) en React 19, componentes UI, estados con TanStack Query y videollamadas WebRTC. |
-| **QA Engineer & Product Designer** | Ezequiel Charca | Diseño de interfaces en Figma, diseño de design system, auditorías de usabilidad (UX/UI), pruebas E2E y matriz de accesibilidad. |
-| **Project Manager & Legal Ops** | Lara Bouso | Coordinación de sprints, cumplimiento normativo SENASA, documentación funcional y seguimiento de entregables. |
+| Hito | Nombre | Entregables Principales | Estado |
+|---|---|---|---|
+| **M0** | **Cimientos & Hardening de Seguridad** | Purgado de secretos en Git, rotación de claves, paridad `@map` Prisma, types unificados. | `COMPLETED` |
+| **M1** | **Core Telemédico & Video LiveKit** | Redis Adapter activo, LiveKit Web/Mobile funcional, subida de archivos segura a S3/local. | `COMPLETED` |
+| **M2** | **Cumplimiento Legal & Recetas** | Flujo Sala de Espera SENASA, Soft-Deletes probados, recetas con QR y AuditLog. | `COMPLETED` |
+| **M3** | **Quality Engineering & Concurrencia** | Tests de WebSockets, cobertura backend $> 80\%$, smoke tests E2E con Playwright. | `IN PROGRESS` |
+| **M4** | **Despliegue Productivo & Go-Live** | Backend en VPS Coolify con SSL Traefik, Web en Vercel, EAS Android AAB/APK y APM. | `PLANNED` |
 
 ---
 
-## 9. Criterio de "Listo para Producción" (Definition of Done)
+## 5. Gobernanza del Equipo & Matriz de Responsabilidades (RACI)
 
-Para considerar cualquier entrega como completada bajo estándar FAANG:
-1. **Compilación Limpia:** `npx tsc --noEmit` debe ejecutarse con 0 errores en backend, web y mobile.
-2. **Linting Estricto:** `npm run lint` sin warnings ni deshabilitaciones de reglas no justificadas.
-3. **Tests Automatizados:** Toda la suite de Jest (`npm test`) debe pasar al 100% de éxito.
-4. **Resiliencia de Red:** Comprobación de reconexión automática en WebSockets ante cortes intermitentes de red.
-5. **No Secrets in Repo:** Ningún archivo `.env` o credencial sensible debe ser trackeado por Git.
-6. **Auditoría Documentada:** Todo cambio arquitectónico debe acompañarse de su respectiva actualización en `README.md` y `docs/`.
+```
++-----------------------------------------------------------------------------------------+
+|                                    MATRIZ RACI                                          |
++------------------------------------+--------+--------+--------+----------+--------------+
+| Módulo / Iniciativa                | Tobias |  Juan  | Damian | Ezequiel |     Lara     |
+|                                    | (Tech) | (Mob.) | (Web)  |   (QA)   | (PM / Legal) |
++------------------------------------+--------+--------+--------+----------+--------------+
+| Arquitectura de API & Base Datos   |  A/R   |   C    |   C    |    I     |      I       |
+| Infraestructura Redis & WebSockets |  A/R   |   C    |   C    |    I     |      I       |
+| App Móvil React Native (Expo)      |   C    |  A/R   |   I    |    C     |      I       |
+| Frontend Web (React 19 / Vite)     |   C    |   I    |  A/R   |    C     |      I       |
+| Teleconsulta LiveKit SFU           |   C    |   R    |   R    |    A     |      I       |
+| Pruebas Automatizadas & QA         |   C    |   C    |   C    |   A/R    |      I       |
+| Validación Legal SENASA & PII      |   C    |   I    |   I    |    I     |     A/R      |
+| Despliegue VPS Coolify & EAS       |  A/R   |   R    |   R    |    C     |      I       |
++------------------------------------+--------+--------+--------+----------+--------------+
+```
+*Leyenda: **A** = Accountable (Aprobador final); **R** = Responsible (Ejecutor); **C** = Consulted (Consultado); **I** = Informed (Informado).*
 
 ---
 
-*Documento aprobado por el equipo de ingeniería de ConectaVet. Prohibida su reproducción no autorizada.*
+## 6. Recursos, Infraestructura & Presupuesto Operativo
+
+El sistema prioriza una arquitectura de **bajo costo recurrente y alto rendimiento**, utilizando servicios autohospedados modernos combinados con capas gratuitas o eficientes de servicios cloud:
+
+| Capa | Proveedor / Tecnología | Propósito | Costo Estimado |
+|---|---|---|---|
+| **Cómputo Backend** | VPS Ubuntu 24.04 (Hostinger / Hetzner) | Host de Coolify, ConectaVet API (Docker) y Redis Server | \$8 - \$15 USD / mes |
+| **Base de Datos** | Supabase Managed PostgreSQL | Base de datos relacional con backups diarios y réplicas | \$0 - \$25 USD / mes |
+| **Frontend Web** | Vercel Edge Network | Despliegue SPA global con CDN, HTTPS automático y compresión | \$0 (Hobby / Pro) |
+| **Media WebRTC** | LiveKit Cloud / LiveKit Self-hosted | Servidor SFU para videollamadas de baja latencia | Free tier / \$10 USD |
+| **Almacenamiento** | Amazon S3 / Cloudinary (con fallback local) | Almacenamiento seguro de adjuntos médicos y avatares | \$1 - \$5 USD / mes |
+| **Distribución Mobile** | Expo Application Services (EAS) | Compilación en la nube de binarios Android (AAB/APK) | Free tier |
+
+---
+
+## 7. Matriz de Gestión de Riesgos & Amenazas
+
+| ID | Riesgo Identificado | Severidad | Probabilidad | Estrategia de Mitigación / Contingencia |
+|---|---|---|---|---|
+| **R-01** | **Fuga de credenciales en commits de Git** | P0 (Crítico) | Alta | Purgar el árbol de Git mediante `git-filter-repo` y rotar todas las llaves (`JWT_SECRET`, Supabase, LiveKit). |
+| **R-02** | **Desincronización de columnas Prisma vs SQL** | P0 (Crítico) | Media | Mapeo explícito `@map` en `schema.prisma` y verificación en CI (`prisma migrate status`). |
+| **R-03** | **Degradación de llamada en conexiones 4G débiles** | P1 (Alto) | Alta | Implementar simulcast y streaming adaptativo en LiveKit; fallback a chat con imágenes. |
+| **R-04** | **Rechazo de app en Google Play Store** | P1 (Alto) | Media | Ajuste estricto de políticas de privacidad para apps de salud y justificación de permisos en `app.json`. |
+| **R-05** | **Agotamiento del pool de conexiones PostgreSQL** | P2 (Medio) | Baja | Singleton `PrismaClient` con pool acotado (`limit=20`) y Supabase Connection Pooler habilitado. |
+
+---
+
+## 8. Criterio de "Listo para Producción" (Definition of Done - DoD)
+
+Para que cualquier componente o versión de ConectaVet sea promovido a Producción bajo estándar FAANG, debe cumplir:
+1. **Compilación Limpia:** `npx tsc --noEmit` ejecuta con **0 errores** en `backend`, `web` y `mobile`.
+2. **Linting Estricto:** Cero advertencias (`warnings`) sin justificar en pipelines de análisis estático.
+3. **Tests Automatizados:** $100\%$ de la suite de Jest en backend ejecutada en verde ($> 150\text{ pruebas}$).
+4. **Zero-Secrets:** Ningún archivo `.env` o credencial privada presente en el repositorio.
+5. **Auditoría de Accesibilidad:** Cumplimiento de WCAG 2.1 AA en todas las vistas críticas de tutores y veterinarios.
+6. **Resiliencia de Red:** Reconexión automática de WebSockets validada ante cortes abruptos de conexión.
+7. **Documentación Viva:** Documentos técnicos actualizados reflejando el código fuente en el mismo pull request.
+
+---
+
+## 9. Aprobación y Firmas de Autorización
+
+| Nombre | Rol | Estado | Fecha |
+|---|---|---|---|
+| **Tobias Vera** | Lead Backend Engineer & Tech Lead | `APPROVED` | 2026-09-12 |
+| **Juan Mendoza** | Lead Mobile Developer | `APPROVED` | 2026-09-12 |
+| **Damian Orellana** | Lead Web Frontend Developer | `APPROVED` | 2026-09-12 |
+| **Ezequiel Charca** | QA Engineer & Product Designer | `APPROVED` | 2026-09-12 |
+| **Lara Bouso** | Project Manager & Legal Operations | `APPROVED` | 2026-09-12 |

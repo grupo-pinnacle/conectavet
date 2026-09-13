@@ -360,7 +360,7 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
               {formErrors.color && <p className="mt-1 text-xs font-semibold text-red-600">{formErrors.color}</p>}
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Microchip (15 dígitos)</label>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Microchip (15 dígitos, opcional)</label>
               <input type="text" value={form.microchip} onChange={(e) => setForm((f) => ({ ...f, microchip: e.target.value }))} placeholder="15 dígitos" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
               {formErrors.microchip && <p className="mt-1 text-xs font-semibold text-red-600">{formErrors.microchip}</p>}
             </div>

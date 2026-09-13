@@ -127,7 +127,10 @@ export const createPetSchema = z.object({
   weightKg: z.number().positive('El peso debe ser un número positivo').max(500, 'El peso no puede superar los 500 kg').optional(),
   sex: sexSchema.optional(),
   color: z.string().max(50).optional(),
-  microchip: z.string().regex(/^\d{15}$/).optional(),
+  microchip: z.preprocess(
+    (val) => (val === null || (typeof val === 'string' && val.trim() === '') ? undefined : val),
+    z.string().regex(/^\d{15}$/, 'El microchip debe tener exactamente 15 dígitos').optional()
+  ),
   allergies: z.array(z.string().max(50)).max(20).optional(),
   chronicConditions: z.array(z.string().max(80)).max(20).optional(),
   photoUrl: z.string().url().optional(),

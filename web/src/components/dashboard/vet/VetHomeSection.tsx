@@ -19,10 +19,11 @@ export default function VetHomeSection() {
           getManagedPets(),
           getMyConsultations(),
         ]);
+        const uniqueCons = Array.from(new Map(cons.map((c) => [c.id, c])).values());
         setTotalPatients(pets.length);
-        setActiveCons(cons.filter((c) => c.status === "ACTIVE").length);
-        setWaitingCons(cons.filter((c) => c.status === "WAITING").length);
-        setOfferCons(cons.filter((c) => c.status === "PENDING").length);
+        setActiveCons(uniqueCons.filter((c) => c.status === "ACTIVE").length);
+        setWaitingCons(uniqueCons.filter((c) => c.status === "WAITING").length);
+        setOfferCons(uniqueCons.filter((c) => c.status === "PENDING").length);
       } catch {
         // ignore
       } finally {

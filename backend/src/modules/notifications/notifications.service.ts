@@ -102,8 +102,9 @@ export async function notifyUser(
       where: { userId },
       select: { token: true },
     });
-    if (tokens.length > 0) {
-      await sendExpoPush(tokens.map((t) => t.token), title, body, data);
+    const uniqueTokens = Array.from(new Set(tokens.map((t) => t.token)));
+    if (uniqueTokens.length > 0) {
+      await sendExpoPush(uniqueTokens, title, body, data);
     }
   } catch {
     // el push es best-effort; la notificación in-app ya quedó guardada
@@ -148,8 +149,9 @@ export async function notifyVetsOnline(type: string, title: string, body: string
       where: { userId: { in: vets.map((v) => v.id) } },
       select: { token: true },
     });
-    if (tokens.length > 0) {
-      await sendExpoPush(tokens.map((t) => t.token), title, body, data);
+    const uniqueTokens = Array.from(new Set(tokens.map((t) => t.token)));
+    if (uniqueTokens.length > 0) {
+      await sendExpoPush(uniqueTokens, title, body, data);
     }
   } catch {
     /* push best-effort */

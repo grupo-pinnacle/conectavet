@@ -3,13 +3,13 @@ const dateStringSchema = z
   .string()
   .refine((v) => !Number.isNaN(Date.parse(v)), 'Fecha de nacimiento inválida');
 
-// "" equivale a ausente: evita que un campo limpiado se persista
+// "" o null equivale a ausente: evita que un campo limpiado se persista
 // como string vacío o bloquee a clientes (ej. mobile) que lo envían así.
-const emptyToUndefined = (v: unknown) =>
-  typeof v === "string" && v.trim() === "" ? undefined : v;
+const emptyOrNullToUndefined = (v: unknown) =>
+  v === null || (typeof v === "string" && v.trim() === "") ? undefined : v;
 
 const breedSchema = z.preprocess(
-  emptyToUndefined,
+  emptyOrNullToUndefined,
   z.string().trim().min(2, 'La raza debe tener al menos 2 caracteres').max(80, 'La raza no puede superar los 80 caracteres').optional(),
 );
 const weightSchema = z.coerce
@@ -17,10 +17,13 @@ const weightSchema = z.coerce
   .positive('El peso debe ser un número positivo')
   .max(500, 'El peso no puede superar los 500 kg')
   .optional();
-const microchipSchema = z
-  .string()
-  .regex(/^\d{15}$/, 'El microchip debe tener exactamente 15 dígitos')
-  .optional();
+const microchipSchema = z.preprocess(
+  emptyOrNullToUndefined,
+  z
+    .string()
+    .regex(/^\d{15}$/, 'El microchip debe tener exactamente 15 dígitos')
+    .optional(),
+);
 
 export const createPetSchema = z.object({
       name: z.string().trim().min(1, 'El nombre es requerido').max(50, 'El nombre no puede superar los 50 caracteres'),

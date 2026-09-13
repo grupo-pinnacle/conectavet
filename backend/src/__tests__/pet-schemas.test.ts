@@ -44,6 +44,24 @@ describe('BUG-05 Cerco — createPetSchema', () => {
     if (r.success) expect(r.data.breed).toBeUndefined();
   });
 
+  it('borde: microchip "", "   ", null y undefined pasan y equivalen a ausente (BUG-001)', () => {
+    const rEmpty = createPetSchema.safeParse({ ...BASE, microchip: '' });
+    expect(rEmpty.success).toBe(true);
+    if (rEmpty.success) expect(rEmpty.data.microchip).toBeUndefined();
+
+    const rSpaces = createPetSchema.safeParse({ ...BASE, microchip: '   ' });
+    expect(rSpaces.success).toBe(true);
+    if (rSpaces.success) expect(rSpaces.data.microchip).toBeUndefined();
+
+    const rNull = createPetSchema.safeParse({ ...BASE, microchip: null });
+    expect(rNull.success).toBe(true);
+    if (rNull.success) expect(rNull.data.microchip).toBeUndefined();
+
+    const rUndef = createPetSchema.safeParse({ ...BASE, microchip: undefined });
+    expect(rUndef.success).toBe(true);
+    if (rUndef.success) expect(rUndef.data.microchip).toBeUndefined();
+  });
+
   it('borde: nombre de 51 caracteres y arrays desmedidos se rechazan', () => {
     expect(createPetSchema.safeParse({ ...BASE, name: 'A'.repeat(51) }).success).toBe(false);
     expect(
@@ -69,5 +87,13 @@ describe('BUG-05 Cerco — updatePetSchema (mismas reglas, todo opcional)', () =
     const r = updatePetSchema.safeParse({ breed: '' });
     expect(r.success).toBe(true);
     if (r.success) expect((r.data as Record<string, unknown>).breed).toBeUndefined();
+
+    const rChip = updatePetSchema.safeParse({ microchip: '' });
+    expect(rChip.success).toBe(true);
+    if (rChip.success) expect((rChip.data as Record<string, unknown>).microchip).toBeUndefined();
+
+    const rChipNull = updatePetSchema.safeParse({ microchip: null });
+    expect(rChipNull.success).toBe(true);
+    if (rChipNull.success) expect((rChipNull.data as Record<string, unknown>).microchip).toBeUndefined();
   });
 });

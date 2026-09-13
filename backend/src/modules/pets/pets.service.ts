@@ -50,7 +50,7 @@ export async function createPet(data: {
       weightKg: data.weightKg,
       sex: data.sex as Sex,
       color: data.color,
-      microchip: data.microchip,
+      microchip: data.microchip ?? null,
       allergies: data.allergies ?? [],
       chronicConditions: data.chronicConditions ?? [],
       birthDate: data.birthDate ? new Date(data.birthDate) : undefined,

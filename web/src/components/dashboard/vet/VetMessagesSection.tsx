@@ -63,6 +63,15 @@ function needsDateSeparator(curr: Message, prev: Message | null) {
   return c.toDateString() !== p.toDateString();
 }
 
+function dedupById<T extends { id: string }>(items: T[]): T[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+}
+
 function PrescriptionCard({ rx, onViewModal }: { rx: Prescription; onViewModal?: () => void }) {
   const hasDetails = rx.medication || rx.dosage || rx.frequency || rx.durationDays || rx.indications;
 
@@ -241,7 +250,7 @@ export default function VetMessagesSection() {
   const invalidateConsultations = useInvalidateConsultations('vet');
   const patchConsultations = useCallback(
     (updater: (prev: Consultation[]) => Consultation[]) =>
-      queryClient.setQueryData(consultationsKey('vet'), (prev: Consultation[] | undefined) => updater(prev ?? [])),
+      queryClient.setQueryData(consultationsKey('vet'), (prev: Consultation[] | undefined) => dedupById(updater(prev ?? []))),
     [queryClient]
   );
   
@@ -387,11 +396,11 @@ export default function VetMessagesSection() {
   }, [messages.length]);
 
   const pendingList = useMemo(
-    () => consultations.filter((c) => c.status === "PENDING" || c.status === "WAITING"),
+    () => dedupById(consultations.filter((c) => c.status === "PENDING" || c.status === "WAITING")),
     [consultations]
   );
   const activeList = useMemo(
-    () => consultations.filter((c) => c.status === "ACTIVE"),
+    () => dedupById(consultations.filter((c) => c.status === "ACTIVE")),
     [consultations]
   );
   const displayList = tab === "pending" ? pendingList : activeList;

@@ -34,7 +34,10 @@ export default function VetDashboardPage() {
   const refreshCounts = useCallback(async () => {
     try {
       const cons = await getMyConsultations();
-      setOfferCount(cons.filter((c) => c.status === "PENDING").length);
+      const uniquePendingIds = new Set(
+        cons.filter((c) => c.status === "PENDING").map((c) => c.id)
+      );
+      setOfferCount(uniquePendingIds.size);
     } catch {
       // ignore
     }

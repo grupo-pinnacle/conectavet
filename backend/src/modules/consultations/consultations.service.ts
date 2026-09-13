@@ -359,7 +359,8 @@ export async function getConsultationsByUser(
     }),
     prisma.consultation.count({ where }),
   ]);
-  return { data, total, page, limit: cappedLimit, totalPages: Math.ceil(total / cappedLimit) };
+  const uniqueData = Array.from(new Map(data.map((item) => [item.id, item])).values());
+  return { data: uniqueData, total, page, limit: cappedLimit, totalPages: Math.ceil(total / cappedLimit) };
 }
 
 /**

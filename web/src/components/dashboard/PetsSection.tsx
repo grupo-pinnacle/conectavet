@@ -20,6 +20,9 @@ const emptyForm = {
   chronicConditions: "",
 };
 
+const INPUT_CLASSES =
+  "w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none";
+
 export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId: string) => void }) {
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +35,10 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
   const [selectedPetDossier, setSelectedPetDossier] = useState<Pet | null>(null);
   const [copiedChipId, setCopiedChipId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"cards" | "timeline">("cards");
+
+  const updateFormField = <K extends keyof typeof emptyForm>(field: K, value: (typeof emptyForm)[K]) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
 
   const fetchPets = async () => {
     try {
@@ -311,40 +318,74 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
           <div className="mb-4 grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Nombre</label>
-              <input type="text" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Nombre" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
+              <input
+                type="text"
+                value={form.name}
+                onChange={(e) => updateFormField("name", e.target.value)}
+                placeholder="Nombre"
+                className={INPUT_CLASSES}
+              />
               {formErrors.name && <p className="mt-1 text-xs font-semibold text-red-600">{formErrors.name}</p>}
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Especie</label>
-              <select value={form.species} onChange={(e) => setForm((f) => ({ ...f, species: e.target.value }))} className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink focus:border-teal-600 focus:outline-none">
+              <select
+                value={form.species}
+                onChange={(e) => updateFormField("species", e.target.value)}
+                className={INPUT_CLASSES}
+              >
                 <option value="">Seleccionar</option>
                 <option value="Perro">Perro</option>
                 <option value="Gato">Gato</option>
                 <option value="Ave">Ave</option>
                 <option value="Exótico">Exótico</option>
-                </select>
-                {formErrors.species && <p className="mt-1 text-xs font-semibold text-red-600">{formErrors.species}</p>}
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Raza</label>
-                <input type="text" value={form.breed} onChange={(e) => setForm((f) => ({ ...f, breed: e.target.value }))} placeholder="Raza" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
-                {formErrors.breed && <p className="mt-1 text-xs font-semibold text-red-600">{formErrors.breed}</p>}
+              </select>
+              {formErrors.species && <p className="mt-1 text-xs font-semibold text-red-600">{formErrors.species}</p>}
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Raza</label>
+              <input
+                type="text"
+                value={form.breed}
+                onChange={(e) => updateFormField("breed", e.target.value)}
+                placeholder="Raza"
+                className={INPUT_CLASSES}
+              />
+              {formErrors.breed && <p className="mt-1 text-xs font-semibold text-red-600">{formErrors.breed}</p>}
             </div>
             <div className="flex gap-4">
               <div className="flex-1">
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Edad</label>
-                <input type="number" min={0} value={form.age} onChange={(e) => setForm((f) => ({ ...f, age: Number(e.target.value) }))} className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink focus:border-teal-600 focus:outline-none" />
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Edad</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={form.age}
+                  onChange={(e) => updateFormField("age", Number(e.target.value))}
+                  className={INPUT_CLASSES}
+                />
                 {formErrors.age && <p className="mt-1 text-xs font-semibold text-red-600">{formErrors.age}</p>}
               </div>
               <div className="flex-1">
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Peso (kg)</label>
-                <input type="number" min={0} step="0.1" value={form.weight} onChange={(e) => setForm((f) => ({ ...f, weight: e.target.value }))} placeholder="Ej: 10" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Peso (kg)</label>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.1"
+                  value={form.weight}
+                  onChange={(e) => updateFormField("weight", e.target.value)}
+                  placeholder="Ej: 10"
+                  className={INPUT_CLASSES}
+                />
                 {formErrors.weight && <p className="mt-1 text-xs font-semibold text-red-600">{formErrors.weight}</p>}
               </div>
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Sexo</label>
-              <select value={form.sex} onChange={(e) => setForm((f) => ({ ...f, sex: e.target.value }))} className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink focus:border-teal-600 focus:outline-none">
+              <select
+                value={form.sex}
+                onChange={(e) => updateFormField("sex", e.target.value)}
+                className={INPUT_CLASSES}
+              >
                 <option value="">Seleccionar</option>
                 <option value="MALE">Macho</option>
                 <option value="FEMALE">Hembra</option>
@@ -352,26 +393,55 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Fecha de nacimiento</label>
-              <input type="date" value={form.birthDate} onChange={(e) => setForm((f) => ({ ...f, birthDate: e.target.value }))} className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink focus:border-teal-600 focus:outline-none" />
+              <input
+                type="date"
+                value={form.birthDate}
+                onChange={(e) => updateFormField("birthDate", e.target.value)}
+                className={INPUT_CLASSES}
+              />
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Color</label>
-              <input type="text" value={form.color} onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))} placeholder="Ej: Marrón" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
+              <input
+                type="text"
+                value={form.color}
+                onChange={(e) => updateFormField("color", e.target.value)}
+                placeholder="Ej: Marrón"
+                className={INPUT_CLASSES}
+              />
               {formErrors.color && <p className="mt-1 text-xs font-semibold text-red-600">{formErrors.color}</p>}
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Microchip (15 dígitos, opcional)</label>
-              <input type="text" value={form.microchip} onChange={(e) => setForm((f) => ({ ...f, microchip: e.target.value }))} placeholder="15 dígitos" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
+              <input
+                type="text"
+                value={form.microchip}
+                onChange={(e) => updateFormField("microchip", e.target.value)}
+                placeholder="15 dígitos"
+                className={INPUT_CLASSES}
+              />
               {formErrors.microchip && <p className="mt-1 text-xs font-semibold text-red-600">{formErrors.microchip}</p>}
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Alergias</label>
-              <input type="text" value={form.allergies} onChange={(e) => setForm((f) => ({ ...f, allergies: e.target.value }))} placeholder="Separadas por coma" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
+              <input
+                type="text"
+                value={form.allergies}
+                onChange={(e) => updateFormField("allergies", e.target.value)}
+                placeholder="Separadas por coma"
+                className={INPUT_CLASSES}
+              />
               {formErrors.allergies && <p className="mt-1 text-xs font-semibold text-red-600">{formErrors.allergies}</p>}
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">Condiciones crónicas</label>
-              <input type="text" value={form.chronicConditions} onChange={(e) => setForm((f) => ({ ...f, chronicConditions: e.target.value }))} placeholder="Separadas por coma" className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm text-ink placeholder:text-slate-400 focus:border-teal-600 focus:outline-none" />
+              <input
+                type="text"
+                value={form.chronicConditions}
+                onChange={(e) => updateFormField("chronicConditions", e.target.value)}
+                placeholder="Separadas por coma"
+                className={INPUT_CLASSES}
+              />
               {formErrors.chronicConditions && <p className="mt-1 text-xs font-semibold text-red-600">{formErrors.chronicConditions}</p>}
             </div>
           </div>

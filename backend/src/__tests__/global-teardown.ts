@@ -1,8 +1,6 @@
-const path = require('path');
+import { logger } from '../shared/logger';
 
-module.exports = async () => {
-  const backendRoot = path.resolve(__dirname, '..', '..');
-
+export default async (): Promise<void> => {
   const directUrl = process.env.DIRECT_URL || '';
   const separator = directUrl.includes('?') ? '&' : '?';
   const testDirectUrl = `${directUrl}${separator}schema=testing`;
@@ -13,6 +11,9 @@ module.exports = async () => {
     await client.$executeRawUnsafe(`DROP SCHEMA IF EXISTS testing CASCADE`);
     await client.$disconnect();
   } catch (err) {
-    console.warn('[global-teardown] No se pudo dropear schema (se ignora):', err.message.slice(0, 120));
+    const error = err as Error;
+    logger.warn('[global-teardown] No se pudo dropear schema (se ignora)', {
+      error: error?.message?.slice(0, 120),
+    });
   }
 };

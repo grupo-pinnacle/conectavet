@@ -1,6 +1,14 @@
 import { parsePagination, parseMinRating, excludePassword, asyncHandler } from '../shared/utils';
 import { AppError, NotFoundError, ForbiddenError, ConflictError } from '../shared/errors';
 import { Request, Response } from 'express';
+import globalTeardown from './global-teardown';
+import globalSetup from './global-setup';
+import { logger } from '../shared/logger';
+import { execSync } from 'child_process';
+
+jest.mock('child_process', () => ({
+  execSync: jest.fn(),
+}));
 
 describe('parsePagination', () => {
   test('valores por defecto', () => {
@@ -155,5 +163,33 @@ describe('AppError classes', () => {
   test('ConflictError tiene statusCode 409', () => {
     const err = new ConflictError();
     expect(err.statusCode).toBe(409);
+  });
+});
+
+describe('globalTeardown y globalSetup', () => {
+  test('globalTeardown llama a logger.warn cuando ocurre un error', async () => {
+    const warnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => {});
+    await globalTeardown();
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[global-teardown] No se pudo dropear schema (se ignora)',
+      expect.objectContaining({ error: expect.any(String) })
+    );
+    warnSpy.mockRestore();
+  });
+
+  test('globalSetup llama a logger.warn cuando execSync falla', async () => {
+    const warnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => {});
+    (execSync as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('Connection refused');
+    });
+
+    await globalSetup();
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[global-setup] Schema push falló (se ignora si ya existe o hay error de conexión)',
+      expect.objectContaining({ error: 'Connection refused' })
+    );
+
+    warnSpy.mockRestore();
   });
 });

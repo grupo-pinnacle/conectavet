@@ -48,7 +48,6 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch de contadores al montar
     refreshCounts();
     let cancelled = false;
     let sock: Socket | null = null;

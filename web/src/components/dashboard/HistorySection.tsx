@@ -148,6 +148,8 @@ export default function HistorySection() {
     }
   };
 
+  const [selectedPetId, setSelectedPetId] = useState<string>("ALL");
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -155,8 +157,6 @@ export default function HistorySection() {
       </div>
     );
   }
-
-  const [selectedPetId, setSelectedPetId] = useState<string>("ALL");
 
   const petsList = Array.from(
     new Map(

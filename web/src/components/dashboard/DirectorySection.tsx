@@ -87,7 +87,6 @@ export default function DirectorySection() {
   }, [debounced, onlineOnly, minRating, sortBy]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch de datos al montar
     fetchVets();
   }, [fetchVets]);
 

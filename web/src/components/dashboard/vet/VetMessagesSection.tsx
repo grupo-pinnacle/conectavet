@@ -306,14 +306,15 @@ export default function VetMessagesSection() {
     } catch { /* fallback handled */ }
   }, []);
 
+  const activeConsId = activeCons?.id;
   useEffect(() => {
-    if (!activeCons) return;
-    setMessages(getCachedMessages(activeCons.id) ?? []);
-    setPrescriptions(getCachedPrescriptions(activeCons.id) ?? []);
-    joinConsultation(activeCons.id);
-    fetchMsgs(activeCons.id);
-    fetchPrescriptions(activeCons.id);
-  }, [activeCons?.id, fetchMsgs, fetchPrescriptions]);
+    if (!activeConsId) return;
+    setMessages(getCachedMessages(activeConsId) ?? []);
+    setPrescriptions(getCachedPrescriptions(activeConsId) ?? []);
+    joinConsultation(activeConsId);
+    fetchMsgs(activeConsId);
+    fetchPrescriptions(activeConsId);
+  }, [activeConsId, fetchMsgs, fetchPrescriptions]);
 
   useEffect(() => {
     if (!activeCons) return;

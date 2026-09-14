@@ -9,6 +9,7 @@ import { sendMessageSchema } from './consultations.controller';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { Redis } from 'ioredis';
 import { setRedisClient } from './message-throttle';
+import { logger } from '../../shared/logger';
 
 let io: Server;
 
@@ -140,7 +141,13 @@ export async function setupChatSocket(httpServer: HttpServer) {
           if (typeof ack === 'function') ack({ message: result.message, duplicated: result.duplicated });
 
           // Fire-and-forget: no bloquear el evento de socket esperando el push.
-          notifyConsultationMessage(data.consultationId, user.userId).catch(() => {});
+          notifyConsultationMessage(data.consultationId, user.userId).catch((err) => {
+            logger.error('Error al enviar notificación de mensaje de consulta', {
+              error: err instanceof Error ? err.message : String(err),
+              consultationId: data.consultationId,
+              userId: user.userId,
+            });
+          });
           return;
         } catch (error) {
           socket.emit('error', { message: 'Error al guardar el mensaje' });

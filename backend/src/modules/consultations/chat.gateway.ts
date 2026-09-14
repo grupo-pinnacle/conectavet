@@ -1,15 +1,15 @@
-import { Server as HttpServer } from 'http';
-import { Server } from 'socket.io';
-import jwt from 'jsonwebtoken';
-import { prisma } from '../../shared/prisma';
-import { JwtPayload } from '../../shared/types';
-import { sendConsultationMessage } from './consultations.service';
-import { notifyConsultationMessage } from '../notifications/notifications.service';
-import { sendMessageSchema } from './consultations.controller';
-import { createAdapter } from '@socket.io/redis-adapter';
-import { Redis } from 'ioredis';
-import { setRedisClient } from './message-throttle';
-import { logger } from '../../shared/logger';
+import { Server as HttpServer } from "http";
+import { Server } from "socket.io";
+import jwt from "jsonwebtoken";
+import { prisma } from "../../shared/prisma";
+import { JwtPayload } from "../../shared/types";
+import { sendConsultationMessage } from "./consultations.service";
+import { notifyConsultationMessage } from "../notifications/notifications.service";
+import { sendMessageSchema } from "./consultations.controller";
+import { createAdapter } from "@socket.io/redis-adapter";
+import { Redis } from "ioredis";
+import { setRedisClient } from "./message-throttle";
+import { logger } from "../../shared/logger";
 
 let io: Server;
 
@@ -17,11 +17,10 @@ export async function setupChatSocket(httpServer: HttpServer) {
   // WS CORS: misma política que el HTTP (app.ts). Si CORS_ORIGIN contiene '*'
   // no se permiten credenciales (espejo de la lógica de app.ts) para evitar
   // el agujero de configuración S-02.
-  const wsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
-    .split(',')
+  const wsOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
+    .split(",")
     .map((s) => s.trim());
-  const wsAllowCredentials = !wsOrigins.includes('*');
-
+  const wsAllowCredentials = !wsOrigins.includes("*");
 
   // Cliente Redis local a esta instancia (el estado compartido vive en
   // message-throttle vía setRedisClient). Se usa solo si REDIS_URL está seteado.
@@ -43,12 +42,14 @@ export async function setupChatSocket(httpServer: HttpServer) {
       const pub = redisClient!;
       const sub = redisClient!.duplicate();
       io.adapter(createAdapter(pub, sub));
-      console.info('[socket] Redis adapter activado (multi-instancia) + rate-limit/dedup distribuido');
+      logger.info(
+        "[socket] Redis adapter activado (multi-instancia) + rate-limit/dedup distribuido",
+      );
     } catch (err) {
       redisClient = null;
-      console.warn(
-        '[socket] REDIS_URL presente pero no se pudo activar el adapter. ' +
-          'Usando adapter en memoria (NO apto para >1 instancia).'
+      logger.warn(
+        "[socket] REDIS_URL presente pero no se pudo activar el adapter. " +
+          "Usando adapter en memoria (NO apto para >1 instancia).",
       );
     }
   }
@@ -61,31 +62,36 @@ export async function setupChatSocket(httpServer: HttpServer) {
       return m ? decodeURIComponent(m[1]) : undefined;
     })();
     const token = (socket.handshake.auth?.token as string) || cookieToken;
-    if (!token) return next(new Error('Token no proporcionado'));
+    if (!token) return next(new Error("Token no proporcionado"));
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET as string, {
-        algorithms: ['HS256'],
+        algorithms: ["HS256"],
       }) as JwtPayload;
       // Re-leemos el usuario para validar tokenVersion (revocación por logout).
-      const dbUser = await prisma.user.findUnique({ where: { id: decoded.userId } });
-      if (!dbUser) return next(new Error('Usuario inválido'));
-      if (typeof decoded.tokenVersion === 'number' && decoded.tokenVersion !== dbUser.tokenVersion) {
-        return next(new Error('Sesión revocada (logout en otro dispositivo)'));
+      const dbUser = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+      });
+      if (!dbUser) return next(new Error("Usuario inválido"));
+      if (
+        typeof decoded.tokenVersion === "number" &&
+        decoded.tokenVersion !== dbUser.tokenVersion
+      ) {
+        return next(new Error("Sesión revocada (logout en otro dispositivo)"));
       }
       socket.data.user = decoded;
       next();
     } catch {
-      next(new Error('Token inválido'));
+      next(new Error("Token inválido"));
     }
   });
 
-  io.on('connection', (socket) => {
+  io.on("connection", (socket) => {
     const user = socket.data.user as JwtPayload;
     // const _limitKey = user.userId || socket.id;
 
     socket.join(`user:${user.userId}`);
 
-    socket.on('join:consultation', async (consultationId: string) => {
+    socket.on("join:consultation", async (consultationId: string) => {
       try {
         const consultation = await prisma.consultation.findFirst({
           where: {
@@ -95,16 +101,19 @@ export async function setupChatSocket(httpServer: HttpServer) {
           },
         });
         if (!consultation) {
-          return socket.emit('error', { message: 'No pertenecés a esta consulta' });
+          return socket.emit("error", {
+            message: "No pertenecés a esta consulta",
+          });
         }
-        socket.join(`consultation:${consultationId}`); return;
+        socket.join(`consultation:${consultationId}`);
+        return;
       } catch (err) {
-        socket.emit('error', { message: 'Error al unirse a la consulta' });
+        socket.emit("error", { message: "Error al unirse a la consulta" });
         return;
       }
     });
 
-    socket.on('leave:consultation', (consultationId: string) => {
+    socket.on("leave:consultation", (consultationId: string) => {
       try {
         socket.leave(`consultation:${consultationId}`);
       } catch {
@@ -113,16 +122,32 @@ export async function setupChatSocket(httpServer: HttpServer) {
     });
 
     socket.on(
-      'message:send',
-      async (data: { consultationId: string; content?: string; attachmentUrl?: string; clientMsgId?: string }, ack?: (res: { message?: unknown; duplicated?: boolean; error?: string }) => void) => {
+      "message:send",
+      async (
+        data: {
+          consultationId: string;
+          content?: string;
+          attachmentUrl?: string;
+          clientMsgId?: string;
+        },
+        ack?: (res: {
+          message?: unknown;
+          duplicated?: boolean;
+          error?: string;
+        }) => void,
+      ) => {
         try {
           if (!data.consultationId) {
-            return socket.emit('error', { message: 'consultationId requerido' });
+            return socket.emit("error", {
+              message: "consultationId requerido",
+            });
           }
 
           const parsed = sendMessageSchema.safeParse(data);
           if (!parsed.success) {
-            return socket.emit('error', { message: parsed.error.issues[0].message });
+            return socket.emit("error", {
+              message: parsed.error.issues[0].message,
+            });
           }
 
           // const _validData = parsed.data;
@@ -137,62 +162,85 @@ export async function setupChatSocket(httpServer: HttpServer) {
             clientMsgId: data.clientMsgId,
           });
 
-          io.to(`consultation:${data.consultationId}`).emit('message:new', result.message);
-          if (typeof ack === 'function') ack({ message: result.message, duplicated: result.duplicated });
+          io.to(`consultation:${data.consultationId}`).emit(
+            "message:new",
+            result.message,
+          );
+          if (typeof ack === "function")
+            ack({ message: result.message, duplicated: result.duplicated });
 
           // Fire-and-forget: no bloquear el evento de socket esperando el push.
-          notifyConsultationMessage(data.consultationId, user.userId).catch((err) => {
-            logger.error('Error al enviar notificación de mensaje de consulta', {
-              error: err instanceof Error ? err.message : String(err),
-              consultationId: data.consultationId,
-              userId: user.userId,
-            });
-          });
+          notifyConsultationMessage(data.consultationId, user.userId).catch(
+            (err) => {
+              logger.error(
+                "Error al enviar notificación de mensaje de consulta",
+                {
+                  error: err instanceof Error ? err.message : String(err),
+                  consultationId: data.consultationId,
+                  userId: user.userId,
+                },
+              );
+            },
+          );
           return;
         } catch (error) {
-          socket.emit('error', { message: 'Error al guardar el mensaje' });
+          socket.emit("error", { message: "Error al guardar el mensaje" });
           return;
         }
-      }
+      },
     );
 
-    socket.on('call:initiate', async (consultationId: string, peerName: string) => {
-      try {
-        const consultation = await prisma.consultation.findFirst({
-          where: {
-            id: consultationId,
-            deletedAt: null,
-            status: 'ACTIVE',
-            OR: [{ clientId: user.userId }, { vetId: user.userId }],
-          },
-          select: { id: true, clientId: true, vetId: true, status: true },
-        });
-        if (!consultation) {
-          socket.emit('error', { message: 'No participás de una consulta activa' });
-          return;
-        }
-        const targetId = user.userId === consultation.clientId ? consultation.vetId : consultation.clientId;
-        if (!targetId) return;
-
-        // Nombre del emisor con fallback a base de datos
-        let callerName = (peerName || '').trim();
-        if (!callerName) {
-          const caller = await prisma.user.findUnique({
-            where: { id: user.userId },
-            select: { firstName: true, lastName: true, role: true },
+    socket.on(
+      "call:initiate",
+      async (consultationId: string, peerName: string) => {
+        try {
+          const consultation = await prisma.consultation.findFirst({
+            where: {
+              id: consultationId,
+              deletedAt: null,
+              status: "ACTIVE",
+              OR: [{ clientId: user.userId }, { vetId: user.userId }],
+            },
+            select: { id: true, clientId: true, vetId: true, status: true },
           });
-          callerName = [caller?.firstName, caller?.lastName].filter(Boolean).join(' ')
-            || (caller?.role === 'VET' ? 'Veterinario' : 'Paciente');
+          if (!consultation) {
+            socket.emit("error", {
+              message: "No participás de una consulta activa",
+            });
+            return;
+          }
+          const targetId =
+            user.userId === consultation.clientId
+              ? consultation.vetId
+              : consultation.clientId;
+          if (!targetId) return;
+
+          // Nombre del emisor con fallback a base de datos
+          let callerName = (peerName || "").trim();
+          if (!callerName) {
+            const caller = await prisma.user.findUnique({
+              where: { id: user.userId },
+              select: { firstName: true, lastName: true, role: true },
+            });
+            callerName =
+              [caller?.firstName, caller?.lastName].filter(Boolean).join(" ") ||
+              (caller?.role === "VET" ? "Veterinario" : "Paciente");
+          }
+
+          // Emitir a todas las instancias y dispositivos conectados del usuario destinatario
+          io.to(`user:${targetId}`).emit("call:incoming", {
+            consultationId,
+            callerName,
+          });
+        } catch (err) {
+          logger.error("Error al enrutar call:incoming", {
+            error: err instanceof Error ? err.message : String(err),
+          });
         }
+      },
+    );
 
-        // Emitir a todas las instancias y dispositivos conectados del usuario destinatario
-        io.to(`user:${targetId}`).emit('call:incoming', { consultationId, callerName });
-      } catch (err) {
-        console.error('Error al enrutar call:incoming', err);
-      }
-    });
-
-    socket.on('call:cancel', async (consultationId: string) => {
+    socket.on("call:cancel", async (consultationId: string) => {
       try {
         const consultation = await prisma.consultation.findFirst({
           where: {
@@ -203,16 +251,19 @@ export async function setupChatSocket(httpServer: HttpServer) {
           select: { clientId: true, vetId: true },
         });
         if (!consultation) return;
-        const targetId = user.userId === consultation.clientId ? consultation.vetId : consultation.clientId;
+        const targetId =
+          user.userId === consultation.clientId
+            ? consultation.vetId
+            : consultation.clientId;
         if (targetId) {
-          io.to(`user:${targetId}`).emit('call:cancelled', { consultationId });
+          io.to(`user:${targetId}`).emit("call:cancelled", { consultationId });
         }
       } catch {
         /* no-op */
       }
     });
 
-    socket.on('call:reject', async (consultationId: string) => {
+    socket.on("call:reject", async (consultationId: string) => {
       try {
         const consultation = await prisma.consultation.findFirst({
           where: {
@@ -223,17 +274,20 @@ export async function setupChatSocket(httpServer: HttpServer) {
           select: { clientId: true, vetId: true },
         });
         if (!consultation) return;
-        const targetId = user.userId === consultation.clientId ? consultation.vetId : consultation.clientId;
+        const targetId =
+          user.userId === consultation.clientId
+            ? consultation.vetId
+            : consultation.clientId;
         if (targetId) {
-          io.to(`user:${targetId}`).emit('call:rejected', { consultationId });
+          io.to(`user:${targetId}`).emit("call:rejected", { consultationId });
         }
       } catch {
         /* no-op */
       }
     });
 
-    socket.on('disconnect', async () => {
-      if (user.role === 'VET') {
+    socket.on("disconnect", async () => {
+      if (user.role === "VET") {
         try {
           const sockets = await io.in(`user:${user.userId}`).fetchSockets();
           if (sockets.length === 0) {
@@ -241,7 +295,10 @@ export async function setupChatSocket(httpServer: HttpServer) {
               where: { id: user.userId },
               data: { isOnline: false, lastSeen: new Date() },
             });
-            io.emit('vet:availability', { vetId: user.userId, isOnline: false });
+            io.emit("vet:availability", {
+              vetId: user.userId,
+              isOnline: false,
+            });
           }
         } catch {
           /* no-op */
@@ -262,4 +319,3 @@ export function disconnectUserSockets(userId: string) {
     io.in(`user:${userId}`).disconnectSockets(true);
   }
 }
-

@@ -112,10 +112,11 @@ export async function register(input: RegisterInput) {
   });
 
   // Verificación por email (no bloquea el registro si el mail falla).
+  const verifyUrl = `${process.env.WEB_URL ?? ''}/verify-email?token=${emailVerifyToken}`;
   void sendMail(
     user.email,
     'Verificá tu email en VetConnect',
-    `<p>Confirmá tu cuenta haciendo clic aquí: <a href="${process.env.WEB_URL ?? ''}/verify-email?token=${emailVerifyToken}">${process.env.WEB_URL ?? ''}/verify-email?token=${emailVerifyToken}</a></p>`
+    `<p>Confirmá tu cuenta haciendo clic aquí: <a href="${verifyUrl}">${verifyUrl}</a></p>`
   ).catch(() => undefined);
 
   const safeUser = sanitizeUser(user);

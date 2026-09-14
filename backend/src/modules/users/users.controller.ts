@@ -21,7 +21,7 @@ import { getIO } from '../consultations/chat.gateway';
 import { notifyUser } from '../notifications';
 
 import { logger } from '../../shared/logger';
-import { parsePagination } from '../../shared/utils';
+import { parsePagination, parseMinRating } from '../../shared/utils';
 import { asyncHandler } from "../../shared/middlewares/async.middleware.js";
 export const createUserController = asyncHandler(async (req: RequestWithUser, res: Response) => {
 const user = await createUser(req.body);
@@ -102,9 +102,7 @@ export const listVetsController = asyncHandler(async (req: RequestWithUser, res:
 const { page, limit } = parsePagination(req.query as Record<string, string>);
 const search = typeof req.query.search === 'string' ? req.query.search.trim() : undefined;
 const onlineOnly = req.query.online === 'true';
-const minRating = typeof req.query.minRating === 'string' && req.query.minRating !== ''
-      ? Math.max(0, Math.min(5, Number(req.query.minRating) || 0))
-      : undefined;
+const minRating = parseMinRating(req.query.minRating);
 const sortBy = req.query.sortBy === 'rating' ? 'rating' : 'recent';
 const result = await listVets(page, limit, {
       search,

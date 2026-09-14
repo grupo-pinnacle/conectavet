@@ -1,4 +1,4 @@
-import { parsePagination, excludePassword, asyncHandler } from '../shared/utils';
+import { parsePagination, parseMinRating, excludePassword, asyncHandler } from '../shared/utils';
 import { AppError, NotFoundError, ForbiddenError, ConflictError } from '../shared/errors';
 import { Request, Response } from 'express';
 
@@ -47,6 +47,41 @@ describe('parsePagination', () => {
     const result = parsePagination({ page: 'abc', limit: 'xyz' });
     expect(result.page).toBe(1);
     expect(result.limit).toBe(20);
+  });
+});
+
+describe('parseMinRating', () => {
+  test('retorna undefined para undefined o null', () => {
+    expect(parseMinRating(undefined)).toBeUndefined();
+    expect(parseMinRating(null)).toBeUndefined();
+  });
+
+  test('retorna undefined para string vacío o espacios', () => {
+    expect(parseMinRating('')).toBeUndefined();
+    expect(parseMinRating('   ')).toBeUndefined();
+  });
+
+  test('retorna undefined para strings no numéricos', () => {
+    expect(parseMinRating('abc')).toBeUndefined();
+    expect(parseMinRating('NaN')).toBeUndefined();
+  });
+
+  test('retorna undefined para tipos no válidos (arrays, objetos, booleanos)', () => {
+    expect(parseMinRating(['4'])).toBeUndefined();
+    expect(parseMinRating({ rating: 4 })).toBeUndefined();
+    expect(parseMinRating(true)).toBeUndefined();
+  });
+
+  test('parsea números válidos dentro de rango [0, 5]', () => {
+    expect(parseMinRating('0')).toBe(0);
+    expect(parseMinRating('3.5')).toBe(3.5);
+    expect(parseMinRating('5')).toBe(5);
+    expect(parseMinRating(4)).toBe(4);
+  });
+
+  test('clampa valores fuera de rango [0, 5]', () => {
+    expect(parseMinRating('-1')).toBe(0);
+    expect(parseMinRating('10')).toBe(5);
   });
 });
 

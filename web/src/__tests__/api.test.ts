@@ -20,16 +20,23 @@ describe("api service and interceptors", () => {
     vi.clearAllMocks();
     setApiToken(null);
 
-    delete (window as any).location;
-    window.location = {
-      ...originalLocation,
-      pathname: "/dashboard",
-      href: "http://localhost/dashboard",
-    } as any;
+    Object.defineProperty(window, "location", {
+      value: {
+        ...originalLocation,
+        pathname: "/dashboard",
+        href: "http://localhost/dashboard",
+      },
+      writable: true,
+      configurable: true,
+    });
   });
 
   afterEach(() => {
-    window.location = originalLocation;
+    Object.defineProperty(window, "location", {
+      value: originalLocation,
+      writable: true,
+      configurable: true,
+    });
   });
 
   describe("setApiToken and request interceptor", () => {
@@ -216,8 +223,15 @@ describe("api service and interceptors", () => {
 
     it("should handle refresh failure without redirecting if user was already on /login path", async () => {
       setApiToken("existing-token");
-      window.location.pathname = "/login";
-      window.location.href = "http://localhost/login";
+      Object.defineProperty(window, "location", {
+        value: {
+          ...originalLocation,
+          pathname: "/login",
+          href: "http://localhost/login",
+        },
+        writable: true,
+        configurable: true,
+      });
 
       const mockedPost = vi.mocked(axios.post);
       mockedPost.mockRejectedValueOnce(new Error("Refresh failed"));

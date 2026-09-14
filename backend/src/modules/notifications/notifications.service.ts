@@ -1,9 +1,13 @@
-import { prisma } from '../../shared/prisma';
-import { logger } from '../../shared/logger';
+import { prisma } from "../../shared/prisma";
+import { logger } from "../../shared/logger";
 
-const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
+const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 
-export async function registerPushToken(userId: string, token: string, platform: string) {
+export async function registerPushToken(
+  userId: string,
+  token: string,
+  platform: string,
+) {
   return prisma.pushToken.upsert({
     where: { token },
     update: { userId, platform },
@@ -19,7 +23,7 @@ export async function listNotifications(userId: string, limit = 50) {
   const [items, unreadCount] = await Promise.all([
     prisma.notification.findMany({
       where: { userId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: limit,
     }),
     prisma.notification.count({ where: { userId, readAt: null } }),
@@ -27,7 +31,10 @@ export async function listNotifications(userId: string, limit = 50) {
   return { items, unreadCount };
 }
 
-export async function markNotificationRead(userId: string, notificationId: string) {
+export async function markNotificationRead(
+  userId: string,
+  notificationId: string,
+) {
   const result = await prisma.notification.updateMany({
     where: { id: notificationId, userId, readAt: null },
     data: { readAt: new Date() },
@@ -53,24 +60,29 @@ export async function createNotification(data: {
   });
 }
 
-async function sendExpoPush(tokens: string[], title: string, body: string, data?: unknown) {
-  if (process.env.EXPO_PUSH_DISABLED === 'true') return;
+async function sendExpoPush(
+  tokens: string[],
+  title: string,
+  body: string,
+  data?: unknown,
+) {
+  if (process.env.EXPO_PUSH_DISABLED === "true") return;
   try {
     const messages = tokens.map((to) => ({
       to,
       title,
       body,
-      sound: 'default' as const,
+      sound: "default" as const,
       data,
     }));
     await fetch(EXPO_PUSH_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(messages),
       signal: AbortSignal.timeout(5000),
     });
   } catch (error) {
-    logger.warn('Push notification falló', { error: (error as Error).message });
+    logger.warn("Push notification falló", { error: (error as Error).message });
   }
 }
 
@@ -84,15 +96,21 @@ export async function notifyUser(
   type: string,
   title: string,
   body: string,
-  data?: unknown
+  data?: unknown,
 ) {
-  const notification = await createNotification({ userId, type, title, body, data });
+  const notification = await createNotification({
+    userId,
+    type,
+    title,
+    body,
+    data,
+  });
   try {
     // Emit por socket para que la web/mobile actualice en vivo sin polling
-    const { getIO } = await import('../consultations/chat.gateway.js');
+    const { getIO } = require("../consultations/chat.gateway.js");
     const io = getIO();
     if (io) {
-      io.to(`user:${userId}`).emit('notification:new', notification);
+      io.to(`user:${userId}`).emit("notification:new", notification);
     }
   } catch {
     // socket no disponible; la bandeja in-app igual queda actualizada
@@ -112,9 +130,14 @@ export async function notifyUser(
   return notification;
 }
 
-export async function notifyVetsOnline(type: string, title: string, body: string, data?: unknown) {
+export async function notifyVetsOnline(
+  type: string,
+  title: string,
+  body: string,
+  data?: unknown,
+) {
   const vets = await prisma.user.findMany({
-    where: { role: 'VET', isOnline: true },
+    where: { role: "VET", isOnline: true },
     select: { id: true },
   });
   if (vets.length === 0) return;
@@ -130,14 +153,17 @@ export async function notifyVetsOnline(type: string, title: string, body: string
     })),
   });
 
-  // Notificación instantánea vía Socket.io a cada veterinario conectado
+  // Notificación instantánea vía Socket.io en la sala dedicada 'vets-online'
   try {
-    const { getIO } = await import('../consultations/chat.gateway.js');
+    const { getIO } = require("../consultations/chat.gateway.js");
     const io = getIO();
     if (io) {
-      for (const v of vets) {
-        io.to(`user:${v.id}`).emit('notification:new', { type, title, body, data });
-      }
+      io.to("vets-online").emit("notification:new", {
+        type,
+        title,
+        body,
+        data,
+      });
     }
   } catch {
     /* socket opcional */
@@ -161,7 +187,10 @@ export async function notifyVetsOnline(type: string, title: string, body: string
 /**
  * Avisa al OTRO participante de una consulta que hay un mensaje nuevo.
  */
-export async function notifyConsultationMessage(consultationId: string, senderId: string) {
+export async function notifyConsultationMessage(
+  consultationId: string,
+  senderId: string,
+) {
   const consultation = await prisma.consultation.findUnique({
     where: { id: consultationId },
     include: {
@@ -174,13 +203,13 @@ export async function notifyConsultationMessage(consultationId: string, senderId
   const other = isClientSender ? consultation.vet : consultation.client;
   if (!other) return;
   const senderName = isClientSender
-    ? consultation.client.firstName || 'Cliente'
-    : consultation.vet?.firstName || 'Veterinario';
+    ? consultation.client.firstName || "Cliente"
+    : consultation.vet?.firstName || "Veterinario";
   await notifyUser(
     other.id,
-    'message',
-    'Nuevo mensaje',
+    "message",
+    "Nuevo mensaje",
     `${senderName} te escribió en la consulta`,
-    { consultationId }
+    { consultationId },
   );
 }

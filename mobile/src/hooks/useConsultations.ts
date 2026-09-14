@@ -1,5 +1,4 @@
-import { useEffect, useRef } from 'react';
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import NetInfo from '@react-native-community/netinfo';
 import { consultationsService, type SendMessagePayload } from '@/services';
@@ -59,7 +58,7 @@ export function useRateConsultation() {
 
 export function useConsultationMessages(consultationId: string | undefined, userId?: string) {
   const qc = useQueryClient();
-  const key = ['consultations', consultationId, 'messages'];
+  const key = useMemo(() => ['consultations', consultationId, 'messages'], [consultationId]);
 
   // NetInfo: flush outbox automatically when device goes online
   useEffect(() => {
@@ -173,8 +172,7 @@ export function useConsultationMessages(consultationId: string | undefined, user
         leaveConsultation(consultationId);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- key/qc son estables; reconectar ante cambios de array rompería el socket
-  }, [consultationId]);
+  }, [consultationId, key, qc]);
 
   const send = useMutation({
     mutationFn: async (payload: SendMessagePayload) => {

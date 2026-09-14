@@ -57,8 +57,8 @@ function mockReq(overrides: MockRequestOptions = {}): RequestWithUser {
 }
 
 function mockIO() {
-  const emit = jest.fn();
-  const to = jest.fn().mockReturnValue({ emit });
+  const emit = jest.fn((_event: string, _payload: Record<string, unknown> = {}) => {});
+  const to = jest.fn((_room: string) => ({ emit }));
   (mockedGetIO as jest.Mock).mockReturnValue({ to });
   return { emit, to };
 }
@@ -77,7 +77,7 @@ describe('BUG-01 Cerco — cancelController broadcast', () => {
     await cancelController(mockReq(), res, jest.fn());
 
     expect(mockedCancel).toHaveBeenCalledWith('cons-1', 'client-1');
-    const rooms = to.mock.calls.map((c: string[]) => c[0]).sort();
+    const rooms = to.mock.calls.map((c) => c[0]).sort();
     expect(rooms).toEqual(['consultation:cons-1', 'user:client-1', 'user:vet-9'].sort());
     expect(emit).toHaveBeenCalledTimes(3);
     for (const call of emit.mock.calls) {
@@ -95,7 +95,7 @@ describe('BUG-01 Cerco — cancelController broadcast', () => {
 
     await cancelController(mockReq({ params: { id: 'cons-2' } }), res, jest.fn());
 
-    const rooms = to.mock.calls.map((c: string[]) => c[0]).sort();
+    const rooms = to.mock.calls.map((c) => c[0]).sort();
     expect(rooms).toEqual(['consultation:cons-2', 'user:client-1'].sort());
     expect(rooms.every((r: string) => !r.includes('null') && !r.includes('undefined'))).toBe(true);
     expect(emit).toHaveBeenCalledTimes(2);
@@ -124,9 +124,10 @@ describe('BUG-01 Cerco — cancelController broadcast', () => {
     // Los oyentes filtran por consultation.id y aplican patch por id:
     // el payload debe conservar id + status + participantes.
     const [, payload] = emit.mock.calls[0];
-    expect(payload.id).toBe('cons-3');
-    expect(payload.status).toBe('CANCELLED');
-    expect(payload.clientId).toBe('client-1');
+    expect(payload).toBeDefined();
+    expect(payload!.id).toBe('cons-3');
+    expect(payload!.status).toBe('CANCELLED');
+    expect(payload!.clientId).toBe('client-1');
     expect(res.json.mock.calls[0][0]).toEqual({ success: true, data: updated });
   });
 

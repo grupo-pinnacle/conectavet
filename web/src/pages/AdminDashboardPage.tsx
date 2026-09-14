@@ -79,9 +79,6 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     fetchStats();
-    // La carga inicial de usuarios la hace el efecto debounce (400ms):
-    // llamarla acá también duplicaba GET /admin/users en cada montaje.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchUsers inicial lo dispara el debounce
   }, [fetchStats]);
 
   useEffect(() => {
@@ -113,7 +110,7 @@ export default function AdminDashboardPage() {
       setSelectedUsers(new Set());
       fetchUsers(page, search, roleFilter);
       fetchStats();
-    } catch (error) {
+    } catch {
       alert("Error al borrar usuarios");
     } finally {
       setIsDeleting(false);

@@ -1,4 +1,4 @@
-import type { FC } from "react";
+import { useMemo, type FC } from "react";
 import { X, Printer, ShieldCheck, Stethoscope, PawPrint, Calendar, User, FileText } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import Button from "../Button";
@@ -30,18 +30,39 @@ export const PrescriptionPDFModal: FC<PrescriptionPDFModalProps> = ({
   vetLicense = "M.P. 10.452 / SENASA H-892",
   onClose,
 }) => {
-  const dateStr = new Date(prescription.createdAt || Date.now()).toLocaleDateString("es-AR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+  const createdAtDate = useMemo(
+    () => (prescription.createdAt ? new Date(prescription.createdAt) : new Date()),
+    [prescription.createdAt]
+  );
 
-  const timeStr = new Date(prescription.createdAt || Date.now()).toLocaleTimeString("es-AR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const dateStr = useMemo(
+    () =>
+      createdAtDate.toLocaleDateString("es-AR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }),
+    [createdAtDate]
+  );
 
-  const rxCode = `RX-${prescription.id ? prescription.id.slice(-8).toUpperCase() : "VET" + Date.now().toString().slice(-6)}`;
+  const timeStr = useMemo(
+    () =>
+      createdAtDate.toLocaleTimeString("es-AR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    [createdAtDate]
+  );
+
+  const rxCode = useMemo(
+    () =>
+      `RX-${
+        prescription.id
+          ? prescription.id.slice(-8).toUpperCase()
+          : "VET" + createdAtDate.getTime().toString().slice(-6)
+      }`,
+    [prescription.id, createdAtDate]
+  );
   const qrValidationUrl = `https://conectavet.com/verify-rx?code=${rxCode}`;
 
   const handlePrint = () => {

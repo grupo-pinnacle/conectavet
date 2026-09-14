@@ -248,16 +248,15 @@ export default function MessagesSection() {
 
   // Al cambiar de consulta: hidratá desde la caché (instántaneo) y,
   // si es la primera vez, traé de la API sin pantalla de carga.
+  const activeConsId = activeCons?.id;
   useEffect(() => {
-    if (!activeCons) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- hidratación desde caché
-    setMessages(getCachedMessages(activeCons.id) ?? []);
-    setPrescriptions(getCachedPrescriptions(activeCons.id) ?? []);
-    joinConsultation(activeCons.id);
-    fetchMsgs(activeCons.id);
-    fetchPrescriptions(activeCons.id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- la caché evita refetches; re-sincronizar por objeto causaría bucles
-  }, [activeCons?.id, fetchMsgs, fetchPrescriptions]);
+    if (!activeConsId) return;
+    setMessages(getCachedMessages(activeConsId) ?? []);
+    setPrescriptions(getCachedPrescriptions(activeConsId) ?? []);
+    joinConsultation(activeConsId);
+    fetchMsgs(activeConsId);
+    fetchPrescriptions(activeConsId);
+  }, [activeConsId, fetchMsgs, fetchPrescriptions]);
 
   // Mantené la caché al día mientras el usuario está en esta conversación.
   useEffect(() => {
@@ -327,10 +326,8 @@ export default function MessagesSection() {
   // refresca en segundo plano. Sin polling mientras el socket está vivo.
   useEffect(() => {
     fetchCons();
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch de datos al montar
     setLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetch de datos al montar
-  }, []);
+  }, [fetchCons]);
 
   // Respaldo: solo con el socket caído, refrescá consultas y mensajes.
   useEffect(() => {

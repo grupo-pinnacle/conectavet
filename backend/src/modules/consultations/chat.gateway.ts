@@ -81,7 +81,6 @@ export async function setupChatSocket(httpServer: HttpServer) {
 
   io.on('connection', (socket) => {
     const user = socket.data.user as JwtPayload;
-    // const _limitKey = user.userId || socket.id;
 
     socket.join(`user:${user.userId}`);
 
@@ -124,8 +123,6 @@ export async function setupChatSocket(httpServer: HttpServer) {
           if (!parsed.success) {
             return socket.emit('error', { message: parsed.error.issues[0].message });
           }
-
-          // const _validData = parsed.data;
 
           // Lógica única compartida con REST: participación, estado ACTIVE,
           // rate-limit y dedup durable por clientMsgId.

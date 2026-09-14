@@ -28,7 +28,7 @@ module.exports = {
     {
       ...sharedConfig,
       displayName: 'unit',
-      testMatch: ['**/__tests__/(utils|cache).test.ts'],
+      testMatch: ['**/__tests__/(utils|cache|auth-cookies).test.ts'],
       globalSetup: undefined,
       globalTeardown: undefined,
       coverageDirectory: 'coverage/unit',
@@ -36,7 +36,7 @@ module.exports = {
     {
       ...sharedConfig,
       displayName: 'integration',
-      testMatch: ['**/__tests__/!(utils|cache).test.ts'],
+      testMatch: ['**/__tests__/!(utils|cache|auth-cookies).test.ts'],
       globalSetup: '<rootDir>/jest-global-setup.js',
       globalTeardown: '<rootDir>/jest-global-teardown.js',
       coverageDirectory: 'coverage/integration',

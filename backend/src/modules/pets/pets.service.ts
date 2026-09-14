@@ -125,9 +125,10 @@ export async function deletePet(id: string) {
     if (io) {
       for (const c of result.affectedConsultations) {
         const payload = { id: c.id, status: 'CANCELLED', petId: id };
-        io.to(`consultation:${c.id}`).emit('consultation:updated', payload);
-        if (c.clientId) io.to(`user:${c.clientId}`).emit('consultation:updated', payload);
-        if (c.vetId) io.to(`user:${c.vetId}`).emit('consultation:updated', payload);
+        const rooms: string[] = [`consultation:${c.id}`];
+        if (c.clientId) rooms.push(`user:${c.clientId}`);
+        if (c.vetId) rooms.push(`user:${c.vetId}`);
+        io.to(rooms).emit('consultation:updated', payload);
       }
     }
   } catch {

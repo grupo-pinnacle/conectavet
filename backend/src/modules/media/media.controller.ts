@@ -27,7 +27,6 @@ export function handleUploadErrors(
   err: Error,
   _req: RequestWithUser,
   res: Response,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _next: (e: Error) => unknown
 ) {
   if (err instanceof multer.MulterError) {

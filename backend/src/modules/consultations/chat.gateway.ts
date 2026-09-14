@@ -43,10 +43,10 @@ export async function setupChatSocket(httpServer: HttpServer) {
       const pub = redisClient!;
       const sub = redisClient!.duplicate();
       io.adapter(createAdapter(pub, sub));
-      console.info('[socket] Redis adapter activado (multi-instancia) + rate-limit/dedup distribuido');
+      logger.info('[socket] Redis adapter activado (multi-instancia) + rate-limit/dedup distribuido');
     } catch (err) {
       redisClient = null;
-      console.warn(
+      logger.warn(
         '[socket] REDIS_URL presente pero no se pudo activar el adapter. ' +
           'Usando adapter en memoria (NO apto para >1 instancia).'
       );
@@ -188,7 +188,11 @@ export async function setupChatSocket(httpServer: HttpServer) {
         // Emitir a todas las instancias y dispositivos conectados del usuario destinatario
         io.to(`user:${targetId}`).emit('call:incoming', { consultationId, callerName });
       } catch (err) {
-        console.error('Error al enrutar call:incoming', err);
+        logger.error('Error al enrutar call:incoming', {
+          error: err instanceof Error ? err.message : String(err),
+          consultationId,
+          userId: user.userId,
+        });
       }
     });
 

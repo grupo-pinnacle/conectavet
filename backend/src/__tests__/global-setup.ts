@@ -1,7 +1,8 @@
-const { execSync } = require('child_process');
-const path = require('path');
+import { execSync } from 'child_process';
+import path from 'path';
+import { logger } from '../shared/logger';
 
-module.exports = async () => {
+export default async (): Promise<void> => {
   const backendRoot = path.resolve(__dirname, '..', '..');
 
   const directUrl = process.env.DIRECT_URL || '';
@@ -23,6 +24,9 @@ module.exports = async () => {
       cwd: backendRoot,
     });
   } catch (err) {
-    console.warn('[global-setup] Schema push falló (se ignora si ya existe o hay error de conexión):', err.message);
+    const error = err as Error;
+    logger.warn('[global-setup] Schema push falló (se ignora si ya existe o hay error de conexión)', {
+      error: error?.message,
+    });
   }
 };

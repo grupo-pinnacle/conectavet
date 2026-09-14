@@ -19,6 +19,7 @@ import { authenticate, authorize, RequestWithUser } from './shared/middlewares/a
 import { Prisma, Role } from '@prisma/client';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
+import { parseCookies, getCsrfTokenFromCookie } from './shared/auth-cookies.js';
 
 interface AppRequest extends Request {
   id: string;
@@ -58,18 +59,30 @@ app.use(cors({
 app.use((req: Request, res: Response, next: NextFunction) => {
   const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method);
   const cookieHeader = req.headers.cookie || '';
-  const hasAuthCookie = cookieHeader.includes('access_token=');
+  const cookies = parseCookies(cookieHeader);
+  const hasAuthCookie = !!cookies['access_token'];
   const authHeader = req.headers.authorization || '';
   const hasBearer = authHeader.startsWith('Bearer ');
 
   if (isMutating && hasAuthCookie && !hasBearer) {
     const origin = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : undefined);
-    if (origin) {
-      const allowed = corsOrigins.includes(origin) || corsOrigins.includes('*');
-      if (!allowed) {
-        res.status(403).json({ success: false, message: 'Origen no permitido (CSRF Protection)' });
-        return;
-      }
+    if (!origin) {
+      res.status(403).json({ success: false, message: 'Origen no proporcionado (CSRF Protection)' });
+      return;
+    }
+
+    const allowed = corsOrigins.includes(origin) || corsOrigins.includes('*');
+    if (!allowed) {
+      res.status(403).json({ success: false, message: 'Origen no permitido (CSRF Protection)' });
+      return;
+    }
+
+    const csrfCookie = getCsrfTokenFromCookie(req);
+    const csrfHeader = (req.headers['x-csrf-token'] || req.headers['x-xsrf-token']) as string | undefined;
+
+    if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
+      res.status(403).json({ success: false, message: 'Token CSRF inválido o ausente' });
+      return;
     }
   }
   next();

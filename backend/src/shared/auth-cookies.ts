@@ -1,9 +1,11 @@
 import type { Request, Response } from 'express';
+import { randomBytes } from 'crypto';
 
 const isProd = process.env.NODE_ENV === 'production';
 
 export const ACCESS_COOKIE = 'access_token';
 export const REFRESH_COOKIE = 'refresh_token';
+export const CSRF_COOKIE = 'csrf_token';
 
 const baseCookieOpts = {
   httpOnly: true,
@@ -12,17 +14,33 @@ const baseCookieOpts = {
   path: '/',
 };
 
-export function setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
+const csrfCookieOpts = {
+  httpOnly: false,
+  secure: isProd,
+  sameSite: 'lax' as const,
+  path: '/',
+};
+
+export function generateCsrfToken(): string {
+  return randomBytes(32).toString('hex');
+}
+
+export function setAuthCookies(res: Response, accessToken: string, refreshToken: string, csrfToken?: string) {
+  const token = csrfToken || generateCsrfToken();
   res.cookie(ACCESS_COOKIE, accessToken, { ...baseCookieOpts, maxAge: 2 * 60 * 60 * 1000 });
   res.cookie(REFRESH_COOKIE, refreshToken, { ...baseCookieOpts, maxAge: 7 * 24 * 60 * 60 * 1000 });
+  res.cookie(CSRF_COOKIE, token, { ...csrfCookieOpts, maxAge: 7 * 24 * 60 * 60 * 1000 });
+  res.cookie('XSRF-TOKEN', token, { ...csrfCookieOpts, maxAge: 7 * 24 * 60 * 60 * 1000 });
 }
 
 export function clearAuthCookies(res: Response) {
   res.clearCookie(ACCESS_COOKIE, baseCookieOpts);
   res.clearCookie(REFRESH_COOKIE, baseCookieOpts);
+  res.clearCookie(CSRF_COOKIE, csrfCookieOpts);
+  res.clearCookie('XSRF-TOKEN', csrfCookieOpts);
 }
 
-function parseCookies(header?: string): Record<string, string> {
+export function parseCookies(header?: string): Record<string, string> {
   const out: Record<string, string> = {};
   if (!header) return out;
   for (const part of header.split(';')) {
@@ -41,4 +59,9 @@ export function getAccessTokenFromCookie(req: Request): string | undefined {
 
 export function getRefreshTokenFromCookie(req: Request): string | undefined {
   return parseCookies(req.headers.cookie)[REFRESH_COOKIE];
+}
+
+export function getCsrfTokenFromCookie(req: Request): string | undefined {
+  const cookies = parseCookies(req.headers.cookie);
+  return cookies[CSRF_COOKIE] || cookies['XSRF-TOKEN'];
 }

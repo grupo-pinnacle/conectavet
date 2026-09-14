@@ -2,6 +2,9 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
 process.env.EXPO_PUSH_DISABLED = 'true';
+if (!process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = 'test-secret';
+}
 
 (() => {
   const tmpFile = join(__dirname, '..', '..', '.jest-schema');

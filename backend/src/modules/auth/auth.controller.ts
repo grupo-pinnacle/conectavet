@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { RequestWithUser } from '../../shared/middlewares/auth.middleware.js';
-import { setAuthCookies, clearAuthCookies, getRefreshTokenFromCookie } from '../../shared/auth-cookies.js';
+import { setAuthCookies, clearAuthCookies, getRefreshTokenFromCookie, getCsrfTokenFromCookie, generateCsrfToken, CSRF_COOKIE } from '../../shared/auth-cookies.js';
 import { register, login, logout, refreshAccessToken, verifyEmail, requestPasswordReset, resetPassword } from './auth.service.js';
 import { asyncHandler } from "../../shared/middlewares/async.middleware.js";
 export const registerController = asyncHandler(async (req: Request, res: Response) => {
@@ -53,4 +53,22 @@ if (!token) {
     }
 await verifyEmail(token);
 return res.status(200).json({ success: true, message: 'Email verificado. Ya podés iniciar sesión.' });
+});
+
+export const csrfController = asyncHandler(async (req: Request, res: Response) => {
+  let token = getCsrfTokenFromCookie(req);
+  if (!token) {
+    token = generateCsrfToken();
+  }
+  const isProd = process.env.NODE_ENV === 'production';
+  const csrfCookieOpts = {
+    httpOnly: false,
+    secure: isProd,
+    sameSite: 'lax' as const,
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  };
+  res.cookie(CSRF_COOKIE, token, csrfCookieOpts);
+  res.cookie('XSRF-TOKEN', token, csrfCookieOpts);
+  return res.status(200).json({ success: true, csrfToken: token });
 });

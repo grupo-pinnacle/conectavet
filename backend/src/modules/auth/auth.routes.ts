@@ -11,6 +11,7 @@ import {
   forgotPasswordController,
   resetPasswordController,
   verifyEmailController,
+  csrfController,
 } from './auth.controller';
 import { getMeController } from '../users/users.controller';
 
@@ -26,6 +27,7 @@ if (REFRESH_ENABLED) {
 
 router.post('/logout', authenticate, logoutController);
 router.get('/me', authenticate, getMeController);
+router.get('/csrf', csrfController);
 
 // S-04: anti-abuse en forgot-password. Límite estricto por IP + email para
 // evitar enumeración masiva y "notification fatigue" (spam de emails).

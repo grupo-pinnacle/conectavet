@@ -6,6 +6,20 @@ export function parsePagination(query: { page?: string; limit?: string }, maxLim
   return { page, limit, skip: (page - 1) * limit };
 }
 
+export function parseMinRating(val: unknown): number | undefined {
+  if (typeof val !== 'string' && typeof val !== 'number') {
+    return undefined;
+  }
+  if (typeof val === 'string' && val.trim() === '') {
+    return undefined;
+  }
+  const num = Number(val);
+  if (Number.isNaN(num) || !Number.isFinite(num)) {
+    return undefined;
+  }
+  return Math.max(0, Math.min(5, num));
+}
+
 export function excludePassword<T extends Record<string, unknown>>(obj: T): Omit<T, 'password'> {
   const { password, ...rest } = obj;
   return rest as Omit<T, 'password'>;

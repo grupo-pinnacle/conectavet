@@ -16,7 +16,7 @@ import { prisma } from './shared/prisma.js';
 import { logger } from './shared/logger.js';
 import { AppError } from './shared/errors/index.js';
 import { authenticate, authorize, RequestWithUser } from './shared/middlewares/auth.middleware.js';
-import { Role } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 
@@ -100,7 +100,7 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
 app.get('/health', async (_req: Request, res: Response) => {
   try {
     await Promise.race([
-      prisma.$queryRaw`SELECT 1`,
+      prisma.$queryRaw(Prisma.sql`SELECT 1`),
       new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000)),
     ]);
     res.json({

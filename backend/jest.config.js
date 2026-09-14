@@ -28,7 +28,7 @@ module.exports = {
     {
       ...sharedConfig,
       displayName: 'unit',
-      testMatch: ['**/__tests__/(utils|cache).test.ts'],
+      testMatch: ['**/__tests__/(utils|cache|users-batch).test.ts'],
       globalSetup: undefined,
       globalTeardown: undefined,
       coverageDirectory: 'coverage/unit',

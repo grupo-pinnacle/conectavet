@@ -1,5 +1,6 @@
 import { parsePagination, parseMinRating, excludePassword, asyncHandler } from '../shared/utils';
-import { AppError, NotFoundError, ForbiddenError, ConflictError } from '../shared/errors';
+import { AppError, NotFoundError, ForbiddenError, ConflictError, handleError } from '../shared/errors';
+import { logger } from '../shared/logger';
 import { Request, Response } from 'express';
 
 describe('parsePagination', () => {
@@ -155,5 +156,103 @@ describe('AppError classes', () => {
   test('ConflictError tiene statusCode 409', () => {
     const err = new ConflictError();
     expect(err.statusCode).toBe(409);
+  });
+});
+
+describe('handleError', () => {
+  let mockRes: Response;
+  let loggerErrorSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis(),
+    } as unknown as Response;
+
+    loggerErrorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  test('maneja AppError devolviendo el statusCode y mensaje correspondiente sin loguear error', () => {
+    const error = new NotFoundError('Recurso no encontrado');
+
+    handleError(error, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(404);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      success: false,
+      message: 'Recurso no encontrado',
+    });
+    expect(loggerErrorSpy).not.toHaveBeenCalled();
+  });
+
+  test('maneja AppError genérico con código de estado personalizado', () => {
+    const error = new AppError('Acceso denegado', 402);
+
+    handleError(error, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(402);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      success: false,
+      message: 'Acceso denegado',
+    });
+    expect(loggerErrorSpy).not.toHaveBeenCalled();
+  });
+
+  test('maneja Error estándar con contexto por defecto logueando y devolviendo 500', () => {
+    const error = new Error('Database connection failed');
+
+    handleError(error, mockRes);
+
+    expect(loggerErrorSpy).toHaveBeenCalledWith(
+      'Error en controller',
+      expect.objectContaining({
+        message: 'Database connection failed',
+        stack: expect.any(String),
+      })
+    );
+    expect(mockRes.status).toHaveBeenCalledWith(500);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      success: false,
+      message: 'Error interno del servidor',
+    });
+  });
+
+  test('maneja Error estándar con contexto personalizado', () => {
+    const error = new Error('Failed to create user');
+
+    handleError(error, mockRes, 'users-controller');
+
+    expect(loggerErrorSpy).toHaveBeenCalledWith(
+      'Error en users-controller',
+      expect.objectContaining({
+        message: 'Failed to create user',
+      })
+    );
+    expect(mockRes.status).toHaveBeenCalledWith(500);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      success: false,
+      message: 'Error interno del servidor',
+    });
+  });
+
+  test('maneja errores no estándar (null, undefined, string, objeto sin stack)', () => {
+    handleError('Error como string', mockRes, 'string-context');
+
+    expect(loggerErrorSpy).toHaveBeenCalledWith(
+      'Error en string-context',
+      expect.objectContaining({
+        message: undefined,
+        stack: undefined,
+      })
+    );
+    expect(mockRes.status).toHaveBeenCalledWith(500);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      success: false,
+      message: 'Error interno del servidor',
+    });
   });
 });

@@ -357,42 +357,79 @@ export async function getAdminStats() {
 }
 export async function batchDeleteUsers(adminId: string, userIds: string[]) {
   const users = await prisma.user.findMany({ where: { id: { in: userIds } } });
-  
-  for (const user of users) {
-    if (user.id === adminId) continue;
+  const targetUsers = users.filter((user) => user.id !== adminId);
 
-    const hasConsultations = await prisma.consultation.findFirst({
-      where: {
-        OR: [{ clientId: user.id }, { vetId: user.id }]
-      }
+  if (targetUsers.length === 0) return;
+
+  const targetUserIds = targetUsers.map((user) => user.id);
+
+  const consultations = await prisma.consultation.findMany({
+    where: {
+      OR: [
+        { clientId: { in: targetUserIds } },
+        { vetId: { in: targetUserIds } },
+      ],
+    },
+    select: {
+      clientId: true,
+      vetId: true,
+    },
+  });
+
+  const usersWithConsultations = new Set<string>();
+  for (const c of consultations) {
+    if (c.clientId) usersWithConsultations.add(c.clientId);
+    if (c.vetId) usersWithConsultations.add(c.vetId);
+  }
+
+  const softDeleteUserIds: string[] = [];
+  const hardDeleteUserIds: string[] = [];
+
+  for (const user of targetUsers) {
+    if (usersWithConsultations.has(user.id)) {
+      softDeleteUserIds.push(user.id);
+    } else {
+      hardDeleteUserIds.push(user.id);
+    }
+  }
+
+  if (softDeleteUserIds.length > 0) {
+    await prisma.pushToken.deleteMany({
+      where: { userId: { in: softDeleteUserIds } },
     });
 
-    if (hasConsultations) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          email: 'deleted-' + user.id + '@anonymized.com',
-          firstName: 'Usuario',
-          lastName: 'Eliminado',
-          deletedAt: new Date(),
-          isOnline: false,
-          tokenVersion: { increment: 1 },
-          pushTokens: { deleteMany: {} }
-        }
-      });
-    } else {
-      await prisma.user.delete({ where: { id: user.id } });
-    }
+    const now = new Date();
+    await Promise.all(
+      softDeleteUserIds.map((id) =>
+        prisma.user.update({
+          where: { id },
+          data: {
+            email: 'deleted-' + id + '@anonymized.com',
+            firstName: 'Usuario',
+            lastName: 'Eliminado',
+            deletedAt: now,
+            isOnline: false,
+            tokenVersion: { increment: 1 },
+          },
+        })
+      )
+    );
+  }
 
-    await prisma.auditLog.create({
-      data: {
-        adminId,
-        action: 'DELETE_USER',
-        targetId: user.id,
-        details: { softDeleted: !!hasConsultations }
-      }
+  if (hardDeleteUserIds.length > 0) {
+    await prisma.user.deleteMany({
+      where: { id: { in: hardDeleteUserIds } },
     });
   }
+
+  await prisma.auditLog.createMany({
+    data: targetUsers.map((user) => ({
+      adminId,
+      action: 'DELETE_USER',
+      targetId: user.id,
+      details: { softDeleted: usersWithConsultations.has(user.id) },
+    })),
+  });
 }
 
 export async function listAuditLogs(page = 1, limit = 50) {

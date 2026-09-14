@@ -2,6 +2,9 @@
  * BUG-01 Cerco — cancelController: broadcast triple + contrato REST/socket.
  * Unit puro con mocks: no toca DB, Redis ni sockets reales.
  */
+import { Response } from 'express';
+import { RequestWithUser } from '../shared/middlewares/auth.middleware';
+import { JwtPayload } from '../shared/types';
 import { cancelController } from '../modules/consultations/consultations.controller';
 import { cancelConsultation } from '../modules/consultations/consultations.service';
 import { getIO } from '../modules/consultations/chat.gateway';
@@ -21,20 +24,36 @@ jest.mock('../modules/notifications', () => ({
 const mockedCancel = cancelConsultation as jest.Mock;
 const mockedGetIO = getIO as jest.Mock;
 
-function mockRes() {
-  const res: any = {};
+interface MockResponse extends Response {
+  status: jest.Mock;
+  json: jest.Mock;
+}
+
+interface MockRequestOptions {
+  user?: Partial<JwtPayload>;
+  params?: Record<string, string>;
+  body?: Record<string, unknown>;
+}
+
+function mockRes(): MockResponse {
+  const res = {} as MockResponse;
   res.status = jest.fn().mockReturnValue(res);
   res.json = jest.fn().mockReturnValue(res);
   return res;
 }
 
-function mockReq(overrides: any = {}) {
+function mockReq(overrides: MockRequestOptions = {}): RequestWithUser {
   return {
-    user: { userId: 'client-1', role: 'CLIENT' },
-    params: { id: 'cons-1' },
-    body: {},
-    ...overrides,
-  } as any;
+    user: {
+      userId: 'client-1',
+      email: 'client@example.com',
+      role: 'CLIENT',
+      tokenVersion: 1,
+      ...overrides.user,
+    },
+    params: { id: 'cons-1', ...overrides.params },
+    body: { ...overrides.body },
+  } as unknown as RequestWithUser;
 }
 
 function mockIO() {
@@ -58,7 +77,7 @@ describe('BUG-01 Cerco — cancelController broadcast', () => {
     await cancelController(mockReq(), res, jest.fn());
 
     expect(mockedCancel).toHaveBeenCalledWith('cons-1', 'client-1');
-    const rooms = to.mock.calls.map((c: any[]) => c[0]).sort();
+    const rooms = to.mock.calls.map((c: string[]) => c[0]).sort();
     expect(rooms).toEqual(['consultation:cons-1', 'user:client-1', 'user:vet-9'].sort());
     expect(emit).toHaveBeenCalledTimes(3);
     for (const call of emit.mock.calls) {
@@ -76,7 +95,7 @@ describe('BUG-01 Cerco — cancelController broadcast', () => {
 
     await cancelController(mockReq({ params: { id: 'cons-2' } }), res, jest.fn());
 
-    const rooms = to.mock.calls.map((c: any[]) => c[0]).sort();
+    const rooms = to.mock.calls.map((c: string[]) => c[0]).sort();
     expect(rooms).toEqual(['consultation:cons-2', 'user:client-1'].sort());
     expect(rooms.every((r: string) => !r.includes('null') && !r.includes('undefined'))).toBe(true);
     expect(emit).toHaveBeenCalledTimes(2);

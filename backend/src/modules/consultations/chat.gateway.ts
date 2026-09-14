@@ -125,8 +125,6 @@ export async function setupChatSocket(httpServer: HttpServer) {
             return socket.emit('error', { message: parsed.error.issues[0].message });
           }
 
-          // const _validData = parsed.data;
-
           // Lógica única compartida con REST: participación, estado ACTIVE,
           // rate-limit y dedup durable por clientMsgId.
           const result = await sendConsultationMessage({

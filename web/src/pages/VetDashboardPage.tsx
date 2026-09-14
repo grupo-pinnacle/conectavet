@@ -56,7 +56,11 @@ export default function VetDashboardPage() {
         <div className="mb-8">
           <Logo size="lg" />
         </div>
-        <div className="max-w-md rounded-2xl bg-white p-8 shadow-card">
+        <div className="max-w-md rounded-2xl border border-border bg-white p-8 shadow-overlay">
+          <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-widest text-amber-700 ring-1 ring-inset ring-amber-200">
+            <span className="h-2 w-2 rounded-full bg-amber-500" />
+            En revisión
+          </span>
           <h1 className="text-xl font-bold text-ink">Cuenta en revisión</h1>
           <p className="mt-4 text-sm text-slate-600">
             Tu cuenta de veterinario se ha creado exitosamente y está pendiente de aprobación por un administrador.
@@ -64,7 +68,7 @@ export default function VetDashboardPage() {
           </p>
           <button
             onClick={handleLogout}
-            className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-teal-50 px-4 py-3 text-sm font-bold text-teal-700 transition-colors hover:bg-teal-100"
+            className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-700 to-green-600 px-4 py-3 text-sm font-bold text-white shadow-md shadow-teal-600/25 transition-all duration-fast hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.97]"
           >
             <LogOut className="h-4 w-4" /> Cerrar sesión
           </button>
@@ -88,8 +92,12 @@ export default function VetDashboardPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-surface font-sans md:flex-row">
-      <aside className="hidden w-[260px] flex-col border-r border-border bg-white md:flex">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-surface font-sans md:flex-row">
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute -top-40 -right-40 h-[30rem] w-[30rem] rounded-full bg-teal-200/30 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 h-[26rem] w-[26rem] rounded-full bg-green-200/30 blur-3xl" />
+      </div>
+      <aside className="relative z-10 hidden w-[260px] flex-col border-r border-border bg-white md:flex">
         <div className="flex h-16 items-center px-6">
           <Logo size="sm" />
         </div>
@@ -101,16 +109,16 @@ export default function VetDashboardPage() {
               <button
                 key={item.key}
                 onClick={() => setActiveTab(item.key)}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] font-medium transition-colors duration-fast ease-ui ${
+                className={`group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-all duration-fast ease-ui ${
                   activeTab === item.key
-                    ? "bg-teal-50 text-teal-700"
+                    ? "bg-gradient-to-r from-teal-700 to-green-600 text-white shadow-md shadow-teal-600/25"
                     : "text-slate-500 hover:bg-slate-50 hover:text-ink"
                 }`}
               >
-                <Icon className="w-4 h-4 flex-shrink-0" />
+                <Icon className={`h-4 w-4 flex-shrink-0 ${activeTab === item.key ? "text-white" : "text-slate-400 group-hover:text-teal-700"}`} />
                 <span className="flex-1 text-left">{item.label}</span>
                 {badge && (
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-danger text-[10px] font-bold text-white shadow-sm">
+                  <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white shadow-sm ${activeTab === item.key ? "bg-white/25" : "bg-danger"}`}>
                     {badge}
                   </span>
                 )}
@@ -120,7 +128,7 @@ export default function VetDashboardPage() {
         </nav>
         <div className="border-t border-border px-4 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-700 text-sm font-bold text-white">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-teal-600 to-green-500 text-sm font-bold text-white shadow-md shadow-teal-600/25">
               {user?.name?.charAt(0) || "D"}
             </div>
             <div className="flex-1 truncate">
@@ -172,7 +180,7 @@ export default function VetDashboardPage() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
+      <main className="relative z-10 flex-1 overflow-y-auto pb-20 md:pb-0">
         <div className="mx-auto max-w-6xl px-6 py-8 md:px-10">
           {renderSection()}
         </div>

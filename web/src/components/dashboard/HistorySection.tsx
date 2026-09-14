@@ -201,8 +201,10 @@ export default function HistorySection() {
       )}
 
       {filteredCompleted.length === 0 ? (
-        <div className="rounded-xl border border-border bg-white p-10 text-center shadow-sm">
-          <ClipboardList className="mx-auto h-10 w-10 text-teal-700" />
+        <div className="rounded-2xl border border-border bg-white p-10 text-center shadow-raised">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-teal-600 to-green-500 shadow-md shadow-teal-600/25">
+            <ClipboardList className="h-6 w-6 text-white" />
+          </div>
           <p className="mt-4 text-lg font-bold text-ink">Aún no hay historial</p>
           <p className="text-sm text-slate-500">
             Las consultas finalizadas aparecerán en una línea de tiempo cronológica con sus recetas y diagnósticos.
@@ -213,13 +215,13 @@ export default function HistorySection() {
           {filteredCompleted.map((c) => (
             <div
               key={c.id}
-              className="relative rounded-xl border border-border bg-white p-5 shadow-sm transition-all hover:shadow-md"
+              className="relative rounded-2xl border border-border bg-white p-5 shadow-raised transition-all duration-fast hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-overlay"
             >
               {/* Timeline marker node */}
-              <div className="absolute -left-6 top-5 flex h-4 w-4 -translate-x-1/2 items-center justify-center rounded-full border-2 border-white bg-teal-700 shadow" />
+              <div className="absolute -left-6 top-5 flex h-4 w-4 -translate-x-1/2 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-teal-600 to-green-500 shadow" />
               <div className="mb-3 flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-50 text-sm font-bold text-teal-700">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-teal-600 to-green-500 text-sm font-bold text-white shadow-md shadow-teal-600/25">
                     {c.pet?.name?.charAt(0) || "?"}
                   </div>
                   <div>

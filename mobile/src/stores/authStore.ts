@@ -42,9 +42,32 @@ export const useAuthStore = create<AuthState>((set) => ({
       const me = await api.get<User>('/auth/me');
       set({ user: me, isAuthenticated: true, isHydrated: true });
     } catch (e) {
-      // El interceptor normaliza el error de la API en ApiError (con .status),
-      // no en un AxiosError con .response.status. Por eso chequeamos la instancia.
       if (e instanceof ApiError && e.status === 401) {
+        // El access token expiró o fue revocado. Antes de cerrar la sesión,
+        // intentamos refrescar una vez con el refresh token (7d) de SecureStore.
+        try {
+          const refreshToken = await secureStorage.getRefreshToken();
+          if (!refreshToken) {
+            throw new ApiError('Sin refresh token', 'NO_REFRESH_TOKEN', 400);
+          }
+          const authData = await api.post<AuthResponse>('/auth/refresh', {
+            refreshToken,
+            platform: 'mobile',
+          });
+          await secureStorage.setAccessToken(authData.accessToken);
+          if (authData.refreshToken) {
+            await secureStorage.setRefreshToken(authData.refreshToken);
+          }
+          const me = await api.get<User>('/auth/me');
+          set({ user: me, isAuthenticated: true, isHydrated: true });
+          return;
+        } catch (refreshErr) {
+          const refreshStatus = refreshErr instanceof ApiError ? refreshErr.status : 0;
+          if (refreshStatus >= 500 || refreshStatus === 0) {
+            set({ isHydrated: true });
+            return;
+          }
+        }
         await secureStorage.clearAll();
         set({ user: null, isAuthenticated: false });
       }

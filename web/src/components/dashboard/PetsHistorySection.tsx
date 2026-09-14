@@ -15,7 +15,7 @@ export default function PetsHistorySection({ onAgendarCita }: { onAgendarCita?: 
         <button
           onClick={() => setView("pets")}
           className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
-            view === "pets" ? "bg-teal-700 text-white shadow-subtle" : "text-slate-500 hover:text-ink"
+            view === "pets" ? "bg-gradient-to-r from-teal-700 to-green-600 text-white shadow-md shadow-teal-600/25" : "text-slate-500 hover:text-ink"
           }`}
         >
           <PawPrint className="h-4 w-4" /> Mascotas
@@ -23,7 +23,7 @@ export default function PetsHistorySection({ onAgendarCita }: { onAgendarCita?: 
         <button
           onClick={() => setView("history")}
           className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
-            view === "history" ? "bg-teal-700 text-white shadow-subtle" : "text-slate-500 hover:text-ink"
+            view === "history" ? "bg-gradient-to-r from-teal-700 to-green-600 text-white shadow-md shadow-teal-600/25" : "text-slate-500 hover:text-ink"
           }`}
         >
           <ClipboardList className="h-4 w-4" /> Historial clínico

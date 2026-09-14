@@ -33,9 +33,10 @@ function Navbar() {
       </div>
       <Link
         to="/login"
-        className="rounded-lg bg-teal-700 px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-teal-800 active:scale-[0.97]"
+        className="group relative inline-flex items-center justify-center overflow-hidden rounded-lg bg-gradient-to-r from-teal-700 via-teal-600 to-green-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-teal-600/25 ring-1 ring-inset ring-white/20 transition-all duration-fast hover:from-teal-800 hover:via-teal-700 hover:to-green-700 hover:shadow-lg hover:shadow-teal-600/35 hover:-translate-y-0.5 active:scale-[0.97]"
       >
-        Iniciar sesión
+        <span aria-hidden className="pointer-events-none absolute inset-0 -translate-x-[150%] skew-x-[-20deg] bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ease-ui group-hover:translate-x-[150%] motion-reduce:hidden" />
+        <span className="relative">Iniciar sesión</span>
       </Link>
     </nav>
   );
@@ -44,8 +45,11 @@ function Navbar() {
 function Hero() {
   return (
     <section id="inicio" className="relative overflow-hidden bg-white pt-20">
-      <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-bl from-teal-50/50 to-transparent pointer-events-none" />
-      <div className="mx-auto grid max-w-7xl items-center gap-12 px-6 py-16 md:grid-cols-2 md:px-12 md:py-24">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-32 right-0 h-96 w-96 rounded-full bg-teal-100/60 blur-3xl" />
+        <div className="absolute -left-32 bottom-0 h-80 w-80 rounded-full bg-green-100/60 blur-3xl" />
+      </div>
+      <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-6 py-16 md:grid-cols-2 md:px-12 md:py-24">
         <div className="z-10">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-success-bg px-3 py-1 text-xs font-bold text-success-dark">
             <span className="h-2 w-2 rounded-full bg-success" />
@@ -54,7 +58,7 @@ function Hero() {
           <h1 className="mb-6 text-4xl font-extrabold leading-tight text-ink md:text-5xl tracking-tight">
             Cuidado veterinario
             <br />
-            <span className="text-teal-700">siempre al alcance</span>
+            <span className="bg-gradient-to-r from-teal-600 via-teal-700 to-green-600 bg-clip-text text-transparent">siempre al alcance</span>
           </h1>
           <p className="mb-10 max-w-lg text-body leading-relaxed text-slate-600">
             Conectá con veterinarios matriculados por chat y videollamada en tiempo real. Historial clínico digital, recetas médicas y seguimiento profesional en una sola plataforma.
@@ -62,29 +66,35 @@ function Hero() {
           <div className="flex flex-col gap-4 sm:flex-row">
             <Link
               to="/register"
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-700 px-8 py-4 font-bold text-white shadow-lg shadow-teal-700/20 transition-all hover:bg-teal-800 hover:-translate-y-0.5 active:scale-[0.97]"
+              className="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-lg bg-gradient-to-r from-teal-700 via-teal-600 to-green-600 px-8 py-4 font-bold text-white shadow-lg shadow-teal-600/30 ring-1 ring-inset ring-white/20 transition-all duration-fast hover:from-teal-800 hover:via-teal-700 hover:to-green-700 hover:shadow-xl hover:shadow-teal-600/40 hover:-translate-y-0.5 active:scale-[0.97]"
             >
-              Comenzar ahora <ChevronRight className="w-4 h-4" />
+              <span aria-hidden className="pointer-events-none absolute inset-0 -translate-x-[150%] skew-x-[-20deg] bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ease-ui group-hover:translate-x-[150%] motion-reduce:hidden" />
+              <span className="relative whitespace-nowrap">Comenzar ahora</span>
+              <ChevronRight className="relative h-4 w-4 flex-shrink-0" />
             </Link>
             <a
               href="#servicios"
-              className="inline-flex items-center justify-center rounded-lg border border-border bg-white px-8 py-4 font-bold text-ink transition-all hover:bg-slate-50 active:scale-[0.97]"
+              className="group relative inline-flex items-center justify-center overflow-hidden rounded-lg border border-border bg-white px-8 py-4 font-bold text-ink shadow-sm transition-all duration-fast hover:-translate-y-0.5 hover:border-teal-300 hover:text-teal-700 hover:shadow-md active:scale-[0.97]"
             >
               Ver servicios
             </a>
           </div>
         </div>
         <div className="relative">
-          <div className="absolute -top-12 -right-12 h-64 w-64 rounded-full bg-teal-100/30 blur-3xl" />
-          <div className="relative z-10 overflow-hidden rounded-2xl border border-border bg-white shadow-overlay">
-            <div className="flex aspect-[4/3] items-center justify-center bg-gradient-to-br from-teal-50 to-green-50 p-8">
+          <div className="absolute -top-12 -right-12 h-64 w-64 rounded-full bg-teal-100/40 blur-3xl" />
+          <div className="absolute -bottom-8 -left-8 h-48 w-48 rounded-full bg-green-100/40 blur-3xl" />
+          <div className="relative z-10 overflow-hidden rounded-3xl border border-white bg-white/70 shadow-overlay backdrop-blur-sm">
+            <div className="flex aspect-[4/3] items-center justify-center bg-gradient-to-br from-teal-50 via-white to-green-50 p-8">
               <div className="text-center">
-                <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-success-bg">
-                  <Heart className="w-10 h-10 text-success" />
+                <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-teal-600 to-green-500 shadow-lg shadow-teal-600/25">
+                  <Heart className="h-10 w-10 text-white" />
                 </div>
                 <p className="text-lg font-bold text-ink">Cuidado veterinario</p>
                 <p className="text-sm text-slate-500">desde la comodidad de tu hogar</p>
               </div>
+            </div>
+            <div className="absolute bottom-4 left-4 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-teal-700 shadow-md ring-1 ring-inset ring-border">
+              24/7 disponible
             </div>
           </div>
         </div>
@@ -215,13 +225,15 @@ function CTASection() {
         <div className="relative z-10 flex flex-col justify-center gap-4 sm:flex-row">
           <Link
             to="/register"
-            className="inline-flex items-center gap-2 rounded-lg bg-white px-10 py-4 font-bold text-teal-700 shadow-xl transition-all hover:scale-105 active:scale-[0.98]"
+            className="group relative inline-flex items-center gap-2 overflow-hidden rounded-lg bg-white px-10 py-4 font-bold text-teal-700 shadow-xl transition-all duration-fast hover:scale-105 hover:shadow-2xl active:scale-[0.98]"
           >
-            Comenzar ahora <ChevronRight className="w-4 h-4" />
+            <span aria-hidden className="pointer-events-none absolute inset-0 -translate-x-[150%] skew-x-[-20deg] bg-gradient-to-r from-transparent via-teal-200/60 to-transparent transition-transform duration-700 ease-ui group-hover:translate-x-[150%] motion-reduce:hidden" />
+            <span className="relative whitespace-nowrap">Comenzar ahora</span>
+            <ChevronRight className="relative h-4 w-4 flex-shrink-0" />
           </Link>
           <a
             href="#servicios"
-            className="inline-flex items-center rounded-lg border border-white/30 px-10 py-4 font-bold text-white transition-all hover:bg-white/10"
+            className="group relative inline-flex items-center overflow-hidden rounded-lg border border-white/30 px-10 py-4 font-bold text-white transition-all duration-fast hover:-translate-y-0.5 hover:bg-white/10 hover:border-white/50 active:scale-[0.97]"
           >
             Ver servicios
           </a>

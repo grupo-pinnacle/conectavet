@@ -74,6 +74,7 @@ api.interceptors.response.use(
 
       original._retry = true;
       isRefreshing = true;
+      const hadToken = !!accessToken;
 
       try {
         // El refresh token vive en cookie HttpOnly; el backend lo lee de ahí.
@@ -91,7 +92,7 @@ api.interceptors.response.use(
         return api(original);
       } catch {
         onTokenRefreshed(null);
-        if (!window.location.pathname.startsWith("/login")) {
+        if (hadToken && !window.location.pathname.startsWith("/login")) {
           window.location.href = "/login";
         }
         return Promise.reject(error);

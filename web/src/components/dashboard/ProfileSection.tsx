@@ -128,10 +128,10 @@ export default function ProfileSection() {
 
       {/* Tarjetas de métricas rápidas */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-border bg-white p-5 shadow-raised transition-all duration-fast hover:-translate-y-0.5 hover:shadow-overlay">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Mascotas Vinculadas</span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-600 to-teal-400 text-white shadow-md shadow-teal-600/20">
               <PawPrint className="h-5 w-5" />
             </div>
           </div>
@@ -139,10 +139,10 @@ export default function ProfileSection() {
           <p className="mt-1 text-xs text-slate-500">Pacientes con historial clínico activo</p>
         </div>
 
-        <div className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-border bg-white p-5 shadow-raised transition-all duration-fast hover:-translate-y-0.5 hover:shadow-overlay">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Estado Profesional</span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-400 text-white shadow-md shadow-emerald-500/20">
               <ShieldCheck className="h-5 w-5" />
             </div>
           </div>
@@ -152,10 +152,10 @@ export default function ProfileSection() {
           <p className="mt-1 text-xs text-slate-500">Conforme Ley 25.326 de Protección de Datos</p>
         </div>
 
-        <div className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-border bg-white p-5 shadow-raised transition-all duration-fast hover:-translate-y-0.5 hover:shadow-overlay">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Antigüedad</span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-400 text-white shadow-md shadow-indigo-500/20">
               <Calendar className="h-5 w-5" />
             </div>
           </div>
@@ -167,7 +167,7 @@ export default function ProfileSection() {
       </div>
 
       {/* Contenido principal: Ver / Editar */}
-      <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm">
+      <div className="rounded-2xl border border-border bg-white p-6 sm:p-8 shadow-raised">
         <div className="mb-6 flex items-center justify-between border-b border-slate-100 pb-4">
           <div>
             <h3 className="text-lg font-bold text-slate-900">

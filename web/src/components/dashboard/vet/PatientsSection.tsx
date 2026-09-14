@@ -75,9 +75,9 @@ export default function PatientsSection() {
             <button
               key={s}
               onClick={() => setFilterSpecies(s)}
-              className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+              className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-all ${
                 filterSpecies === s
-                  ? "bg-teal-700 text-white"
+                  ? "bg-gradient-to-r from-teal-700 to-green-600 text-white shadow-md shadow-teal-600/25"
                   : "border border-border bg-white text-slate-500 hover:bg-slate-100"
               }`}
             >
@@ -88,8 +88,10 @@ export default function PatientsSection() {
       </div>
 
       {patients.length === 0 ? (
-        <div className="rounded-xl border border-border bg-white p-10 text-center shadow-sm">
-          <PawPrint className="mx-auto h-10 w-10 text-teal-700" />
+        <div className="rounded-2xl border border-border bg-white p-10 text-center shadow-raised">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-teal-600 to-green-500 shadow-md shadow-teal-600/25">
+            <PawPrint className="h-6 w-6 text-white" />
+          </div>
           <p className="mt-4 text-lg font-bold text-ink">Aún no tenés pacientes</p>
           <p className="text-sm text-slate-500">
             Cuando tomes consultas, los pacientes aparecerán acá.
@@ -101,7 +103,7 @@ export default function PatientsSection() {
             <button
               key={p.id}
               onClick={() => { setSelectedPetId(p.id); setSelectedPetName(p.name); }}
-              className="rounded-xl border border-border bg-white p-5 shadow-sm transition-all text-left hover:shadow-md hover:border-teal-200 hover:-translate-y-0.5"
+              className="rounded-2xl border border-border bg-white p-5 shadow-raised transition-all duration-fast text-left hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-overlay"
             >
               <div className="mb-4 flex items-center gap-4">
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-2xl">

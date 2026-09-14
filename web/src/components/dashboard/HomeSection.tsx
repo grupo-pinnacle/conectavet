@@ -103,15 +103,17 @@ export default function HomeSection({ onNavigate }: HomeSectionProps) {
       ) : (
         <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
           {[
-            { label: "Mascotas", value: String(petsCount), color: "text-teal-700", icon: PawPrint },
-            { label: "Consultas activas", value: String(activeConsultations.length), color: activeConsultations.length > 0 ? "text-success font-extrabold" : "text-slate-700", icon: MessageCircle },
+            { label: "Mascotas", value: String(petsCount), color: "text-teal-700", gradient: "from-teal-600 to-teal-500", icon: PawPrint },
+            { label: "Consultas activas", value: String(activeConsultations.length), color: activeConsultations.length > 0 ? "text-success font-extrabold" : "text-slate-700", gradient: activeConsultations.length > 0 ? "from-green-600 to-green-500" : "from-slate-500 to-slate-400", icon: MessageCircle },
           ].map((stat) => (
-            <div key={stat.label} className="rounded-xl border border-slate-100 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-shadow hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
+            <div key={stat.label} className="rounded-2xl border border-border bg-white p-5 shadow-raised transition-all duration-fast hover:-translate-y-0.5 hover:shadow-overlay">
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                   {stat.label}
                 </p>
-                <stat.icon className={`h-5 w-5 ${stat.color} opacity-80`} />
+                <div className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${stat.gradient} shadow-md`}>
+                  <stat.icon className="h-4 w-4 text-white" />
+                </div>
               </div>
               <p className={`text-3xl font-bold tracking-tight tabular-nums ${stat.color}`}>{stat.value}</p>
             </div>
@@ -131,9 +133,11 @@ export default function HomeSection({ onNavigate }: HomeSectionProps) {
             <button
               key={item.label}
               onClick={() => onNavigate(item.action)}
-              className="flex flex-col items-center rounded-xl border border-border bg-white p-5 shadow-sm transition-colors hover:bg-slate-100"
+              className="group flex flex-col items-center gap-2 rounded-2xl border border-border bg-white p-5 shadow-raised transition-all duration-fast hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-overlay active:scale-[0.97]"
             >
-              <item.icon className="mb-2 h-8 w-8 text-teal-700" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-600 to-green-500 shadow-md shadow-teal-600/25 transition-transform duration-fast group-hover:scale-110">
+                <item.icon className="h-6 w-6 text-white" />
+              </div>
               <span className="text-sm font-semibold text-ink">{item.label}</span>
             </button>
           ))}

@@ -287,7 +287,7 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
 
           <button
             onClick={() => setShowForm(true)}
-            className="rounded-xl bg-teal-700 px-4 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-teal-800 transition-colors flex items-center gap-1.5"
+            className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-teal-700 to-green-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-teal-600/25 transition-all duration-fast sm:text-sm hover:shadow-lg hover:shadow-teal-600/35 hover:-translate-y-0.5 active:scale-[0.97]"
           >
             <Sparkles className="h-4 w-4" />
             <span>+ Agregar mascota</span>
@@ -376,7 +376,7 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
             </div>
           </div>
           <div className="flex gap-3">
-            <button type="submit" disabled={saving} className="rounded-lg bg-teal-700 px-6 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60">
+            <button type="submit" disabled={saving} className="rounded-lg bg-gradient-to-r from-teal-700 to-green-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-teal-600/25 transition-all duration-fast hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.97] disabled:opacity-60 disabled:translate-y-0 disabled:shadow-none">
               {saving ? "Guardando..." : editingPet ? "Guardar cambios" : "Guardar"}
             </button>
             <button type="button" onClick={closeForm} className="rounded-lg border border-border px-6 py-2.5 text-sm font-semibold text-slate-500 hover:bg-slate-100">
@@ -395,7 +395,7 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
           <p className="text-sm text-slate-500 max-w-sm mx-auto mt-1">
             Registrá a tu perro, gato u otra mascota para acceder a consultas telemédicas y recetas digitales.
           </p>
-          <button onClick={() => setShowForm(true)} className="mt-5 rounded-xl bg-teal-700 px-6 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-teal-800 transition-colors">
+          <button onClick={() => setShowForm(true)} className="mt-5 rounded-xl bg-gradient-to-r from-teal-700 to-green-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-teal-600/25 transition-all duration-fast hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.97]">
             + Agregar primera mascota
           </button>
         </div>
@@ -407,7 +407,7 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
           {pets.map((pet, i) => (
             <div
               key={pet.id}
-              className="group relative rounded-2xl border border-border bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-teal-300"
+              className="group relative rounded-2xl border border-border bg-white p-5 shadow-raised transition-all duration-200 hover:-translate-y-1 hover:shadow-overlay hover:border-teal-300"
             >
               <div className="mb-4 flex items-center gap-4">
                 <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-3xl shadow-inner border border-amber-100/60">
@@ -498,7 +498,7 @@ export default function PetsSection({ onAgendarCita }: { onAgendarCita?: (petId:
                 </button>
                 <button
                   onClick={() => onAgendarCita?.(pet.id)}
-                  className="flex-1 rounded-xl bg-teal-700 py-2 text-xs font-bold text-white shadow-xs hover:bg-teal-800 transition-colors text-center"
+                  className="flex-1 rounded-xl bg-gradient-to-r from-teal-700 to-green-600 py-2 text-xs font-bold text-white shadow-md shadow-teal-600/25 transition-all duration-fast hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.97] text-center"
                 >
                   Agendar cita
                 </button>

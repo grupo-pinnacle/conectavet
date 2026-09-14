@@ -155,7 +155,7 @@ export default function ConsultationsSection({ initialPetId = "" }: { initialPet
       )}
 
       {/* Nueva consulta */}
-      <div className="mb-8 rounded-xl border border-border bg-white p-6 shadow-sm">
+      <div className="mb-8 rounded-2xl border border-border bg-white p-6 shadow-raised">
         <h3 className="mb-4 text-lg font-bold text-ink flex items-center gap-2">
           <Calendar className="h-5 w-5 text-teal-700" />
           Solicitar nueva consulta
@@ -210,8 +210,10 @@ export default function ConsultationsSection({ initialPetId = "" }: { initialPet
       {/* Consultas activas */}
       <h3 className="mb-4 text-lg font-bold text-ink">Tus consultas en curso</h3>
       {activeConsultations.length === 0 ? (
-        <div className="rounded-xl border border-border bg-white p-10 text-center shadow-sm">
-          <PawPrint className="mx-auto h-10 w-10 text-teal-700" />
+        <div className="rounded-2xl border border-border bg-white p-10 text-center shadow-raised">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-teal-600 to-green-500 text-xl shadow-md shadow-teal-600/25">
+            <PawPrint className="h-6 w-6 text-white" />
+          </div>
           <p className="mt-4 text-lg font-bold text-ink">
             No tenés consultas activas en este momento
           </p>
@@ -224,10 +226,10 @@ export default function ConsultationsSection({ initialPetId = "" }: { initialPet
           {activeConsultations.map((c) => (
             <div
               key={c.id}
-              className="flex items-center gap-4 rounded-xl border border-border bg-white p-5 shadow-sm transition-all hover:border-teal-200"
+              className="flex items-center gap-4 rounded-2xl border border-border bg-white p-5 shadow-raised transition-all duration-fast hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-overlay"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 text-xl shrink-0">
-                <PawPrint className="h-6 w-6 text-teal-700" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-teal-600 to-green-500 text-xl shadow-md shadow-teal-600/25 shrink-0">
+                <PawPrint className="h-6 w-6 text-white" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-ink truncate">{c.petName}</p>

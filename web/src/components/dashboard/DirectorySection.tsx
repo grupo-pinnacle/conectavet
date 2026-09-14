@@ -181,7 +181,7 @@ export default function DirectorySection() {
       )}
 
       {/* Filtros */}
-      <div className="mb-6 rounded-xl border border-border bg-white p-5 shadow-sm">
+      <div className="mb-6 rounded-2xl border border-border bg-white p-5 shadow-raised">
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -233,7 +233,7 @@ export default function DirectorySection() {
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-teal-700 border-t-transparent" />
         </div>
       ) : vets.length === 0 ? (
-        <div className="rounded-xl border border-border bg-white p-10 text-center shadow-sm">
+        <div className="rounded-2xl border border-border bg-white p-10 text-center shadow-raised">
           <Stethoscope className="mx-auto h-10 w-10 text-teal-700" />
           <p className="mt-4 text-lg font-bold text-ink">No encontramos veterinarios</p>
           <p className="text-sm text-slate-500">Probá ajustar los filtros de búsqueda.</p>
@@ -241,9 +241,9 @@ export default function DirectorySection() {
       ) : (
         <div className="space-y-3">
           {vets.map((v) => (
-            <div key={v.id} className="rounded-xl border border-border bg-white p-5 shadow-sm">
+            <div key={v.id} className="rounded-2xl border border-border bg-white p-5 shadow-raised transition-all duration-fast hover:-translate-y-0.5 hover:shadow-overlay">
               <div className="flex flex-wrap items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-50 text-lg font-bold text-teal-700">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-600 to-green-500 text-lg font-bold text-white shadow-md shadow-teal-600/25">
                   {(v.firstName || v.email || "V").charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -334,7 +334,7 @@ export default function DirectorySection() {
       {/* Modal de consulta */}
       {consultVet && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-in fade-in duration-200">
-          <div className="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-xl animate-in zoom-in-95 duration-200">
+          <div className="mx-4 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl animate-in zoom-in-95 duration-200 border border-border">
             <h3 className="mb-1 text-lg font-bold text-ink">
               Consultar a {vetName(consultVet)}
             </h3>

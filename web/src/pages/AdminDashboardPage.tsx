@@ -17,8 +17,8 @@ function StatCard({ label, value, icon: Icon, color }: {
   label: string; value: number; icon: React.ElementType; color: string;
 }) {
   return (
-    <div className={`rounded-2xl border border-border bg-white p-5 flex items-center gap-4`}>
-      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${color}`}>
+    <div className="rounded-2xl border border-border bg-white p-5 flex items-center gap-4 transition-all duration-fast hover:-translate-y-0.5 hover:shadow-overlay">
+      <div className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${color} shadow-md`}>
         <Icon className="h-6 w-6 text-white" />
       </div>
       <div>
@@ -139,9 +139,13 @@ export default function AdminDashboardPage() {
   const displayUsers = activeTab === "pending" ? pendingVets : users;
 
   return (
-    <div className="flex min-h-screen flex-col bg-surface font-sans">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-surface font-sans">
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute -top-40 -right-40 h-[30rem] w-[30rem] rounded-full bg-teal-200/30 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 h-[26rem] w-[26rem] rounded-full bg-green-200/30 blur-3xl" />
+      </div>
       {/* Top nav */}
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-white px-6 py-4">
+      <header className="relative z-20 sticky top-0 flex items-center justify-between border-b border-border bg-white/95 px-6 py-4 backdrop-blur-sm">
         <div className="flex items-center gap-3">
           <Logo size="sm" />
           <span className="hidden rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-bold text-purple-700 sm:inline">
@@ -161,7 +165,7 @@ export default function AdminDashboardPage() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-8">
+      <main className="relative z-10 mx-auto w-full max-w-6xl px-4 py-8 sm:px-8">
         {/* Stats */}
         {stats && (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6 mb-8">
@@ -178,16 +182,16 @@ export default function AdminDashboardPage() {
         <div className="mb-4 flex gap-2">
           <button
             onClick={() => setActiveTab("users")}
-            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-              activeTab === "users" ? "bg-teal-700 text-white" : "bg-white border border-border text-slate-600 hover:bg-slate-50"
+            className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-fast ${
+              activeTab === "users" ? "bg-gradient-to-r from-teal-700 to-green-600 text-white shadow-md shadow-teal-600/25" : "bg-white border border-border text-slate-600 hover:bg-slate-50"
             }`}
           >
             Todos los usuarios ({total})
           </button>
           <button
             onClick={() => setActiveTab("pending")}
-            className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-              activeTab === "pending" ? "bg-amber-500 text-white" : "bg-white border border-border text-slate-600 hover:bg-slate-50"
+            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-fast ${
+              activeTab === "pending" ? "bg-gradient-to-r from-amber-500 to-amber-400 text-white shadow-md shadow-amber-500/30" : "bg-white border border-border text-slate-600 hover:bg-slate-50"
             }`}
           >
             <Clock className="h-3.5 w-3.5" />
@@ -200,7 +204,7 @@ export default function AdminDashboardPage() {
           </button>
           <button
             onClick={() => { fetchStats(); fetchUsers(page, search, roleFilter); }}
-            className="ml-auto flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-2 text-sm text-slate-500 hover:bg-slate-50 transition-colors"
+            className="ml-auto flex items-center gap-1.5 rounded-xl border border-border bg-white px-3 py-2 text-sm text-slate-500 hover:bg-slate-50 transition-colors"
           >
             <RefreshCw className="h-3.5 w-3.5" /> Actualizar
           </button>

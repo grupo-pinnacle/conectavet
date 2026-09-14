@@ -12,8 +12,8 @@ export default function Card({
   children, variant = "elevated", padding = "p-4", className = "", onClick,
 }: CardProps) {
   const variantStyles = {
-    elevated: "bg-surface-card rounded-xl shadow-raised border-0",
-    outlined: "bg-surface-card rounded-xl shadow-none border border-border",
+    elevated: "bg-surface-card rounded-2xl shadow-raised border border-border",
+    outlined: "bg-surface-card rounded-2xl shadow-none border border-border",
     ghost: "bg-transparent rounded-xl shadow-none border-0",
   };
 

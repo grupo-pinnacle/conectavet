@@ -403,7 +403,7 @@ export default function MessagesSection() {
   const waitingForVet = activeCons?.status === "PENDING" || activeCons?.status === "WAITING";
 
   return (
-    <div className="flex h-[calc(100vh-10rem)] overflow-hidden rounded-xl border border-border bg-white shadow-sm md:h-[calc(100vh-7rem)]">
+    <div className="flex h-[calc(100vh-10rem)] overflow-hidden rounded-2xl border border-border bg-white shadow-raised md:h-[calc(100vh-7rem)]">
       {/* Sidebar */}
       <div
         className={`w-full shrink-0 border-r border-border md:w-80 ${showList ? "block" : "hidden md:block"}`}
@@ -443,7 +443,7 @@ export default function MessagesSection() {
                   isSelected ? "bg-teal-50/60 shadow-[inset_3px_0_0_0_#0F766E]" : ""
                 }`}
               >
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-bold text-teal-700">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-600 to-green-500 text-sm font-bold text-white shadow-md shadow-teal-600/25">
                   {c.pet?.name?.charAt(0) || "?"}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -487,7 +487,7 @@ export default function MessagesSection() {
               >
                 <ArrowLeft className="h-5 w-5 text-slate-500" />
               </button>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-50 text-sm font-bold text-teal-700 shrink-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-teal-600 to-green-500 text-sm font-bold text-white shadow-md shadow-teal-600/25 shrink-0">
                 {activeCons.pet?.name?.charAt(0) || "?"}
               </div>
               <div className="flex-1 min-w-0">
@@ -539,7 +539,7 @@ export default function MessagesSection() {
                       alert(msg || "No se pudo cancelar la consulta. Intentá de nuevo.");
                     }
                   }}
-                  className="rounded-full px-4 py-1.5 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+                  className="rounded-full border border-red-200 bg-red-50 px-4 py-1.5 text-sm font-bold text-red-600 transition-all duration-fast hover:bg-red-100 hover:shadow-md hover:-translate-y-0.5 active:scale-[0.97]"
                 >
                   Cancelar
                 </button>
@@ -640,7 +640,7 @@ export default function MessagesSection() {
                   <button
                     onClick={() => handleSend()}
                     disabled={!input.trim() || isSending}
-                    className="flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-teal-700 px-4 py-3 text-sm font-bold text-white transition-all hover:bg-teal-800 active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+                    className="flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-teal-700 to-green-600 px-4 py-3 text-sm font-bold text-white shadow-md shadow-teal-600/25 transition-all duration-fast hover:shadow-lg hover:shadow-teal-600/35 hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:active:scale-100 disabled:translate-y-0 disabled:shadow-none"
                   >
                     {isSending ? (
                       <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

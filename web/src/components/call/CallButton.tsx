@@ -71,10 +71,10 @@ export default function CallButton({ consultationId, peerName, disabled }: CallB
       <button
         onClick={startCall}
         disabled={disabled || loading}
-        className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold transition-colors ${
+        className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold transition-all duration-fast ${
           disabled
             ? "cursor-not-allowed bg-slate-100 text-slate-400"
-            : "bg-teal-700 text-white hover:bg-teal-800"
+            : "bg-gradient-to-r from-teal-700 to-green-600 text-white shadow-md shadow-teal-600/25 hover:shadow-lg hover:shadow-teal-600/40 hover:-translate-y-0.5 active:scale-[0.97]"
         }`}
         aria-label="Iniciar videollamada"
       >

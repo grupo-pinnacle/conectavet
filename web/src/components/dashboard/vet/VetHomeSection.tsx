@@ -36,10 +36,10 @@ export default function VetHomeSection() {
   }, []);
 
   const stats = [
-    { label: "Pacientes", value: String(totalPatients), color: "text-teal-700", icon: Users },
-    { label: "Consultas activas", value: String(activeCons), color: "text-success", icon: MessageCircle },
-    { label: "Ofertas", value: String(offerCons), color: "text-sky-600", icon: Clock },
-    { label: "En espera", value: String(waitingCons), color: "text-amber-500", icon: Clock },
+    { label: "Pacientes", value: String(totalPatients), color: "text-teal-700", gradient: "from-teal-600 to-teal-400", icon: Users },
+    { label: "Consultas activas", value: String(activeCons), color: "text-success", gradient: "from-green-600 to-green-400", icon: MessageCircle },
+    { label: "Ofertas", value: String(offerCons), color: "text-sky-600", gradient: "from-sky-600 to-sky-400", icon: Clock },
+    { label: "En espera", value: String(waitingCons), color: "text-amber-500", gradient: "from-amber-500 to-amber-300", icon: Clock },
   ];
 
   return (
@@ -52,7 +52,7 @@ export default function VetHomeSection() {
       </div>
 
       <div
-        className={`mb-8 flex flex-col gap-4 rounded-xl border p-5 shadow-sm transition-colors sm:flex-row sm:items-center ${
+        className={`mb-8 flex flex-col gap-4 rounded-2xl border p-5 shadow-sm transition-all sm:flex-row sm:items-center ${
           isOnline ? "border-green-200 bg-green-50" : "border-amber-200 bg-amber-50"
         }`}
       >
@@ -114,12 +114,14 @@ export default function VetHomeSection() {
           {stats.map((stat) => {
             const Icon = stat.icon;
             return (
-              <div key={stat.label} className="rounded-xl border border-slate-100 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-shadow hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
+              <div key={stat.label} className="rounded-2xl border border-border bg-white p-5 shadow-raised transition-all duration-fast hover:-translate-y-0.5 hover:shadow-overlay">
                 <div className="mb-3 flex items-center justify-between">
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                     {stat.label}
                   </p>
-                  <Icon className={`h-5 w-5 ${stat.color} opacity-80`} />
+                  <div className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${stat.gradient} shadow-md`}>
+                    <Icon className="h-4 w-4 text-white" />
+                  </div>
                 </div>
                 <p className={`text-3xl font-bold tracking-tight tabular-nums ${stat.color}`}>{stat.value}</p>
               </div>

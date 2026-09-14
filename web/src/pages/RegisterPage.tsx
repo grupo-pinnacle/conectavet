@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Heart, Syringe } from "lucide-react";
+import { Eye, EyeOff, Heart, Syringe, UserPlus } from "lucide-react";
 import Logo from "../components/Logo";
 import Button from "../components/Button";
 import Input from "../components/input";
@@ -73,38 +73,53 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-surface font-sans">
-      <div className="mx-auto grid min-h-screen max-w-7xl grid-cols-1 items-center gap-12 px-6 py-12 lg:grid-cols-2 lg:px-12">
-        <div className="flex flex-col justify-center space-y-6">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-widest text-teal-700">
-              TELEMEDICINA VETERINARIA
-            </p>
-            <h1 className="mt-2 text-4xl font-extrabold leading-tight text-ink lg:text-5xl tracking-tight">
-              Unite a la familia
-              <br />
-              VetConnect.
-            </h1>
-            <p className="mt-4 max-w-lg text-body leading-relaxed text-slate-500">
-              Creá tu cuenta y accedé a consultas veterinarias en línea e historial clínico digital para el cuidado de tu mascota.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-4">
-            {[
-              { num: "10,000+", label: "Mascotas felices" },
-              { num: "500+", label: "Veterinarios" },
-              { num: "24/7", label: "Disponibilidad" },
-            ].map((stat) => (
-              <div key={stat.label} className="rounded-lg border border-border bg-white px-5 py-3 shadow-subtle">
-                <p className="text-lg font-bold text-teal-700">{stat.num}</p>
-                <p className="text-xs text-slate-500">{stat.label}</p>
-              </div>
-            ))}
+    <div className="relative min-h-screen overflow-hidden bg-surface font-sans">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-40 -right-40 h-[28rem] w-[28rem] rounded-full bg-teal-200/40 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 h-[24rem] w-[24rem] rounded-full bg-green-200/40 blur-3xl" />
+      </div>
+      <Link
+        to="/"
+        className="fixed top-6 left-6 z-50 inline-flex items-center gap-1 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-md transition-all hover:text-teal-700 hover:shadow-lg"
+      >
+        ← Inicio
+      </Link>
+      <div className="relative mx-auto grid min-h-screen max-w-7xl grid-cols-1 items-center gap-10 px-6 py-12 lg:grid-cols-2 lg:px-12">
+        <div className="relative z-10 overflow-hidden rounded-3xl bg-gradient-to-br from-teal-700 via-teal-800 to-teal-950 p-8 text-white shadow-overlay md:p-12">
+          <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-28 -left-28 h-72 w-72 rounded-full bg-green-400/15 blur-3xl" />
+          <div className="relative z-10 flex flex-col justify-center space-y-10">
+            <div>
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-teal-100 ring-1 ring-inset ring-white/20">
+                <span className="h-2 w-2 rounded-full bg-green-400" />
+                Telemedicina veterinaria
+              </span>
+              <h1 className="mt-5 text-4xl font-extrabold leading-tight tracking-tight text-white lg:text-5xl">
+                Unite a la familia
+                <br />
+                VetConnect.
+              </h1>
+              <p className="mt-6 max-w-lg text-body leading-relaxed text-teal-100/90">
+                Creá tu cuenta y accedé a consultas veterinarias en línea e historial clínico digital para el cuidado de tu mascota.
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { num: "10,000+", label: "Mascotas felices" },
+                { num: "500+", label: "Veterinarios" },
+                { num: "24/7", label: "Disponibilidad" },
+              ].map((stat) => (
+                <div key={stat.label} className="rounded-xl border border-white/15 bg-white/10 px-3 py-4 text-center backdrop-blur-sm">
+                  <p className="text-lg font-bold text-white">{stat.num}</p>
+                  <p className="mt-1 text-xs text-teal-100/90">{stat.label}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
         <div className="mx-auto w-full max-w-md">
-          <div className="rounded-xl border border-border bg-white p-8 shadow-overlay md:p-12">
+          <div className="rounded-2xl border border-border bg-white p-8 shadow-overlay md:p-10">
             <div className="mb-8">
               <div className="mb-2">
                 <Link to="/" >
@@ -127,30 +142,30 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setRole("owner")}
-                className={`rounded-xl border-2 p-5 text-center transition-all ${
+                className={`rounded-2xl border-2 p-5 text-center transition-all duration-normal ${
                   role === "owner"
-                    ? "border-teal-700 bg-teal-50"
-                    : "border-border bg-white hover:border-slate-300"
+                    ? "border-teal-700 bg-gradient-to-br from-teal-700 to-green-600 text-white shadow-lg shadow-teal-600/25"
+                    : "border-border bg-white hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-md active:scale-[0.97]"
                 }`}
               >
-                <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-success-bg">
-                  <Heart className="h-6 w-6 text-success" />
+                <div className={`mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full ${role === "owner" ? "bg-white/15" : "bg-success-bg"}`}>
+                  <Heart className={`h-6 w-6 ${role === "owner" ? "text-white" : "text-success"}`} />
                 </div>
-                <p className="text-sm font-bold text-ink">Dueño de mascota</p>
+                <p className={`text-sm font-bold ${role === "owner" ? "text-white" : "text-ink"}`}>Dueño de mascota</p>
               </button>
               <button
                 type="button"
                 onClick={() => setRole("vet")}
-                className={`rounded-xl border-2 p-5 text-center transition-all ${
+                className={`rounded-2xl border-2 p-5 text-center transition-all duration-normal ${
                   role === "vet"
-                    ? "border-teal-700 bg-teal-50"
-                    : "border-border bg-white hover:border-slate-300"
+                    ? "border-teal-700 bg-gradient-to-br from-teal-700 to-green-600 text-white shadow-lg shadow-teal-600/25"
+                    : "border-border bg-white hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-md active:scale-[0.97]"
                 }`}
               >
-                <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-teal-50">
-                  <Syringe className="h-6 w-6 text-teal-700" />
+                <div className={`mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full ${role === "vet" ? "bg-white/15" : "bg-teal-50"}`}>
+                  <Syringe className={`h-6 w-6 ${role === "vet" ? "text-white" : "text-teal-700"}`} />
                 </div>
-                <p className="text-sm font-bold text-ink">Veterinario</p>
+                <p className={`text-sm font-bold ${role === "vet" ? "text-white" : "text-ink"}`}>Veterinario</p>
               </button>
             </div>
 
@@ -270,7 +285,7 @@ export default function RegisterPage() {
                   </button>
                 }
               />
-              <Button type="submit" loading={loading} variant="primary" size="lg">
+              <Button type="submit" loading={loading} variant="primary" size="lg" icon={<UserPlus className="h-5 w-5" />}>
                 {loading ? "Creando cuenta..." : "Crear cuenta"}
               </Button>
             </form>

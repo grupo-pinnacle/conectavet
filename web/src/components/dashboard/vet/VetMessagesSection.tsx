@@ -156,7 +156,7 @@ function PrescriptionCard({ rx, onViewModal }: { rx: Prescription; onViewModal?:
           {onViewModal && (
             <button
               onClick={onViewModal}
-              className="inline-flex items-center gap-1 rounded-md border border-teal-300 bg-teal-700 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-teal-800 transition-colors shadow-sm"
+              className="inline-flex items-center gap-1 rounded-md border border-teal-300 bg-gradient-to-r from-teal-700 to-green-600 px-2.5 py-1 text-[11px] font-bold text-white shadow-md shadow-teal-600/25 transition-all duration-fast hover:shadow-lg hover:shadow-teal-600/35 hover:-translate-y-0.5 active:scale-[0.97]"
               title="Ver formato oficial con QR y firma"
             >
               <FileText className="h-3 w-3" />
@@ -546,7 +546,7 @@ export default function VetMessagesSection() {
   const isWaiting = activeCons?.status === "WAITING";
 
   return (
-    <div className="flex h-[calc(100vh-10rem)] overflow-hidden rounded-xl border border-border bg-white shadow-sm md:h-[calc(100vh-7rem)]">
+    <div className="flex h-[calc(100vh-10rem)] overflow-hidden rounded-2xl border border-border bg-white shadow-raised md:h-[calc(100vh-7rem)]">
       {/* Sidebar */}
       <div
         className={`w-full shrink-0 border-r border-border md:w-80 ${showList ? "block" : "hidden md:block"}`}
@@ -618,7 +618,7 @@ export default function VetMessagesSection() {
                     isSelected ? "bg-teal-50/60 shadow-[inset_3px_0_0_0_#0F766E]" : ""
                   }`}
                 >
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-bold text-teal-700">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-600 to-green-500 text-sm font-bold text-white shadow-md shadow-teal-600/25">
                     {c.pet?.name?.charAt(0) || "?"}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -746,7 +746,7 @@ export default function VetMessagesSection() {
               >
                 <ArrowLeft className="h-5 w-5 text-slate-500" />
               </button>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-50 text-sm font-bold text-teal-700 shrink-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-teal-600 to-green-500 text-sm font-bold text-white shadow-md shadow-teal-600/25 shrink-0">
                 {activeCons.pet?.name?.charAt(0) || "?"}
               </div>
               <div className="flex-1 min-w-0">
@@ -931,7 +931,7 @@ export default function VetMessagesSection() {
                   <button
                     onClick={() => handleSend()}
                     disabled={!input.trim() || isSending}
-                    className="flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-teal-700 px-4 py-3 text-sm font-bold text-white transition-all hover:bg-teal-800 active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+                    className="flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-teal-700 to-green-600 px-4 py-3 text-sm font-bold text-white shadow-md shadow-teal-600/25 transition-all duration-fast hover:shadow-lg hover:shadow-teal-600/35 hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:active:scale-100 disabled:translate-y-0 disabled:shadow-none"
                   >
                     {isSending ? (
                       <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -968,7 +968,7 @@ export default function VetMessagesSection() {
       {/* Close modal */}
       {showCloseModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-in fade-in duration-200">
-          <div className="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-xl animate-in zoom-in-95 duration-200">
+          <div className="mx-4 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl animate-in zoom-in-95 duration-200 border border-border">
             <h3 className="mb-2 text-lg font-bold text-ink">Cerrar consulta</h3>
             <p className="mb-4 text-sm text-slate-500">
               Agregá notas para el historial de{" "}
@@ -1009,7 +1009,7 @@ export default function VetMessagesSection() {
       {/* Prescription modal */}
       {showPrescriptionModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-in fade-in duration-200">
-          <div className="mx-4 w-full max-w-lg rounded-xl bg-white p-6 shadow-xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+          <div className="mx-4 w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto border border-border">
             <h3 className="mb-2 flex items-center gap-2 text-lg font-bold text-ink">
               <Pill className="h-5 w-5 text-teal-700" />
               Enviar receta

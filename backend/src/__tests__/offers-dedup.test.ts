@@ -68,7 +68,7 @@ describe('BUG-002 Backend — getConsultationsByUser unicidad para VET', () => {
     const result = await getConsultationsByUser('vet-1', 'VET');
 
     expect(result.data).toHaveLength(5);
-    const ids = result.data.map((c: any) => c.id);
+    const ids = result.data.map((c: { id: string }) => c.id);
     expect(new Set(ids).size).toBe(5);
   });
 
@@ -88,7 +88,7 @@ describe('BUG-002 Backend — getConsultationsByUser unicidad para VET', () => {
     const result = await getConsultationsByUser('vet-1', 'VET');
 
     expect(result.data).toHaveLength(5);
-    const uniqueIds = Array.from(new Set(result.data.map((c: any) => c.id)));
+    const uniqueIds = Array.from(new Set(result.data.map((c: { id: string }) => c.id)));
     expect(uniqueIds).toEqual(['c-1', 'c-2', 'c-3', 'c-4', 'c-5']);
   });
 });
@@ -115,7 +115,7 @@ describe('BUG-002 Backend — Deduplicación de tokens Expo Push', () => {
     expect(mockFetch).toHaveBeenCalledTimes(1);
     const fetchCallBody = JSON.parse(mockFetch.mock.calls[0][1].body);
     expect(fetchCallBody).toHaveLength(2);
-    expect(fetchCallBody.map((m: any) => m.to)).toEqual([
+    expect(fetchCallBody.map((m: { to: string }) => m.to)).toEqual([
       'ExponentPushToken[device-aaa]',
       'ExponentPushToken[device-bbb]',
     ]);
@@ -139,7 +139,7 @@ describe('BUG-002 Backend — Deduplicación de tokens Expo Push', () => {
     expect(mockFetch).toHaveBeenCalledTimes(1);
     const fetchCallBody = JSON.parse(mockFetch.mock.calls[0][1].body);
     expect(fetchCallBody).toHaveLength(2);
-    expect(fetchCallBody.map((m: any) => m.to)).toEqual([
+    expect(fetchCallBody.map((m: { to: string }) => m.to)).toEqual([
       'ExponentPushToken[shared-device]',
       'ExponentPushToken[vet2-device]',
     ]);
